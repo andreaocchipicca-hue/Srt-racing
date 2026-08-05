@@ -1,4 +1,4 @@
-const CACHE='srt-professional-v4-20260806';
+const CACHE='srt-v5a-punti-20260806';
 
 const CORE = [
   '/',
