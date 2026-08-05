@@ -1,15 +1,20 @@
 {
   "name": "SRT Santena Racing Team",
   "short_name": "SRT Racing",
-  "description": "Web app ufficiale del campionato SRT Santena Racing Team",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a12",
-  "theme_color": "#e10600",
-  "orientation": "portrait-primary",
+  "background_color": "#09090d",
+  "theme_color": "#09090d",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }
