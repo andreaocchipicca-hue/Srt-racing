@@ -1,0 +1,2899 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT Santena Racing Team - F1 Championship</title>
+    <meta name="description" content="SRT Santena Racing Team - Campionato di Formula 1. Classifiche, calendario, piloti, scuderie e statistiche.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Racing+Sans+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+    <style>
+        :root {
+            --primary: #e10600;
+            --primary-dark: #b80500;
+            --secondary: #1a1a2e;
+            --dark: #0f0f1a;
+            --darker: #0a0a12;
+            --card-bg: #1a1a2e;
+            --card-border: #2a2a4a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b8;
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
+            --accent: #e10600;
+            --accent-hover: #ff1a1a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--darker);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .font-racing { font-family: 'Racing Sans One', cursive; }
+        .bg-f1 { background: var(--dark); }
+        .bg-card { background: var(--card-bg); border: 1px solid var(--card-border); }
+        .text-f1 { color: var(--primary); }
+        .border-f1 { border-color: var(--primary); }
+        .btn-f1 {
+            background: var(--primary);
+            color: white;
+            padding: 0.625rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-f1:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(225,6,0,0.3); }
+        .btn-f1-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 0.625rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .btn-f1-outline:hover { background: var(--primary); color: white; }
+        .input-f1 {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+            color: white;
+            width: 100%;
+            transition: all 0.3s;
+            outline: none;
+        }
+        .input-f1:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(225,6,0,0.15); }
+        .input-f1::placeholder { color: var(--text-secondary); }
+        .glass { background: rgba(26,26,46,0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
+        .card-hover { transition: all 0.3s; }
+        .card-hover:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); border-color: rgba(225,6,0,0.3); }
+        .gradient-text { background: linear-gradient(135deg, var(--primary), #ff6b35); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .gradient-border { position: relative; }
+        .gradient-border::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--primary), #ff6b35, var(--gold)); border-radius: 0 0 0.5rem 0.5rem; }
+        .flag-icon { display: inline-block; width: 28px; height: 18px; border-radius: 2px; background-size: cover; background-position: center; vertical-align: middle; margin-right: 6px; }
+        .position-badge { width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 700; font-size: 0.875rem; }
+        .pos-1 { background: var(--gold); color: #000; }
+        .pos-2 { background: var(--silver); color: #000; }
+        .pos-3 { background: var(--bronze); color: #fff; }
+        .sidebar { width: 280px; height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; transform: translateX(-100%); transition: transform 0.3s ease; overflow-y: auto; }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+        .main-content { margin-left: 0; transition: margin-left 0.3s; min-height: 100vh; }
+        @media (min-width: 1024px) {
+            .sidebar { transform: translateX(0); }
+            .sidebar-overlay { display: none; }
+            .main-content { margin-left: 280px; }
+            .sidebar-toggle { display: none; }
+        }
+        .page { display: none; animation: fadeIn 0.4s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 20px rgba(225,6,0,0.2); } 50% { box-shadow: 0 0 40px rgba(225,6,0,0.4); } }
+        .animate-slide-down { animation: slideDown 0.5s ease; }
+        .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+        .countdown-item { background: rgba(255,255,255,0.05); border-radius: 0.75rem; padding: 0.75rem 1rem; text-align: center; min-width: 70px; }
+        .countdown-item .num { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
+        .countdown-item .label { font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.05em; }
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+        .tab-btn { padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; color: var(--text-secondary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-btn:hover { color: var(--text-primary); }
+        .table-f1 { width: 100%; border-collapse: collapse; }
+        .table-f1 th { text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); border-bottom: 1px solid var(--card-border); font-weight: 600; }
+        .table-f1 td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.9rem; }
+        .table-f1 tr:hover td { background: rgba(255,255,255,0.02); }
+        .table-f1 tr:last-child td { border-bottom: none; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: none; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-overlay.open { display: flex; }
+        .modal-content { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 1rem; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 2rem; }
+        .toast { position: fixed; bottom: 2rem; right: 2rem; z-index: 300; padding: 1rem 1.5rem; border-radius: 0.75rem; background: var(--card-bg); border: 1px solid var(--card-border); box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: translateY(100px); opacity: 0; transition: all 0.4s; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-color: #10b981; }
+        .toast.error { border-color: var(--primary); }
+        .loading-spinner { width: 40px; height: 40px; border: 3px solid var(--card-border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .driver-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--card-border); }
+        .team-color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .race-status { padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+        .race-status.completed { background: rgba(16,185,129,0.15); color: #10b981; }
+        .race-status.upcoming { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .race-status.live { background: rgba(225,6,0,0.15); color: var(--primary); animation: pulse-glow 1.5s infinite; }
+        @media (max-width: 640px) {
+            .countdown-item { min-width: 55px; padding: 0.5rem 0.6rem; }
+            .countdown-item .num { font-size: 1.25rem; }
+            .countdown-item .label { font-size: 0.6rem; }
+            .table-f1 th, .table-f1 td { padding: 0.5rem 0.6rem; font-size: 0.8rem; }
+            .modal-content { padding: 1.25rem; }
+        }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        .badge-podium { background: linear-gradient(135deg, var(--gold), #f0c000); color: #000; }
+        .badge-podium-silver { background: linear-gradient(135deg, var(--silver), #a0a0a0); color: #000; }
+        .badge-podium-bronze { background: linear-gradient(135deg, var(--bronze), #a06030); color: #fff; }
+        .flag-select { background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); border-radius: 0.5rem; padding: 0.75rem 1rem; color: white; width: 100%; outline: none; cursor: pointer; }
+        .flag-select:focus { border-color: var(--primary); }
+        .flag-select option { background: var(--dark); color: white; }
+        .news-card { transition: all 0.3s; }
+        .news-card:hover { transform: translateY(-2px); }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 0.75rem; padding: 1.25rem; transition: all 0.3s; }
+        .stat-card:hover { border-color: rgba(225,6,0,0.3); }
+        .stat-card .stat-value { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
+        .stat-card .stat-label { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+        .trophy-gold { color: var(--gold); }
+        .trophy-silver { color: var(--silver); }
+        .trophy-bronze { color: var(--bronze); }
+        .search-box { position: relative; }
+        .search-box input { padding-left: 2.5rem; }
+        .search-box i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary); }
+        .notification-badge { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; background: var(--primary); border-radius: 50%; font-size: 0.6rem; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .driver-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 0.75rem; padding: 1.5rem; text-align: center; transition: all 0.3s; }
+        .driver-card:hover { transform: translateY(-4px); border-color: rgba(225,6,0,0.3); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+        .driver-card .avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--card-border); margin: 0 auto 1rem; }
+        .driver-card .number { font-family: 'Racing Sans One', cursive; font-size: 2rem; color: var(--primary); }
+        .team-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 0.75rem; padding: 1.5rem; transition: all 0.3s; }
+        .team-card:hover { transform: translateY(-4px); border-color: rgba(225,6,0,0.3); }
+        .team-card .team-logo { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; }
+        .gradient-bar { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--primary), #ff6b35); }
+        .inline-flag { display: inline-block; width: 24px; height: 16px; border-radius: 2px; vertical-align: middle; margin-right: 4px; background-size: cover; }
+        .pagination { display: flex; gap: 0.5rem; align-items: center; justify-content: center; margin-top: 1.5rem; }
+        .pagination button { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--card-border); background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .pagination button:hover { border-color: var(--primary); color: var(--primary); }
+        .pagination button.active { background: var(--primary); border-color: var(--primary); color: white; }
+        .filter-chip { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 1rem; border-radius: 999px; border: 1px solid var(--card-border); background: transparent; color: var(--text-secondary); font-size: 0.8rem; cursor: pointer; transition: all 0.3s; }
+        .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+        .filter-chip.active { background: rgba(225,6,0,0.15); border-color: var(--primary); color: var(--primary); }
+        .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
+        .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.3; }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--darker); }
+        ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+    </style>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0a12">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+
+<div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<aside id="sidebar" class="sidebar bg-f1 border-r border-gray-800/50 scrollbar-thin">
+    <div class="p-5 border-b border-gray-800/50">
+        <div class="flex items-center gap-3">
+            <img src="icon-192.png" alt="SRT Racing" class="w-10 h-10 rounded-lg object-cover">
+            <div>
+                <h2 class="font-racing text-lg text-white">SRT Racing</h2>
+                <p class="text-xs text-gray-500">Santena Racing Team</p>
+            </div>
+        </div>
+    </div>
+    <nav class="p-4 space-y-1" id="sidebar-nav">
+        <a href="#" data-page="home" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-home w-5 text-center"></i><span>Home</span>
+        </a>
+        <a href="#" data-page="drivers-standings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-trophy w-5 text-center"></i><span>Classifica Piloti</span>
+        </a>
+        <a href="#" data-page="constructors-standings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-building w-5 text-center"></i><span>Classifica Costruttori</span>
+        </a>
+        <a href="#" data-page="calendar" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-calendar-alt w-5 text-center"></i><span>Calendario</span>
+        </a>
+        <a href="#" data-page="drivers" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-helmet-safety w-5 text-center"></i><span>Piloti</span>
+        </a>
+        <a href="#" data-page="teams" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-flag-checkered w-5 text-center"></i><span>Scuderie</span>
+        </a>
+        <a href="#" data-page="statistics" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-chart-line w-5 text-center"></i><span>Statistiche</span>
+        </a>
+        <a href="#" data-page="records" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-medal w-5 text-center"></i><span>Record Piste</span>
+        </a>
+        <a href="#" data-page="hall-of-fame" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-crown w-5 text-center"></i><span>Albo d'Oro</span>
+        </a>
+        <a href="#" data-page="regulations" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-book w-5 text-center"></i><span>Regolamento</span>
+        </a>
+        <a href="#" data-page="news" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link">
+            <i class="fas fa-newspaper w-5 text-center"></i><span>News</span>
+        </a>
+        <hr class="border-gray-800/50 my-3">
+        <div id="sidebar-auth-section">
+            <a href="#" data-page="login" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link" id="login-link">
+                <i class="fas fa-sign-in-alt w-5 text-center"></i><span>Login</span>
+            </a>
+            <a href="#" data-page="profile" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link" id="profile-link" style="display:none;">
+                <i class="fas fa-user w-5 text-center"></i><span>Profilo</span>
+            </a>
+            <a href="#" data-page="admin" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-all sidebar-link" id="admin-link" style="display:none;">
+                <i class="fas fa-cog w-5 text-center"></i><span>Pannello Admin</span>
+            </a>
+            <a href="#" id="logout-btn" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/5 transition-all" style="display:none;">
+                <i class="fas fa-sign-out-alt w-5 text-center"></i><span>Logout</span>
+            </a>
+        </div>
+    </nav>
+    <div class="p-4 border-t border-gray-800/50 mt-auto">
+        <p class="text-xs text-gray-600 text-center">© 2025 SRT Santena Racing</p>
+    </div>
+</aside>
+
+<div class="main-content">
+    <header class="glass sticky top-0 z-50 border-b border-gray-800/50">
+        <div class="flex items-center justify-between px-4 lg:px-6 py-3">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="sidebar-toggle text-gray-400 hover:text-white text-xl p-1">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <img src="icon-192.png" alt="SRT Racing" class="w-8 h-8 rounded-lg object-cover">
+                    <span class="font-racing text-sm text-white hidden sm:block">SRT Santena Racing</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:flex items-center gap-2 text-xs text-gray-500">
+                    <i class="fas fa-user-circle"></i>
+                    <span id="header-user">Ospite</span>
+                </div>
+                <div id="header-role-badge"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="p-4 lg:p-6">
+        <div id="page-loading" class="flex items-center justify-center py-20">
+            <div class="loading-spinner"></div>
+        </div>
+
+        <div id="page-home" class="page active"></div>
+        <div id="page-drivers-standings" class="page"></div>
+        <div id="page-constructors-standings" class="page"></div>
+        <div id="page-calendar" class="page"></div>
+        <div id="page-grand-prix" class="page"></div>
+        <div id="page-drivers" class="page"></div>
+        <div id="page-teams" class="page"></div>
+        <div id="page-statistics" class="page"></div>
+        <div id="page-records" class="page"></div>
+        <div id="page-hall-of-fame" class="page"></div>
+        <div id="page-regulations" class="page"></div>
+        <div id="page-news" class="page"></div>
+        <div id="page-login" class="page"></div>
+        <div id="page-profile" class="page"></div>
+        <div id="page-admin" class="page"></div>
+    </main>
+</div>
+
+<div id="toast" class="toast">
+    <div class="flex items-center gap-3">
+        <i id="toast-icon" class="fas fa-check-circle text-lg"></i>
+        <span id="toast-message"></span>
+    </div>
+</div>
+
+<div id="modal-overlay" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal-content" id="modal-content">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold" id="modal-title">Modal</h3>
+            <button onclick="closeModal()" class="text-gray-500 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="modal-body"></div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// SUPABASE CONFIGURATION
+// ============================================================
+const SUPABASE_URL = 'https://mwzhbzwznmhmllbejgpi.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_JtYkjccNtiy3tia73usYAg_2slsuEo2';
+const supabase = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+// ============================================================
+// DATA LAYER
+// ============================================================
+
+// Flags database (country → flag emoji / image)
+const FLAGS = {
+    'Italia': '🇮🇹','Regno Unito': '🇬🇧','Germania': '🇩🇪','Francia': '🇫🇷','Spagna': '🇪🇸','Paesi Bassi': '🇳🇱','Belgio': '🇧🇪','Monaco': '🇲🇨','Austria': '🇦🇹','Ungheria': '🇭🇺','Giappone': '🇯🇵','Australia': '🇦🇺','Singapore': '🇸🇬','Brasile': '🇧🇷','Messico': '🇲🇽','Stati Uniti': '🇺🇸','Canada': '🇨🇦','Azerbaigian': '🇦🇿','Bahrein': '🇧🇭','Arabia Saudita': '🇸🇦','Emirati Arabi': '🇦🇪','Qatar': '🇶🇦','Cina': '🇨🇳','Corea del Sud': '🇰🇷','Sudafrica': '🇿🇦','Turchia': '🇹🇷','Russia': '🇷🇺','Portogallo': '🇵🇹','Malesia': '🇲🇾','India': '🇮🇳','Svizzera': '🇨🇭','Svezia': '🇸🇪','Danimarca': '🇩🇰','Finlandia': '🇫🇮','Nuova Zelanda': '🇳🇿','Argentina': '🇦🇷','Colombia': '🇨🇴','Thailandia': '🇹🇭','Vietnam': '🇻🇳','Indonesia': '🇮🇩','Polonia': '🇵🇱','Cechia': '🇨🇿','Slovacchia': '🇸🇰','Slovenia': '🇸🇮','Croazia': '🇭🇷','Serbia': '🇷🇸','Grecia': '🇬🇷','Romania': '🇷🇴','Bulgaria': '🇧🇬','Irlanda': '🇮🇪','Scozia': '🏴󠁧󠁢󠁳󠁣󠁴󠁿','Galles': '🏴󠁧󠁢󠁷󠁬󠁳󠁿','Inghilterra': '🏴󠁧󠁢󠁥󠁮󠁧󠁿','Marocco': '🇲🇦','Egitto': '🇪🇬','Israele': '🇮🇱','Uruguay': '🇺🇾','Cile': '🇨🇱','Perù': '🇵🇪','Venezuela': '🇻🇪','Costa Rica': '🇨🇷','Panama': '🇵🇦','Giamaica': '🇯🇲','Bahamas': '🇧🇸','Malta': '🇲🇹','Cipro': '🇨🇾','Lussemburgo': '🇱🇺','Lettonia': '🇱🇻','Estonia': '🇪🇪','Lituania': '🇱🇹','Islanda': '🇮🇸','Norvegia': '🇳🇴','Ucraina': '🇺🇦','Bielorussia': '🇧🇾','Georgia': '🇬🇪','Armenia': '🇦🇲','Kazakistan': '🇰🇿','Uzbekistan': '🇺🇿','Nuova Caledonia': '🇳🇨','Filippine': '🇵🇭','Taiwan': '🇹🇼','Corea del Nord': '🇰🇵','Mongolia': '🇲🇳','Bangladesh': '🇧🇩','Pakistan': '🇵🇰','Afghanistan': '🇦🇫','Iran': '🇮🇷','Iraq': '🇮🇶','Siria': '🇸🇾','Giordania': '🇯🇴','Libano': '🇱🇧','Kuwait': '🇰🇼','Oman': '🇴🇲','Yemen': '🇾🇪','Angola': '🇦🇴','Mozambico': '🇲🇿','Etiopia': '🇪🇹','Kenya': '🇰🇪','Nigeria': '🇳🇬','Ghana': '🇬🇭','Camerun': '🇨🇲','Costa d\'Avorio': '🇨🇮','Senegal': '🇸🇳','Algeria': '🇩🇿','Tunisia': '🇹🇳','Libia': '🇱🇾','Sudan': '🇸🇩','Eritrea': '🇪🇷','Somalia': '🇸🇴','Repubblica Democratica del Congo': '🇨🇩','Zambia': '🇿🇲','Zimbabwe': '🇿🇼','Botswana': '🇧🇼','Namibia': '🇳🇦','Mauritius': '🇲🇺','Seychelles': '🇸🇨','Madagascar': '🇲🇬','Anguilla': '🇦🇮','Antigua e Barbuda': '🇦🇬','Barbados': '🇧🇧','Dominica': '🇩🇲','Repubblica Dominicana': '🇩🇴','Grenada': '🇬🇩','Haiti': '🇭','Saint Kitts e Nevis': '🇰🇳','Saint Lucia': '🇱🇨','Saint Vincent e Grenadine': '🇻🇨','Trinidad e Tobago': '🇹🇹','Figi': '🇫🇯','Samoa': '🇼🇸','Tonga': '🇹🇴','Papua Nuova Guinea': '🇵🇬','Isole Salomone': '🇸🇧','Vanuatu': '🇻🇺','Kiribati': '🇰🇮','Tuvalu': '🇹🇻','Nauru': '🇳🇷','Palau': '🇵🇼','Isole Marshall': '🇲🇭','Micronesia': '🇫🇲','Macedonia del Nord': '🇲🇰','Bosnia ed Erzegovina': '🇧🇦','Montenegro': '🇲🇪','Kosovo': '🇽🇰','Albania': '🇦🇱','Moldavia': '🇲🇩','Liechtenstein': '🇱🇮','Andorra': '🇦🇩','San Marino': '🇸🇲','Vaticano': '🇻🇦','Monaco': '🇲🇨','Gibilterra': '🇬🇮','Bermuda': '🇧🇲','Cayman': '🇰🇾','Isole Vergini Britanniche': '🇻🇬','Isole Vergini Americane': '🇻🇮','Porto Rico': '🇵🇷','Guam': '🇬🇺','Samoa Americane': '🇦🇸','Isole Marianne Settentrionali': '🇲🇵','Aruba': '🇦🇼','Curaçao': '🇨🇼','Sint Maarten': '🇸🇽','Isola di Man': '🇮🇲','Jersey': '🇯🇪','Guernsey': '🇬🇬','Isole Faroe': '🇫🇴','Groenlandia': '🇬🇱','Svalbard e Jan Mayen': '🇸🇯','Isola di Natale': '🇨🇽','Isole Cocos': '🇨🇨','Isole Heard e McDonald': '🇭🇲','Isole minori esterne degli Stati Uniti': '🇺🇲','Territorio Britannico dell\'Oceano Indiano': '🇮🇴','Antartide': '🇦🇶'
+};
+
+// F1 Circuits database
+const F1_CIRCUITS = [
+    { name: 'Autodromo Nazionale di Monza', country: 'Italia', city: 'Monza', length: '5.793 km' },
+    { name: 'Circuit de Monaco', country: 'Monaco', city: 'Monte Carlo', length: '3.337 km' },
+    { name: 'Silverstone Circuit', country: 'Regno Unito', city: 'Silverstone', length: '5.891 km' },
+    { name: 'Spa-Francorchamps', country: 'Belgio', city: 'Spa', length: '7.004 km' },
+    { name: 'Circuit de Barcelona-Catalunya', country: 'Spagna', city: 'Barcellona', length: '4.675 km' },
+    { name: 'Suzuka International Racing Course', country: 'Giappone', city: 'Suzuka', length: '5.807 km' },
+    { name: 'Melbourne Grand Prix Circuit', country: 'Australia', city: 'Melbourne', length: '5.278 km' },
+    { name: 'Marina Bay Street Circuit', country: 'Singapore', city: 'Singapore', length: '4.940 km' },
+    { name: 'Interlagos Circuit', country: 'Brasile', city: 'San Paolo', length: '4.309 km' },
+    { name: 'Autódromo Hermanos Rodríguez', country: 'Messico', city: 'Città del Messico', length: '4.304 km' },
+    { name: 'Circuit of the Americas', country: 'Stati Uniti', city: 'Austin', length: '5.513 km' },
+    { name: 'Circuit Gilles Villeneuve', country: 'Canada', city: 'Montreal', length: '4.361 km' },
+    { name: 'Red Bull Ring', country: 'Austria', city: 'Spielberg', length: '4.318 km' },
+    { name: 'Hungaroring', country: 'Ungheria', city: 'Budapest', length: '4.381 km' },
+    { name: 'Circuit Paul Ricard', country: 'Francia', city: 'Le Castellet', length: '5.842 km' },
+    { name: 'Yas Marina Circuit', country: 'Emirati Arabi', city: 'Abu Dhabi', length: '5.554 km' },
+    { name: 'Bahrain International Circuit', country: 'Bahrein', city: 'Sakhir', length: '5.412 km' },
+    { name: 'Jeddah Corniche Circuit', country: 'Arabia Saudita', city: 'Jeddah', length: '6.174 km' },
+    { name: 'Losail International Circuit', country: 'Qatar', city: 'Lusail', length: '5.380 km' },
+    { name: 'Shanghai International Circuit', country: 'Cina', city: 'Shanghai', length: '5.451 km' },
+    { name: 'Miami International Autodrome', country: 'Stati Uniti', city: 'Miami', length: '5.410 km' },
+    { name: 'Imola Circuit', country: 'Italia', city: 'Imola', length: '4.909 km' },
+    { name: 'Baku City Circuit', country: 'Azerbaigian', city: 'Baku', length: '6.003 km' },
+    { name: 'Zandvoort Circuit', country: 'Paesi Bassi', city: 'Zandvoort', length: '4.259 km' },
+    { name: 'Korean International Circuit', country: 'Corea del Sud', city: 'Yeongam', length: '5.621 km' },
+    { name: 'Sepang International Circuit', country: 'Malesia', city: 'Kuala Lumpur', length: '5.543 km' },
+    { name: 'Istanbul Park', country: 'Turchia', city: 'Istanbul', length: '5.338 km' },
+    { name: 'Autódromo do Algarve', country: 'Portogallo', city: 'Portimão', length: '4.653 km' },
+    { name: 'Kyalami Grand Prix Circuit', country: 'Sudafrica', city: 'Midrand', length: '4.529 km' },
+    { name: 'Buddh International Circuit', country: 'India', city: 'Noida', length: '5.125 km' },
+    { name: 'Sochi Autodrom', country: 'Russia', city: 'Sochi', length: '5.848 km' },
+    { name: 'Hanoi Circuit', country: 'Vietnam', city: 'Hanoi', length: '5.607 km' },
+    { name: 'Las Vegas Strip Circuit', country: 'Stati Uniti', city: 'Las Vegas', length: '6.201 km' },
+    { name: 'Losail International Circuit', country: 'Qatar', city: 'Lusail', length: '5.380 km' },
+    { name: 'Autopolis', country: 'Giappone', city: 'Hita', length: '4.674 km' },
+    { name: 'Chang International Circuit', country: 'Thailandia', city: 'Buriram', length: '4.554 km' },
+    { name: 'Moscow Raceway', country: 'Russia', city: 'Moscow', length: '3.931 km' },
+    { name: 'TT Circuit Assen', country: 'Paesi Bassi', city: 'Assen', length: '4.542 km' },
+    { name: 'Brno Circuit', country: 'Cechia', city: 'Brno', length: '5.403 km' },
+    { name: 'Automotodrom Grobnik', country: 'Croazia', city: 'Rijeka', length: '4.168 km' },
+    { name: 'Misano World Circuit', country: 'Italia', city: 'Misano Adriatico', length: '4.226 km' },
+    { name: 'Mugello Circuit', country: 'Italia', city: 'Scarperia', length: '5.245 km' },
+    { name: 'Vallelunga Circuit', country: 'Italia', city: 'Campagnano di Roma', length: '4.085 km' },
+    { name: 'Enna-Pergusa', country: 'Italia', city: 'Enna', length: '4.950 km' },
+    { name: 'Adria International Raceway', country: 'Italia', city: 'Adria', length: '2.702 km' },
+    { name: 'Autodromo di Franciacorta', country: 'Italia', city: 'Castrezzato', length: '2.568 km' },
+    { name: 'Autodromo dell\'Umbria', country: 'Italia', city: 'Magione', length: '2.507 km' },
+    { name: 'Autodromo di Vairano', country: 'Italia', city: 'Vairano', length: '2.600 km' },
+    { name: 'Autodromo di Imola', country: 'Italia', city: 'Imola', length: '4.909 km' },
+    { name: 'Autodromo del Levante', country: 'Italia', city: 'Binetto', length: '2.700 km' },
+    { name: 'Autodromo di Modena', country: 'Italia', city: 'Modena', length: '2.365 km' },
+    { name: 'Autodromo di Pergusa', country: 'Italia', city: 'Enna', length: '4.950 km' },
+    { name: 'Autodromo di Sant\'Agata', country: 'Italia', city: 'Sant\'Agata', length: '2.800 km' },
+    { name: 'Autodromo di Varano', country: 'Italia', city: 'Varano', length: '2.360 km' },
+    { name: 'Circuit de Nevers Magny-Cours', country: 'Francia', city: 'Magny-Cours', length: '4.411 km' },
+    { name: 'Hockenheimring', country: 'Germania', city: 'Hockenheim', length: '4.574 km' },
+    { name: 'Nürburgring', country: 'Germania', city: 'Nürburg', length: '5.148 km' },
+    { name: 'Autódromo Internacional do Algarve', country: 'Portogallo', city: 'Portimão', length: '4.653 km' },
+    { name: 'Circuito de Jerez', country: 'Spagna', city: 'Jerez de la Frontera', length: '4.428 km' },
+    { name: 'Circuit Ricardo Tormo', country: 'Spagna', city: 'Valencia', length: '4.005 km' },
+    { name: 'Brands Hatch', country: 'Regno Unito', city: 'West Kingsdown', length: '3.908 km' },
+    { name: 'Donington Park', country: 'Regno Unito', city: 'Castle Donington', length: '4.020 km' },
+    { name: 'Oulton Park', country: 'Regno Unito', city: 'Little Budworth', length: '4.307 km' },
+    { name: 'Snetterton Circuit', country: 'Regno Unito', city: 'Snetterton', length: '4.417 km' },
+    { name: 'Thruxton Circuit', country: 'Regno Unito', city: 'Thruxton', length: '3.791 km' },
+    { name: 'Knockhill Racing Circuit', country: 'Regno Unito', city: 'Dunfermline', length: '2.135 km' },
+    { name: 'Croft Circuit', country: 'Regno Unito', city: 'Dalton-on-Tees', length: '3.415 km' },
+    { name: 'Rockingham Motor Speedway', country: 'Regno Unito', city: 'Rockingham', length: '3.120 km' },
+    { name: 'Anglesey Circuit', country: 'Regno Unito', city: 'Anglesey', length: '3.381 km' },
+    { name: 'Cadwell Park', country: 'Regno Unito', city: 'Louth', length: '3.437 km' },
+    { name: 'Mallory Park', country: 'Regno Unito', city: 'Kirkby Mallory', length: '2.173 km' },
+    { name: 'Pembrey Circuit', country: 'Regno Unito', city: 'Pembrey', length: '2.562 km' },
+    { name: 'Silverstone National', country: 'Regno Unito', city: 'Silverstone', length: '2.639 km' },
+    { name: 'Anderstorp Raceway', country: 'Svezia', city: 'Anderstorp', length: '4.025 km' },
+    { name: 'Mantorp Park', country: 'Svezia', city: 'Mantorp', length: '3.125 km' },
+    { name: 'Ring Knutstorp', country: 'Svezia', city: 'Knutstorp', length: '2.271 km' },
+    { name: 'Karlskoga Motorstadion', country: 'Svezia', city: 'Karlskoga', length: '2.455 km' },
+    { name: 'Falkenbergs Motorbana', country: 'Svezia', city: 'Bergagård', length: '2.170 km' },
+    { name: 'Ahvenisto Race Circuit', country: 'Finlandia', city: 'Hämeenlinna', length: '2.985 km' },
+    { name: 'Alastaro Circuit', country: 'Finlandia', city: 'Alastaro', length: '2.612 km' },
+    { name: 'Botniaring', country: 'Finlandia', city: 'Kauhajoki', length: '2.601 km' },
+    { name: 'Kymi Ring', country: 'Finlandia', city: 'Kymi', length: '4.630 km' },
+    { name: 'Rudskogen Motorsenter', country: 'Norvegia', city: 'Rakkestad', length: '2.153 km' },
+    { name: 'Vålerbanen', country: 'Norvegia', city: 'Våler', length: '2.700 km' }
+];
+
+// Sample data for initial state (will be replaced by Supabase data)
+let appState = {
+    currentUser: null,
+    currentRole: 'guest',
+    currentPage: 'home',
+    session: null,
+    season: {
+        id: 1,
+        name: 'Stagione 2025',
+        year: 2025,
+        isActive: true
+    },
+    drivers: [
+        { id: 1, name: 'Marco Rossi', surname: 'Rossi', number: 16, nationality: 'Italia', teamId: 1, platform: 'PC', avatar: 'https://picsum.photos/200?random=101', color: '#e10600' },
+        { id: 2, name: 'Luca Bianchi', surname: 'Bianchi', number: 27, nationality: 'Italia', teamId: 1, platform: 'PS5', avatar: 'https://picsum.photos/200?random=102', color: '#e10600' },
+        { id: 3, name: 'Alessandro Verdi', surname: 'Verdi', number: 44, nationality: 'Italia', teamId: 2, platform: 'PC', avatar: 'https://picsum.photos/200?random=103', color: '#00d2ff' },
+        { id: 4, name: 'Giovanni Neri', surname: 'Neri', number: 55, nationality: 'Italia', teamId: 2, platform: 'Xbox', avatar: 'https://picsum.photos/200?random=104', color: '#00d2ff' },
+        { id: 5, name: 'Francesco Gialli', surname: 'Gialli', number: 77, nationality: 'Italia', teamId: 3, platform: 'PS5', avatar: 'https://picsum.photos/200?random=105', color: '#ffd700' },
+        { id: 6, name: 'Andrea Blu', surname: 'Blu', number: 63, nationality: 'Italia', teamId: 3, platform: 'PC', avatar: 'https://picsum.photos/200?random=106', color: '#ffd700' },
+        { id: 7, name: 'Matteo Viola', surname: 'Viola', number: 4, nationality: 'Italia', teamId: 4, platform: 'Xbox', avatar: 'https://picsum.photos/200?random=107', color: '#9b59b6' },
+        { id: 8, name: 'Stefano Argento', surname: 'Argento', number: 22, nationality: 'Italia', teamId: 4, platform: 'PC', avatar: 'https://picsum.photos/200?random=108', color: '#9b59b6' },
+        { id: 9, name: 'Davide Rosa', surname: 'Rosa', number: 88, nationality: 'Italia', teamId: 5, platform: 'PS5', avatar: 'https://picsum.photos/200?random=109', color: '#ff69b4' },
+        { id: 10, name: 'Nicola Arancio', surname: 'Arancio', number: 99, nationality: 'Italia', teamId: 5, platform: 'PC', avatar: 'https://picsum.photos/200?random=110', color: '#ff69b4' }
+    ],
+    teams: [
+        { id: 1, name: 'SRT Rosso Corsa', color: '#e10600', logo: 'https://picsum.photos/100?random=201', country: 'Italia' },
+        { id: 2, name: 'SRT Blu Racing', color: '#00d2ff', logo: 'https://picsum.photos/100?random=202', country: 'Italia' },
+        { id: 3, name: 'SRT Oro Team', color: '#ffd700', logo: 'https://picsum.photos/100?random=203', country: 'Italia' },
+        { id: 4, name: 'SRT Viola Speed', color: '#9b59b6', logo: 'https://picsum.photos/100?random=204', country: 'Italia' },
+        { id: 5, name: 'SRT Rosa Racing', color: '#ff69b4', logo: 'https://picsum.photos/100?random=205', country: 'Italia' }
+    ],
+    races: [
+        { id: 1, name: 'Gran Premio d\'Italia', circuit: 'Autodromo Nazionale di Monza', country: 'Italia', date: '2025-03-16', time: '15:00', status: 'completed', seasonId: 1, round: 1, laps: 53 },
+        { id: 2, name: 'Gran Premio di Monaco', circuit: 'Circuit de Monaco', country: 'Monaco', date: '2025-04-06', time: '15:00', status: 'completed', seasonId: 1, round: 2, laps: 78 },
+        { id: 3, name: 'Gran Premio di Silverstone', circuit: 'Silverstone Circuit', country: 'Regno Unito', date: '2025-05-11', time: '15:00', status: 'upcoming', seasonId: 1, round: 3, laps: 52 },
+        { id: 4, name: 'Gran Premio del Belgio', circuit: 'Spa-Francorchamps', country: 'Belgio', date: '2025-06-08', time: '15:00', status: 'upcoming', seasonId: 1, round: 4, laps: 44 },
+        { id: 5, name: 'Gran Premio di Spagna', circuit: 'Circuit de Barcelona-Catalunya', country: 'Spagna', date: '2025-06-29', time: '15:00', status: 'upcoming', seasonId: 1, round: 5, laps: 66 },
+        { id: 6, name: 'Gran Premio del Giappone', circuit: 'Suzuka International Racing Course', country: 'Giappone', date: '2025-07-20', time: '07:00', status: 'upcoming', seasonId: 1, round: 6, laps: 53 },
+        { id: 7, name: 'Gran Premio d\'Australia', circuit: 'Melbourne Grand Prix Circuit', country: 'Australia', date: '2025-08-10', time: '07:00', status: 'upcoming', seasonId: 1, round: 7, laps: 58 },
+        { id: 8, name: 'Gran Premio di Singapore', circuit: 'Marina Bay Street Circuit', country: 'Singapore', date: '2025-09-14', time: '14:00', status: 'upcoming', seasonId: 1, round: 8, laps: 62 },
+        { id: 9, name: 'Gran Premio del Brasile', circuit: 'Interlagos Circuit', country: 'Brasile', date: '2025-10-05', time: '18:00', status: 'upcoming', seasonId: 1, round: 9, laps: 71 },
+        { id: 10, name: 'Gran Premio degli Stati Uniti', circuit: 'Circuit of the Americas', country: 'Stati Uniti', date: '2025-10-26', time: '21:00', status: 'upcoming', seasonId: 1, round: 10, laps: 56 }
+    ],
+    raceResults: [],
+    news: [
+        { id: 1, title: 'Grande vittoria per Marco Rossi a Monza!', date: '2025-03-16', category: 'Gara', excerpt: 'Marco Rossi domina il GP d\'Italia con una prestazione eccezionale.', content: '…', image: 'https://picsum.photos/800/400?random=301', author: 'Admin' },
+        { id: 2, title: 'Il SRT Racing Team svela la nuova livrea 2025', date: '2025-03-01', category: 'Team', excerpt: 'Presentata la nuova colorazione per la stagione 2025.', content: '…', image: 'https://picsum.photos/800/400?random=302', author: 'Admin' },
+        { id: 3, title: 'Calendario 2025 ufficiale', date: '2025-02-15', category: 'Annuncio', excerpt: 'Pubblicato il calendario completo della stagione 2025.', content: '…', image: 'https://picsum.photos/800/400?random=303', author: 'Admin' }
+    ],
+    regulations: [
+        { id: 1, title: 'Regolamento Sportivo', content: '…', icon: 'fa-flag-checkered' },
+        { id: 2, title: 'Sistema di Punteggio', content: '…', icon: 'fa-trophy' },
+        { id: 3, title: 'Regole di Gara', content: '…', icon: 'fa-gavel' },
+        { id: 4, title: 'Penalità e Sanzioni', content: '…', icon: 'fa-exclamation-triangle' }
+    ],
+    hallOfFame: [
+        { id: 1, season: '2024', champion: 'Marco Rossi', team: 'SRT Rosso Corsa', points: 285, image: 'https://picsum.photos/200?random=401' },
+        { id: 2, season: '2023', champion: 'Luca Bianchi', team: 'SRT Blu Racing', points: 262, image: 'https://picsum.photos/200?random=402' },
+        { id: 3, season: '2022', champion: 'Alessandro Verdi', team: 'SRT Oro Team', points: 248, image: 'https://picsum.photos/200?random=403' }
+    ],
+    trackRecords: [],
+    scoringSystem: {}
+};
+
+// Default scoring system
+const DEFAULT_SCORING = {
+    points: [25, 18, 15, 12, 10, 8, 6, 5, 4, 3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    poleBonus: 1,
+    fastestLapBonus: 1,
+    sprintPoints: [8, 7, 6, 5, 4, 3, 2, 1],
+    attendanceBonus: 0,
+    penalties: []
+};
+
+// ============================================================
+// STATE MANAGEMENT
+// ============================================================
+let state = JSON.parse(JSON.stringify(appState));
+let charts = {};
+
+function getState() { return state; }
+
+function updateState(newData) {
+    state = { ...state, ...newData };
+}
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function getFlag(country) {
+    return FLAGS[country] || '🏁';
+}
+
+function getFlagUrl(country) {
+    const map = {
+        'Italia': 'it', 'Regno Unito': 'gb', 'Germania': 'de', 'Francia': 'fr',
+        'Spagna': 'es', 'Paesi Bassi': 'nl', 'Belgio': 'be', 'Monaco': 'mc',
+        'Austria': 'at', 'Ungheria': 'hu', 'Giappone': 'jp', 'Australia': 'au',
+        'Singapore': 'sg', 'Brasile': 'br', 'Messico': 'mx', 'Stati Uniti': 'us',
+        'Canada': 'ca', 'Azerbaigian': 'az', 'Bahrein': 'bh', 'Arabia Saudita': 'sa',
+        'Emirati Arabi': 'ae', 'Qatar': 'qa', 'Cina': 'cn', 'Corea del Sud': 'kr',
+        'Sudafrica': 'za', 'Turchia': 'tr', 'Russia': 'ru', 'Portogallo': 'pt',
+        'Malesia': 'my', 'India': 'in', 'Svizzera': 'ch', 'Svezia': 'se',
+        'Danimarca': 'dk', 'Finlandia': 'fi', 'Nuova Zelanda': 'nz', 'Argentina': 'ar',
+        'Colombia': 'co', 'Thailandia': 'th', 'Cechia': 'cz', 'Croazia': 'hr',
+        'Grecia': 'gr', 'Romania': 'ro', 'Irlanda': 'ie', 'Polonia': 'pl',
+        'Ucraina': 'ua', 'Norvegia': 'no', 'Islanda': 'is', 'Lussemburgo': 'lu',
+        'Slovenia': 'si', 'Slovacchia': 'sk', 'Bulgaria': 'bg', 'Serbia': 'rs',
+        'Lettonia': 'lv', 'Estonia': 'ee', 'Lituania': 'lt', 'Cipro': 'cy',
+        'Malta': 'mt', 'Andorra': 'ad', 'San Marino': 'sm', 'Vaticano': 'va',
+        'Monaco': 'mc', 'Liechtenstein': 'li', 'Gibilterra': 'gi', 'Bermuda': 'bm'
+    };
+    const code = map[country] || 'un';
+    return `https://flagcdn.com/24x18/${code}.png`;
+}
+
+function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function formatTime(timeStr) {
+    return timeStr || '—';
+}
+
+function getPositionClass(pos) {
+    if (pos === 1) return 'pos-1';
+    if (pos === 2) return 'pos-2';
+    if (pos === 3) return 'pos-3';
+    return '';
+}
+
+function getStatusClass(status) {
+    if (status === 'completed') return 'race-status completed';
+    if (status === 'live') return 'race-status live';
+    return 'race-status upcoming';
+}
+
+function getStatusLabel(status) {
+    if (status === 'completed') return 'Concluso';
+    if (status === 'live') return 'In corso';
+    return 'In programma';
+}
+
+function getTeamColor(teamId) {
+    const team = state.teams.find(t => t.id === teamId);
+    return team ? team.color : '#666';
+}
+
+function getTeamName(teamId) {
+    const team = state.teams.find(t => t.id === teamId);
+    return team ? team.name : '—';
+}
+
+function getDriverName(driverId) {
+    const d = state.drivers.find(dr => dr.id === driverId);
+    return d ? `${d.name} ${d.surname}` : '—';
+}
+
+function getDriverAvatar(driverId) {
+    const d = state.drivers.find(dr => dr.id === driverId);
+    return d ? d.avatar : 'https://picsum.photos/48?random=999';
+}
+
+function getDriverTeam(driverId) {
+    const d = state.drivers.find(dr => dr.id === driverId);
+    return d ? d.teamId : null;
+}
+
+function calculateDriverStandings() {
+    const standings = [];
+    const scoring = DEFAULT_SCORING;
+    const completedRaces = state.races.filter(r => r.status === 'completed');
+    
+    state.drivers.forEach(driver => {
+        const results = state.raceResults.filter(r => r.driverId === driver.id);
+        let points = 0;
+        let wins = 0;
+        let podiums = 0;
+        let poles = 0;
+        let fastestLaps = 0;
+        let racesCount = 0;
+        let retirements = 0;
+        let dnfs = 0;
+        
+        results.forEach(r => {
+            if (r.position && r.position <= 20) {
+                const posPoints = scoring.points[r.position - 1] || 0;
+                points += posPoints;
+                if (r.poleBonus) points += scoring.poleBonus;
+                if (r.fastestLap) points += scoring.fastestLapBonus;
+                racesCount++;
+                if (r.position === 1) wins++;
+                if (r.position <= 3) podiums++;
+                if (r.pole) poles++;
+                if (r.fastestLap) fastestLaps++;
+            }
+            if (r.dnf || r.retired) {
+                retirements++;
+                dnfs++;
+            }
+            if (r.penalty) points -= r.penalty;
+        });
+        
+        standings.push({
+            driverId: driver.id,
+            name: `${driver.name} ${driver.surname}`,
+            teamId: driver.teamId,
+            teamName: getTeamName(driver.teamId),
+            points,
+            wins,
+            podiums,
+            poles,
+            fastestLaps,
+            races: racesCount,
+            retirements,
+            dnfs,
+            avatar: driver.avatar,
+            color: driver.color,
+            number: driver.number
+        });
+    });
+    
+    standings.sort((a, b) => b.points - a.points);
+    let maxPoints = standings.length > 0 ? standings[0].points : 0;
+    standings.forEach((s, i) => {
+        s.position = i + 1;
+        s.gap = maxPoints - s.points;
+    });
+    
+    return standings;
+}
+
+function calculateConstructorStandings() {
+    const standings = [];
+    
+    state.teams.forEach(team => {
+        const teamDrivers = state.drivers.filter(d => d.teamId === team.id);
+        const driverStandings = calculateDriverStandings();
+        const teamResults = driverStandings.filter(d => d.teamId === team.id);
+        
+        let points = 0;
+        let wins = 0;
+        let podiums = 0;
+        
+        teamResults.forEach(d => {
+            points += d.points;
+            wins += d.wins;
+            podiums += d.podiums;
+        });
+        
+        standings.push({
+            teamId: team.id,
+            name: team.name,
+            color: team.color,
+            logo: team.logo,
+            drivers: teamDrivers.map(d => `${d.name} ${d.surname}`).join(', '),
+            points,
+            wins,
+            podiums,
+            driverCount: teamDrivers.length
+        });
+    });
+    
+    standings.sort((a, b) => b.points - a.points);
+    standings.forEach((s, i) => s.position = i + 1);
+    
+    return standings;
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    const msg = document.getElementById('toast-message');
+    
+    msg.textContent = message;
+    toast.className = `toast ${type}`;
+    icon.className = type === 'success' ? 'fas fa-check-circle text-green-400 text-lg' : 'fas fa-exclamation-circle text-red-400 text-lg';
+    
+    toast.classList.add('show');
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+function openModal(title, bodyHtml) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').innerHTML = bodyHtml;
+    document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function navigate(page, params = {}) {
+    closeSidebar();
+    
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    
+    const targetPage = document.getElementById(`page-${page}`);
+    if (targetPage) {
+        targetPage.classList.add('active');
+        document.querySelector(`.sidebar-link[data-page="${page}"]`)?.classList.add('active');
+    }
+    
+    state.currentPage = page;
+    
+    // Render page
+    switch(page) {
+        case 'home': renderHome(); break;
+        case 'drivers-standings': renderDriversStandings(); break;
+        case 'constructors-standings': renderConstructorsStandings(); break;
+        case 'calendar': renderCalendar(); break;
+        case 'grand-prix': renderGrandPrix(params.id); break;
+        case 'drivers': renderDrivers(); break;
+        case 'teams': renderTeams(); break;
+        case 'statistics': renderStatistics(); break;
+        case 'records': renderRecords(); break;
+        case 'hall-of-fame': renderHallOfFame(); break;
+        case 'regulations': renderRegulations(); break;
+        case 'news': renderNews(); break;
+        case 'login': renderLogin(); break;
+        case 'profile': renderProfile(); break;
+        case 'admin': renderAdmin(); break;
+    }
+    
+    document.title = `SRT Racing | ${targetPage?.getAttribute('data-title') || page}`;
+}
+
+// ============================================================
+// RENDER FUNCTIONS
+// ============================================================
+
+// --- HOME ---
+function renderHome() {
+    const container = document.getElementById('page-home');
+    const nextRace = state.races.filter(r => r.status !== 'completed')[0] || state.races[0];
+    const standings = calculateDriverStandings().slice(0, 5);
+    const recentNews = state.news.slice(0, 3);
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <!-- Hero Section -->
+            <div class="relative rounded-2xl overflow-hidden mb-8 bg-gradient-to-br from-gray-900 via-black to-red-900/30 border border-gray-800/50">
+                <div class="absolute inset-0 opacity-10" style="background-image: url('https://picsum.photos/1200/400?random=500'); background-size: cover; background-position: center;"></div>
+                <div class="relative p-6 md:p-10 lg:p-14">
+                    <div class="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+                        <div class="w-20 h-20 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br from-primary to-red-600 flex items-center justify-center text-white font-racing text-3xl md:text-5xl shadow-2xl flex-shrink-0">
+                            SRT
+                        </div>
+                        <div class="text-center md:text-left">
+                            <h1 class="font-racing text-3xl md:text-5xl text-white mb-2">SRT Santena Racing Team</h1>
+                            <p class="text-gray-400 text-base md:text-lg max-w-xl">Campionato di Formula 1 — Stagione ${state.season.year}</p>
+                            <div class="flex flex-wrap gap-3 mt-4 justify-center md:justify-start">
+                                <span class="px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-sm font-medium"><i class="fas fa-trophy mr-1"></i>${state.drivers.length} Piloti</span>
+                                <span class="px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-sm font-medium"><i class="fas fa-flag-checkered mr-1"></i>${state.races.length} Gare</span>
+                                <span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm font-medium"><i class="fas fa-users mr-1"></i>${state.teams.length} Scuderie</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <!-- Next Race Card -->
+                <div class="lg:col-span-2 bg-card rounded-xl p-6 card-hover">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold flex items-center gap-2"><i class="fas fa-flag-checkered text-f1"></i> Prossima Gara</h2>
+                        ${nextRace ? `<span class="text-sm text-gray-500">Round ${nextRace.round}</span>` : ''}
+                    </div>
+                    ${nextRace ? `
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+                            <div class="flex-1">
+                                <h3 class="font-racing text-2xl text-white">${nextRace.name}</h3>
+                                <div class="flex items-center gap-2 mt-1 text-gray-400">
+                                    <span class="inline-flag" style="background-image:url('${getFlagUrl(nextRace.country)}')"></span>
+                                    <span>${nextRace.circuit}</span>
+                                </div>
+                                <div class="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                                    <span><i class="far fa-calendar mr-1"></i>${formatDate(nextRace.date)}</span>
+                                    <span><i class="far fa-clock mr-1"></i>${nextRace.time}</span>
+                                </div>
+                            </div>
+                            <div id="countdown-container" class="flex gap-2 flex-shrink-0">
+                                <div class="countdown-item"><div class="num" id="countdown-days">0</div><div class="label">Giorni</div></div>
+                                <div class="countdown-item"><div class="num" id="countdown-hours">0</div><div class="label">Ore</div></div>
+                                <div class="countdown-item"><div class="num" id="countdown-minutes">0</div><div class="label">Min</div></div>
+                                <div class="countdown-item"><div class="num" id="countdown-seconds">0</div><div class="label">Sec</div></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="${getStatusClass(nextRace.status)}">${getStatusLabel(nextRace.status)}</span>
+                            <button onclick="navigate('grand-prix', {id: ${nextRace.id}})" class="btn-f1-outline text-sm py-1.5 px-3 ml-auto">
+                                <i class="fas fa-info-circle mr-1"></i> Dettagli
+                            </button>
+                        </div>
+                    ` : '<p class="text-gray-500">Nessuna gara in programma.</p>'}
+                </div>
+                
+                <!-- Top 3 Standings -->
+                <div class="bg-card rounded-xl p-6 card-hover">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fas fa-trophy text-gold"></i> Top 3 Piloti</h2>
+                    <div class="space-y-3">
+                        ${standings.slice(0, 3).map((d, i) => `
+                            <div class="flex items-center gap-3 p-3 rounded-lg ${i === 0 ? 'bg-gradient-to-r from-yellow-500/10 to-transparent border border-yellow-500/20' : 'bg-white/5'}">
+                                <div class="position-badge ${getPositionClass(d.position)}">${d.position}</div>
+                                <img src="${d.avatar}" alt="${d.name}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-700" loading="lazy">
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-white text-sm truncate">${d.name}</div>
+                                    <div class="text-xs text-gray-500 flex items-center gap-1">
+                                        <span class="inline-block w-2 h-2 rounded-full" style="background:${d.color}"></span>
+                                        ${d.teamName}
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="font-bold text-lg text-white">${d.points}</div>
+                                    <div class="text-xs text-gray-500">pt</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button onclick="navigate('drivers-standings')" class="btn-f1-outline text-sm py-1.5 px-3 w-full mt-4">
+                        Classifica completa <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- News Section -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold flex items-center gap-2"><i class="fas fa-newspaper text-f1"></i> Ultime News</h2>
+                    <button onclick="navigate('news')" class="text-sm text-gray-500 hover:text-white transition-colors">Tutte le news <i class="fas fa-arrow-right ml-1"></i></button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    ${recentNews.map(n => `
+                        <div class="bg-card rounded-xl overflow-hidden card-hover">
+                            <img src="${n.image}" alt="${n.title}" class="w-full h-40 object-cover" loading="lazy">
+                            <div class="p-4">
+                                <span class="text-xs text-f1 font-semibold">${n.category}</span>
+                                <h3 class="font-semibold text-white mt-1 text-sm leading-snug">${n.title}</h3>
+                                <p class="text-xs text-gray-500 mt-2">${n.excerpt}</p>
+                                <div class="flex items-center justify-between mt-3 text-xs text-gray-600">
+                                    <span>${formatDate(n.date)}</span>
+                                    <span>${n.author}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                ${[
+                    { label: 'Gare Disputate', value: state.races.filter(r => r.status === 'completed').length, icon: 'fa-flag-checkered' },
+                    { label: 'Piloti Iscritti', value: state.drivers.length, icon: 'fa-helmet-safety' },
+                    { label: 'Scuderie', value: state.teams.length, icon: 'fa-building' },
+                    { label: 'Vincitore Attuale', value: standings[0]?.name || '—', icon: 'fa-crown' }
+                ].map(s => `
+                    <div class="bg-card rounded-xl p-4 text-center card-hover">
+                        <i class="fas ${s.icon} text-f1 text-xl mb-2"></i>
+                        <div class="text-2xl font-bold text-white">${s.value}</div>
+                        <div class="text-xs text-gray-500 mt-1">${s.label}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    
+    // Start countdown
+    if (nextRace) {
+        startCountdown(nextRace.date + 'T' + (nextRace.time || '15:00'));
+    }
+}
+
+// --- COUNTDOWN ---
+let countdownInterval = null;
+
+function startCountdown(targetDateStr) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    
+    const target = new Date(targetDateStr).getTime();
+    
+    function update() {
+        const now = new Date().getTime();
+        const diff = target - now;
+        
+        if (diff <= 0) {
+            document.getElementById('countdown-days').textContent = '0';
+            document.getElementById('countdown-hours').textContent = '0';
+            document.getElementById('countdown-minutes').textContent = '0';
+            document.getElementById('countdown-seconds').textContent = '0';
+            if (countdownInterval) clearInterval(countdownInterval);
+            return;
+        }
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        document.getElementById('countdown-days').textContent = days;
+        document.getElementById('countdown-hours').textContent = hours.toString().padStart(2, '0');
+        document.getElementById('countdown-minutes').textContent = minutes.toString().padStart(2, '0');
+        document.getElementById('countdown-seconds').textContent = seconds.toString().padStart(2, '0');
+    }
+    
+    update();
+    countdownInterval = setInterval(update, 1000);
+}
+
+// --- DRIVERS STANDINGS ---
+function renderDriversStandings() {
+    const container = document.getElementById('page-drivers-standings');
+    const standings = calculateDriverStandings();
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                <h1 class="text-2xl font-racing text-white flex items-center gap-2">
+                    <i class="fas fa-trophy text-gold"></i> Classifica Piloti ${state.season.year}
+                </h1>
+                <div class="flex items-center gap-2">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Cerca pilota..." class="input-f1 text-sm py-1.5 px-8 w-48" id="driver-search" oninput="filterDriversStandings(this.value)">
+                    </div>
+                    <button onclick="exportCSV('drivers')" class="btn-f1-outline text-sm py-1.5 px-3"><i class="fas fa-download"></i></button>
+                </div>
+            </div>
+            
+            <!-- Podium -->
+            <div class="flex justify-center items-end gap-4 mb-8 pb-8 border-b border-gray-800/50">
+                ${standings.slice(0, 3).map((d, i) => {
+                    const positions = [2, 1, 3];
+                    const pos = positions[i];
+                    const driver = standings[pos - 1];
+                    if (!driver) return '';
+                    const heights = ['h-32', 'h-40', 'h-28'];
+                    const medals = ['🥇', '🥈', '🥉'];
+                    const colors = ['from-yellow-500 to-yellow-600', 'from-gray-300 to-gray-400', 'from-orange-500 to-orange-600'];
+                    return `
+                        <div class="flex flex-col items-center ${pos === 1 ? 'order-2' : pos === 2 ? 'order-1' : 'order-3'}">
+                            <div class="text-2xl mb-1">${medals[i]}</div>
+                            <img src="${driver.avatar}" alt="${driver.name}" class="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover border-2 border-gray-700 mb-2" loading="lazy">
+                            <div class="text-center">
+                                <div class="font-bold text-sm text-white">${driver.name}</div>
+                                <div class="text-xs text-gray-500">${driver.points} pt</div>
+                            </div>
+                            <div class="w-16 md:w-20 mt-2 bg-gradient-to-t ${colors[i]} rounded-t-lg ${heights[i]} flex items-center justify-center text-white font-bold text-lg">
+                                ${driver.position}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            
+            <!-- Full Standings Table -->
+            <div class="bg-card rounded-xl overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table-f1">
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Pilota</th>
+                                <th>Scuderia</th>
+                                <th class="text-center">Pts</th>
+                                <th class="text-center">Vittorie</th>
+                                <th class="text-center">Podi</th>
+                                <th class="text-center">Pole</th>
+                                <th class="text-center">GV</th>
+                                <th class="text-center">GP</th>
+                                <th class="text-center">Rit</th>
+                                <th class="text-center">Distacco</th>
+                            </tr>
+                        </thead>
+                        <tbody id="standings-table-body">
+                            ${standings.map(d => `
+                                <tr class="cursor-pointer hover:bg-white/5" onclick="showDriverDetail(${d.driverId})">
+                                    <td><span class="position-badge ${getPositionClass(d.position)}">${d.position}</span></td>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <img src="${d.avatar}" alt="${d.name}" class="w-8 h-8 rounded-full object-cover" loading="lazy">
+                                            <div>
+                                                <div class="font-semibold text-white text-sm">${d.name}</div>
+                                                <div class="text-xs text-gray-500">#${d.number}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-block w-3 h-3 rounded-full" style="background:${d.color}"></span>
+                                            <span class="text-sm">${d.teamName}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center font-bold text-white text-lg">${d.points}</td>
+                                    <td class="text-center">${d.wins}</td>
+                                    <td class="text-center">${d.podiums}</td>
+                                    <td class="text-center">${d.poles}</td>
+                                    <td class="text-center">${d.fastestLaps}</td>
+                                    <td class="text-center">${d.races}</td>
+                                    <td class="text-center">${d.retirements}</td>
+                                    <td class="text-center text-gray-500">${d.gap > 0 ? `+${d.gap}` : '—'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            ${standings.length === 0 ? '<div class="empty-state"><i class="fas fa-trophy"></i><p>Nessun dato disponibile. Inserisci i risultati delle gare.</p></div>' : ''}
+        </div>
+    `;
+}
+
+function filterDriversStandings(query) {
+    const rows = document.querySelectorAll('#standings-table-body tr');
+    const q = query.toLowerCase();
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
+}
+
+function showDriverDetail(driverId) {
+    const driver = state.drivers.find(d => d.id === driverId);
+    if (!driver) return;
+    const standings = calculateDriverStandings();
+    const stats = standings.find(s => s.driverId === driverId);
+    const results = state.raceResults.filter(r => r.driverId === driverId);
+    
+    let html = `
+        <div class="flex items-center gap-4 mb-6">
+            <img src="${driver.avatar}" alt="${driver.name}" class="w-16 h-16 rounded-full object-cover border-2 border-gray-700">
+            <div>
+                <h3 class="text-xl font-bold text-white">${driver.name} ${driver.surname}</h3>
+                <div class="flex items-center gap-2 text-gray-400 text-sm">
+                    <span class="inline-block w-3 h-3 rounded-full" style="background:${driver.color}"></span>
+                    ${getTeamName(driver.teamId)} · #${driver.number}
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            ${[
+                { label: 'Punti', value: stats?.points || 0 },
+                { label: 'Vittorie', value: stats?.wins || 0 },
+                { label: 'Podi', value: stats?.podiums || 0 },
+                { label: 'Pole Position', value: stats?.poles || 0 },
+                { label: 'Giri Veloce', value: stats?.fastestLaps || 0 },
+                { label: 'Gare', value: stats?.races || 0 },
+                { label: 'Ritiri', value: stats?.retirements || 0 },
+                { label: 'Miglior Pos.', value: results.length > 0 ? Math.min(...results.filter(r=>r.position).map(r=>r.position)) : '—' }
+            ].map(s => `
+                <div class="bg-white/5 rounded-lg p-3 text-center">
+                    <div class="text-xl font-bold text-white">${s.value}</div>
+                    <div class="text-xs text-gray-500">${s.label}</div>
+                </div>
+            `).join('')}
+        </div>
+        ${results.length > 0 ? `
+            <h4 class="font-semibold text-white mb-3">Risultati Gare</h4>
+            <div class="space-y-2">
+                ${results.map(r => {
+                    const race = state.races.find(rc => rc.id === r.raceId);
+                    return `
+                        <div class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+                            <span class="text-sm font-bold text-gray-400 w-8">P${r.position || '—'}</span>
+                            <div class="flex-1">
+                                <div class="text-sm text-white">${race?.name || 'Gara'}</div>
+                                <div class="text-xs text-gray-500">${race?.circuit || ''}</div>
+                            </div>
+                            ${r.pole ? '<span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">Pole</span>' : ''}
+                            ${r.fastestLap ? '<span class="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">GV</span>' : ''}
+                            ${r.dnf ? '<span class="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">Rit</span>' : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        ` : '<p class="text-gray-500 text-center py-4">Nessun risultato ancora registrato.</p>'}
+    `;
+    
+    openModal(`${driver.name} ${driver.surname} — Statistiche`, html);
+}
+
+// --- CONSTRUCTORS STANDINGS ---
+function renderConstructorsStandings() {
+    const container = document.getElementById('page-constructors-standings');
+    const standings = calculateConstructorStandings();
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-racing text-white flex items-center gap-2">
+                    <i class="fas fa-building text-f1"></i> Classifica Costruttori ${state.season.year}
+                </h1>
+                <button onclick="exportCSV('constructors')" class="btn-f1-outline text-sm py-1.5 px-3"><i class="fas fa-download"></i></button>
+            </div>
+            
+            <div class="bg-card rounded-xl overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table-f1">
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Scuderia</th>
+                                <th>Piloti</th>
+                                <th class="text-center">Pts</th>
+                                <th class="text-center">Vittorie</th>
+                                <th class="text-center">Podi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${standings.map((s, i) => `
+                                <tr class="hover:bg-white/5">
+                                    <td><span class="position-badge ${getPositionClass(s.position)}">${s.position}</span></td>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <img src="${s.logo}" alt="${s.name}" class="w-10 h-10 rounded-lg object-cover" loading="lazy">
+                                            <div>
+                                                <div class="font-semibold text-white text-sm">${s.name}</div>
+                                                <div class="flex items-center gap-1 mt-0.5">
+                                                    <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${s.color}"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-sm text-gray-400">${s.drivers}</td>
+                                    <td class="text-center font-bold text-white text-lg">${s.points}</td>
+                                    <td class="text-center">${s.wins}</td>
+                                    <td class="text-center">${s.podiums}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            ${standings.length === 0 ? '<div class="empty-state"><i class="fas fa-building"></i><p>Nessuna scuderia presente.</p></div>' : ''}
+        </div>
+    `;
+}
+
+// --- CALENDAR ---
+function renderCalendar() {
+    const container = document.getElementById('page-calendar');
+    const races = state.races;
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-racing text-white flex items-center gap-2">
+                    <i class="fas fa-calendar-alt text-f1"></i> Calendario ${state.season.year}
+                </h1>
+                ${state.currentRole === 'admin' ? `
+                    <button onclick="showAddRaceModal()" class="btn-f1 text-sm py-1.5 px-3"><i class="fas fa-plus mr-1"></i> Aggiungi Gara</button>
+                ` : ''}
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${races.map(r => `
+                    <div class="bg-card rounded-xl p-5 card-hover cursor-pointer" onclick="navigate('grand-prix', {id: ${r.id}})">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flag" style="background-image:url('${getFlagUrl(r.country)}')"></span>
+                                <span class="text-sm font-semibold text-white">${r.name}</span>
+                            </div>
+                            <span class="${getStatusClass(r.status)}">${getStatusLabel(r.status)}</span>
+                        </div>
+                        <div class="space-y-1 text-sm text-gray-400">
+                            <div><i class="fas fa-map-marker-alt mr-2 w-4 text-center text-gray-600"></i>${r.circuit}</div>
+                            <div><i class="far fa-calendar mr-2 w-4 text-center text-gray-600"></i>${formatDate(r.date)}</div>
+                            <div><i class="far fa-clock mr-2 w-4 text-center text-gray-600"></i>${r.time || '—'}</div>
+                            <div><i class="fas fa-flag-checkered mr-2 w-4 text-center text-gray-600"></i>Round ${r.round} · ${r.laps || '—'} giri</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            ${races.length === 0 ? '<div class="empty-state"><i class="fas fa-calendar-alt"></i><p>Nessuna gara nel calendario.</p></div>' : ''}
+        </div>
+    `;
+}
+
+// --- GRAND PRIX PAGE ---
+function renderGrandPrix(raceId) {
+    const container = document.getElementById('page-grand-prix');
+    const race = state.races.find(r => r.id === parseInt(raceId));
+    if (!race) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>Gara non trovata.</p></div>';
+        return;
+    }
+    
+    const results = state.raceResults.filter(r => r.raceId === race.id).sort((a, b) => (a.position || 999) - (b.position || 999));
+    const poleResult = results.find(r => r.pole);
+    const fastestLapResult = results.find(r => r.fastestLap);
+    const winner = results.find(r => r.position === 1);
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <button onclick="navigate('calendar')" class="text-gray-500 hover:text-white mb-4 transition-colors">
+                <i class="fas fa-arrow-left mr-1"></i> Torna al calendario
+            </button>
+            
+            <div class="bg-gradient-to-br from-gray-900 via-black to-red-900/20 rounded-2xl p-6 md:p-8 mb-6 border border-gray-800/50">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="inline-flag" style="background-image:url('${getFlagUrl(race.country)}')"></span>
+                            <span class="text-sm text-gray-400">Round ${race.round}</span>
+                        </div>
+                        <h1 class="font-racing text-3xl md:text-4xl text-white">${race.name}</h1>
+                        <p class="text-gray-400 mt-1">${race.circuit}</p>
+                        <div class="flex items-center gap-4 mt-3 text-sm text-gray-500">
+                            <span><i class="far fa-calendar mr-1"></i>${formatDate(race.date)}</span>
+                            <span><i class="far fa-clock mr-1"></i>${race.time || '—'}</span>
+                            <span><i class="fas fa-flag-checkered mr-1"></i>${race.laps || '—'} giri</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="${getStatusClass(race.status)} text-sm">${getStatusLabel(race.status)}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-card rounded-xl p-4 text-center card-hover">
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Vincitore</div>
+                    <div class="flex items-center justify-center gap-2 mt-1">
+                        ${winner ? `
+                            <img src="${getDriverAvatar(winner.driverId)}" alt="" class="w-8 h-8 rounded-full" loading="lazy">
+                            <span class="font-bold text-white">${getDriverName(winner.driverId)}</span>
+                        ` : '<span class="text-gray-500">—</span>'}
+                    </div>
+                </div>
+                <div class="bg-card rounded-xl p-4 text-center card-hover">
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Pole Position</div>
+                    <div class="flex items-center justify-center gap-2 mt-1">
+                        ${poleResult ? `
+                            <img src="${getDriverAvatar(poleResult.driverId)}" alt="" class="w-8 h-8 rounded-full" loading="lazy">
+                            <span class="font-bold text-white">${getDriverName(poleResult.driverId)}</span>
+                        ` : '<span class="text-gray-500">—</span>'}
+                    </div>
+                </div>
+                <div class="bg-card rounded-xl p-4 text-center card-hover">
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">Giro Veloce</div>
+                    <div class="flex items-center justify-center gap-2 mt-1">
+                        ${fastestLapResult ? `
+                            <img src="${getDriverAvatar(fastestLapResult.driverId)}" alt="" class="w-8 h-8 rounded-full" loading="lazy">
+                            <span class="font-bold text-white">${getDriverName(fastestLapResult.driverId)}</span>
+                        ` : '<span class="text-gray-500">—</span>'}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-card rounded-xl overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-800/50 flex items-center justify-between">
+                    <h2 class="font-bold text-white">Risultati Gara</h2>
+                    ${state.currentRole === 'admin' ? `
+                        <button onclick="showAddResultModal(${race.id})" class="btn-f1 text-sm py-1.5 px-3"><i class="fas fa-plus mr-1"></i> Inserisci Risultati</button>
+                    ` : ''}
+                </div>
+                <div class="table-responsive">
+                    <table class="table-f1">
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Pilota</th>
+                                <th>Scuderia</th>
+                                <th class="text-center">Punti</th>
+                                <th class="text-center">Pole</th>
+                                <th class="text-center">GV</th>
+                                <th class="text-center">Penalità</th>
+                                <th class="text-center">Ritirato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${results.map(r => {
+                                const pts = r.position && r.position <= 20 ? (DEFAULT_SCORING.points[r.position - 1] || 0) + (r.pole ? DEFAULT_SCORING.poleBonus : 0) + (r.fastestLap ? DEFAULT_SCORING.fastestLapBonus : 0) - (r.penalty || 0) : 0;
+                                return `
+                                    <tr>
+                                        <td><span class="position-badge ${getPositionClass(r.position)}">${r.position || '—'}</span></td>
+                                        <td>
+                                            <div class="flex items-center gap-2">
+                                                <img src="${getDriverAvatar(r.driverId)}" alt="" class="w-8 h-8 rounded-full object-cover" loading="lazy">
+                                                <span class="font-medium text-white text-sm">${getDriverName(r.driverId)}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="flex items-center gap-2">
+                                                <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${getTeamColor(getDriverTeam(r.driverId))}"></span>
+                                                <span class="text-sm">${getTeamName(getDriverTeam(r.driverId))}</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center font-bold text-white">${pts}</td>
+                                        <td class="text-center">${r.pole ? '<i class="fas fa-check-circle text-purple-400"></i>' : '—'}</td>
+                                        <td class="text-center">${r.fastestLap ? '<i class="fas fa-check-circle text-green-400"></i>' : '—'}</td>
+                                        <td class="text-center">${r.penalty ? `<span class="text-red-400">-${r.penalty}</span>` : '—'}</td>
+                                        <td class="text-center">${r.dnf ? '<span class="text-red-400"><i class="fas fa-times-circle"></i></span>' : '—'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                            ${results.length === 0 ? '<tr><td colspan="8" class="text-center text-gray-500 py-8">Nessun risultato inserito. <button onclick="showAddResultModal(' + race.id + ')" class="text-f1 hover:underline">Inserisci ora</button></td></tr>' : ''}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// --- DRIVERS PAGE ---
+function renderDrivers() {
+    const container = document.getElementById('page-drivers');
+    const drivers = state.drivers;
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-racing text-white flex items-center gap-2">
+                    <i class="fas fa-helmet-safety text-f1"></i> Piloti
+                </h1>
+                ${state.currentRole === 'admin' ? `
+                    <button onclick="showAddDriverModal()" class="btn-f1 text-sm py-1.5 px-3"><i class="fas fa-plus mr-1"></i> Aggiungi Pilota</button>
+                ` : ''}
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                ${drivers.map(d => `
+                    <div class="driver-card cursor-pointer" onclick="showDriverDetail(${d.id})">
+                        <img src="${d.avatar}" alt="${d.name}" class="avatar" loading="lazy">
+                        <div class="number">${d.number}</div>
+                        <h3 class="font-semibold text-white text-sm">${d.name} ${d.surname}</h3>
+                        <div class="flex items-center justify-center gap-1 mt-1">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${d.color}"></span>
+                            <span class="text-xs text-gray-500">${getTeamName(d.teamId)}</span>
+                        </div>
+                        <div class="text-xs text-gray-600 mt-1">
+                            <span class="flag-emoji">${getFlag(d.nationality)}</span> ${d.nationality}
+                        </div>
+                        <div class="text-xs text-gray-600 mt-1">${d.platform}</div>
+                    </div>
+                `).join('')}
+            </div>
+            ${drivers.length === 0 ? '<div class="empty-state"><i class="fas fa-helmet-safety"></i><p>Nessun pilota registrato.</p></div>' : ''}
+        </div>
+    `;
+}
+
+// --- TEAMS PAGE ---
+function renderTeams() {
+    const container = document.getElementById('page-teams');
+    const teams = state.teams;
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-racing text-white flex items-center gap-2">
+                    <i class="fas fa-flag-checkered text-f1"></i> Scuderie
+                </h1>
+                ${state.currentRole === 'admin' ? `
+                    <button onclick="showAddTeamModal()" class="btn-f1 text-sm py-1.5 px-3"><i class="fas fa-plus mr-1"></i> Aggiungi Scuderia</button>
+                ` : ''}
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${teams.map(t => {
+                    const teamDrivers = state.drivers.filter(d => d.teamId === t.id);
+                    const constructorStandings = calculateConstructorStandings();
+                    const teamStanding = constructorStandings.find(s => s.teamId === t.id);
+                    return `
+                        <div class="team-card">
+                            <div class="flex items-center gap-4 mb-4">
+                                <img src="${t.logo}" alt="${t.name}" class="team-logo" loading="lazy">
+                                <div>
+                                    <h3 class="font-bold text-white text-lg">${t.name}</h3>
+                                    <div class="flex items-center gap-1 text-sm text-gray-500">
+                                        <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${t.color}"></span>
+                                        ${t.country}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gradient-bar mb-3" style="background:${t.color}"></div>
+                            <div class="space-y-2">
+                                ${teamDrivers.map(d => `
+                                    <div class="flex items-center gap-2 bg-white/5 rounded-lg p-2">
+                                        <img src="${d.avatar}" alt="" class="w-8 h-8 rounded-full object-cover" loading="lazy">
+                                        <span class="text-sm text-white">${d.name} ${d.surname}</span>
+                                        <span class="text-xs text-gray-500 ml-auto">#${d.number}</span>
+                                    </div>
+                                `).join('')}
+                                ${teamDrivers.length === 0 ? '<p class="text-gray-500 text-sm">Nessun pilota assegnato.</p>' : ''}
+                            </div>
+                            ${teamStanding ? `
+                                <div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-800/50 text-sm">
+                                    <span class="text-gray-500">Punti: <span class="font-bold text-white">${teamStanding.points}</span></span>
+                                    <span class="text-gray-500">Pos: <span class="font-bold text-white">#${teamStanding.position}</span></span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            ${teams.length === 0 ? '<div class="empty-state"><i class="fas fa-flag-checkered"></i><p>Nessuna scuderia registrata.</p></div>' : ''}
+        </div>
+    `;
+}
+
+// --- STATISTICS PAGE ---
+function renderStatistics() {
+    const container = document.getElementById('page-statistics');
+    const standings = calculateDriverStandings();
+    const constructorStandings = calculateConstructorStandings();
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <h1 class="text-2xl font-racing text-white mb-6 flex items-center gap-2">
+                <i class="fas fa-chart-line text-f1"></i> Statistiche ${state.season.year}
+            </h1>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-card rounded-xl p-5">
+                    <h2 class="font-bold text-white mb-4">Distribuzione Punti Piloti</h2>
+                    <div class="chart-container">
+                        <canvas id="points-chart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-card rounded-xl p-5">
+                    <h2 class="font-bold text-white mb-4">Confronto Vittorie / Podi</h2>
+                    <div class="chart-container">
+                        <canvas id="wins-podiums-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-card rounded-xl p-5">
+                    <h2 class="font-bold text-white mb-4">Classifica Costruttori</h2>
+                    <div class="chart-container">
+                        <canvas id="constructors-chart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-card rounded-xl p-5">
+                    <h2 class="font-bold text-white mb-4">Statistiche Generali</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        ${[
+                            { label: 'Gare Totali', value: state.races.length },
+                            { label: 'Gare Concluse', value: state.races.filter(r => r.status === 'completed').length },
+                            { label: 'Piloti Iscritti', value: state.drivers.length },
+                            { label: 'Scuderie', value: state.teams.length },
+                            { label: 'Risultati Inseriti', value: state.raceResults.length },
+                            { label: 'Media Punti/Pilota', value: standings.length > 0 ? (standings.reduce((a, b) => a + b.points, 0) / standings.length).toFixed(1) : 0 },
+                            { label: 'Pilota con più Pole', value: standings.sort((a, b) => b.poles - a.poles)[0]?.name || '—' },
+                            { label: 'Pilota con più GV', value: standings.sort((a, b) => b.fastestLaps - a.fastestLaps)[0]?.name || '—' }
+                        ].map(s => `
+                            <div class="stat-card">
+                                <div class="stat-value text-white">${s.value}</div>
+                                <div class="stat-label">${s.label}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-card rounded-xl p-5">
+                <h2 class="font-bold text-white mb-4">Confronto Piloti</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${standings.slice(0, 6).map(d => `
+                        <div class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+                            <img src="${d.avatar}" alt="" class="w-10 h-10 rounded-full object-cover" loading="lazy">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-semibold text-white text-sm">${d.name}</div>
+                                <div class="text-xs text-gray-500">${d.teamName}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-bold text-white">${d.points} pt</div>
+                                <div class="text-xs text-gray-500">${d.wins}V ${d.podiums}P ${d.poles}PL</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Initialize charts after DOM is ready
+    setTimeout(() => {
+        initCharts(standings, constructorStandings);
+    }, 100);
+}
+
+function initCharts(standings, constructorStandings) {
+    // Destroy existing charts
+    Object.values(charts).forEach(c => { if (c) c.destroy(); });
+    charts = {};
+    
+    const colors = standings.map(d => d.color || '#e10600');
+    const labels = standings.map(d => d.name);
+    const points = standings.map(d => d.points);
+    const wins = standings.map(d => d.wins);
+    const podiums = standings.map(d => d.podiums);
+    
+    // Points Chart
+    const ctx1 = document.getElementById('points-chart')?.getContext('2d');
+    if (ctx1) {
+        charts.points = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Punti',
+                    data: points,
+                    backgroundColor: colors.map(c => c + '80'),
+                    borderColor: colors,
+                    borderWidth: 2,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0a0b8' } },
+                    x: { grid: { display: false }, ticks: { color: '#a0a0b8', maxRotation: 45 } }
+                }
+            }
+        });
+    }
+    
+    // Wins / Podiums Chart
+    const ctx2 = document.getElementById('wins-podiums-chart')?.getContext('2d');
+    if (ctx2) {
+        charts.wins = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Vittorie', data: wins, backgroundColor: '#ffd70080', borderColor: '#ffd700', borderWidth: 2, borderRadius: 4 },
+                    { label: 'Podi', data: podiums, backgroundColor: '#c0c0c080', borderColor: '#c0c0c0', borderWidth: 2, borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#a0a0b8' } }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0a0b8' } },
+                    x: { grid: { display: false }, ticks: { color: '#a0a0b8', maxRotation: 45 } }
+                }
+            }
+        });
+    }
+    
+    // Constructors Chart
+    const ctx3 = document.getElementById('constructors-chart')?.getContext('2d');
+    if (ctx3) {
+        charts.constructors = new Chart(ctx3, {
+            type: 'doughnut',
+            data: {
+                labels: constructorStandings.map(s => s.name),
+                datasets: [{
+                    data: constructorStandings.map(s => s.points),
+                    backgroundColor: constructorStandings.map(s => s.color || '#666'),
+                    borderColor: '#1a1a2e',
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#a0a0b8', padding: 12 } }
+                }
+            }
+        });
+    }
+}
+
+// --- RECORDS PAGE ---
+function renderRecords() {
+    const container = document.getElementById('page-records');
+    const records = state.trackRecords || [];
+    const circuits = [...new Set(state.races.map(r => r.circuit))];
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <h1 class="text-2xl font-racing text-white mb-6 flex items-center gap-2">
+                <i class="fas fa-medal text-f1"></i> Record Piste
+            </h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${circuits.map(circuit => {
+                    const circuitData = F1_CIRCUITS.find(c => c.name === circuit);
+                    const race = state.races.find(r => r.circuit === circuit);
+                    const circuitRecords = records.filter(r => r.circuit === circuit).sort((a, b) => (a.time || 999) - (b.time || 999));
+                    const bestRecord = circuitRecords[0];
+                    return `
+                        <div class="bg-card rounded-xl p-5 card-hover">
+                            <div class="flex items-center gap-2 mb-3">
+                                ${race ? `<span class="inline-flag" style="background-image:url('${getFlagUrl(race.country)}')"></span>` : ''}
+                                <h3 class="font-bold text-white text-sm">${circuit}</h3>
+                            </div>
+                            ${circuitData ? `<p class="text-xs text-gray-500 mb-3">${circuitData.city} · ${circuitData.length}</p>` : ''}
+                            <div class="gradient-bar mb-3"></div>
+                            ${bestRecord ? `
+                                <div class="text-sm">
+                                    <div class="flex items-center gap-2 text-gray-400">
+                                        <i class="fas fa-trophy text-gold text-xs"></i>
+                                        <span class="text-white font-semibold">${getDriverName(bestRecord.driverId)}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">Tempo: ${bestRecord.time || '—'}s</div>
+                                    <div class="text-xs text-gray-500">Data: ${bestRecord.date || '—'}</div>
+                                </div>
+                            ` : `
+                                <p class="text-gray-500 text-sm">Nessun record registrato.</p>
+                            `}
+                            ${circuitRecords.length > 0 ? `
+                                <button onclick="showCircuitRecords('${circuit}')" class="btn-f1-outline text-xs py-1 px-2 mt-3">
+                                    Vedi tutti i tempi
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            ${circuits.length === 0 ? '<div class="empty-state"><i class="fas fa-medal"></i><p>Nessuna pista disponibile.</p></div>' : ''}
+        </div>
+    `;
+}
+
+function showCircuitRecords(circuit) {
+    const records = state.trackRecords.filter(r => r.circuit === circuit).sort((a, b) => (a.time || 999) - (b.time || 999));
+    let html = `
+        <p class="text-gray-400 mb-4">Migliori tempi su <strong class="text-white">${circuit}</strong></p>
+        <div class="space-y-2">
+            ${records.map((r, i) => `
+                <div class="flex items-center gap-3 bg-white/5 rounded-lg p-3">
+                    <span class="font-bold text-gray-400 w-6">${i + 1}</span>
+                    <img src="${getDriverAvatar(r.driverId)}" alt="" class="w-8 h-8 rounded-full object-cover" loading="lazy">
+                    <div class="flex-1">
+                        <div class="text-sm text-white">${getDriverName(r.driverId)}</div>
+                        <div class="text-xs text-gray-500">${getTeamName(getDriverTeam(r.driverId))}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-bold text-white">${r.time || '—'}s</div>
+                        <div class="text-xs text-gray-500">${r.date || '—'}</div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    openModal(`Record — ${circuit}`, html);
+}
+
+// --- HALL OF FAME ---
+function renderHallOfFame() {
+    const container = document.getElementById('page-hall-of-fame');
+    const hof = state.hallOfFame;
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <h1 class="text-2xl font-racing text-white mb-6 flex items-center gap-2">
+                <i class="fas fa-crown text-gold"></i> Albo d'Oro
+            </h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${hof.map(h => `
+                    <div class="bg-card rounded-xl p-6 card-hover text-center">
+                        <div class="text-4xl mb-3">🏆</div>
+                        <img src="${h.image}" alt="${h.champion}" class="w-20 h-20 rounded-full object-cover mx-auto mb-3 border-2 border-gold" loading="lazy">
+                        <h3 class="font-racing text-xl text-white">${h.champion}</h3>
+                        <p class="text-gray-400 text-sm">${h.team}</p>
+                        <div class="flex items-center justify-center gap-4 mt-3">
+                            <span class="text-sm"><span class="text-gold font-bold">${h.points}</span> pt</span>
+                            <span class="text-sm text-gray-500">Stagione ${h.season}</span>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-800/50">
+                            <span class="text-xs text-gray-600">Campione del Mondo</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            ${hof.length === 0 ? '<div class="empty-state"><i class="fas fa-crown"></i><p>Nessun campione ancora registrato.</p></div>' : ''}
+        </div>
+    `;
+}
+
+// --- REGULATIONS ---
+function renderRegulations() {
+    const container = document.getElementById('page-regulations');
+    const regs = state.regulations;
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <h1 class="text-2xl font-racing text-white mb-6 flex items-center gap-2">
+                <i class="fas fa-book text-f1"></i> Regolamento
+            </h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                ${regs.map(r => `
+                    <div class="bg-card rounded-xl p-5 card-hover cursor-pointer" onclick="showRegulationDetail(${r.id})">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center text-f1">
+                                <i class="fas ${r.icon}"></i>
+                            </div>
+                            <h3 class="font-bold text-white">${r.title}</h3>
+                        </div>
+                        <p class="text-sm text-gray-400">${r.content?.substring(0, 120) || 'Clicca per leggere il regolamento completo.'}...</p>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="bg-card rounded-xl p-6">
+                <h2 class="font-bold text-white mb-4">Sistema di Punteggio</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                    ${DEFAULT_SCORING.points.map((p, i) => `
+                        <div class="bg-white/5 rounded-lg p-2 text-center">
+                            <div class="text-xs text-gray-500">${i + 1}°</div>
+                            <div class="font-bold text-white">${p}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="mt-4 text-sm text-gray-500 space-y-1">
+                    <p><i class="fas fa-star text-purple-400 mr-1"></i> Pole Position: +${DEFAULT_SCORING.poleBonus} punto</p>
+                    <p><i class="fas fa-bolt text-green-400 mr-1"></i> Giro Veloce: +${DEFAULT_SCORING.fastestLapBonus} punto</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function showRegulationDetail(id) {
+    const reg = state.regulations.find(r => r.id === id);
+    if (!reg) return;
+    openModal(reg.title, `<p class="text-gray-400">${reg.content || 'Contenuto in fase di aggiornamento.'}</p>`);
+}
+
+// --- NEWS ---
+function renderNews() {
+    const container = document.getElementById('page-news');
+    const allNews = state.news;
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-racing text-white flex items-center gap-2">
+                    <i class="fas fa-newspaper text-f1"></i> News
+                </h1>
+                ${state.currentRole === 'admin' ? `
+                    <button onclick="showAddNewsModal()" class="btn-f1 text-sm py-1.5 px-3"><i class="fas fa-plus mr-1"></i> Nuova News</button>
+                ` : ''}
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                ${allNews.map(n => `
+                    <div class="bg-card rounded-xl overflow-hidden card-hover cursor-pointer" onclick="showNewsDetail(${n.id})">
+                        <img src="${n.image}" alt="${n.title}" class="w-full h-44 object-cover" loading="lazy">
+                        <div class="p-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-xs text-f1 font-semibold">${n.category}</span>
+                                <span class="text-xs text-gray-600">${formatDate(n.date)}</span>
+                            </div>
+                            <h3 class="font-bold text-white text-sm leading-snug">${n.title}</h3>
+                            <p class="text-xs text-gray-500 mt-2">${n.excerpt}</p>
+                            <div class="text-xs text-gray-600 mt-3">By ${n.author}</div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            ${allNews.length === 0 ? '<div class="empty-state"><i class="fas fa-newspaper"></i><p>Nessuna news pubblicata.</p></div>' : ''}
+        </div>
+    `;
+}
+
+function showNewsDetail(id) {
+    const news = state.news.find(n => n.id === id);
+    if (!news) return;
+    openModal(news.title, `
+        <div class="mb-4">
+            <img src="${news.image}" alt="${news.title}" class="w-full h-48 object-cover rounded-lg" loading="lazy">
+        </div>
+        <div class="flex items-center gap-2 mb-3">
+            <span class="text-xs text-f1 font-semibold">${news.category}</span>
+            <span class="text-xs text-gray-500">${formatDate(news.date)}</span>
+            <span class="text-xs text-gray-500">· ${news.author}</span>
+        </div>
+        <p class="text-gray-400">${news.content || news.excerpt}</p>
+    `);
+}
+
+// --- LOGIN ---
+function renderLogin() {
+    const container = document.getElementById('page-login');
+    container.innerHTML = `
+        <div class="animate-slide-down max-w-md mx-auto">
+            <div class="bg-card rounded-2xl p-8 border border-gray-800/50">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-red-600 flex items-center justify-center text-white font-racing text-2xl mx-auto mb-4">SRT</div>
+                    <h1 class="text-2xl font-racing text-white">Accesso SRT</h1>
+                    <p class="text-gray-500 text-sm mt-1">Santena Racing Team · Crossplay</p>
+                </div>
+                <div class="space-y-4">
+                    <div id="signup-name-wrap" style="display:none">
+                        <label class="text-sm text-gray-400 block mb-1">Nome visualizzato</label>
+                        <input type="text" class="input-f1" placeholder="Es. Andrea" id="signup-name">
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-400 block mb-1">Email</label>
+                        <input type="email" class="input-f1" placeholder="nome@esempio.com" id="login-email">
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-400 block mb-1">Password</label>
+                        <input type="password" class="input-f1" placeholder="Almeno 6 caratteri" id="login-password">
+                    </div>
+                    <button id="auth-main-btn" onclick="handleLogin()" class="btn-f1 w-full justify-center py-3">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Accedi
+                    </button>
+                    <button onclick="toggleSignupMode()" class="text-sm text-f1 w-full text-center hover:underline" id="auth-mode-btn">Crea un account</button>
+                    <div class="text-center text-sm text-gray-500"><span>oppure</span></div>
+                    <button onclick="handleGuestLogin()" class="btn-f1-outline w-full justify-center py-2.5">
+                        <i class="fas fa-user-friends mr-2"></i> Continua come ospite
+                    </button>
+                </div>
+                <div class="mt-6 rounded-lg bg-white/5 p-3 text-xs text-gray-500">
+                    Il primo account registrato dopo l'installazione diventerà automaticamente Admin. Gli account successivi saranno Piloti.
+                </div>
+            </div>
+        </div>`;
+}
+
+let signupMode = false;
+function toggleSignupMode() {
+    signupMode = !signupMode;
+    document.getElementById('signup-name-wrap').style.display = signupMode ? 'block' : 'none';
+    document.getElementById('auth-main-btn').innerHTML = signupMode
+        ? '<i class="fas fa-user-plus mr-2"></i> Registrati'
+        : '<i class="fas fa-sign-in-alt mr-2"></i> Accedi';
+    document.getElementById('auth-main-btn').setAttribute('onclick', signupMode ? 'handleSignup()' : 'handleLogin()');
+    document.getElementById('auth-mode-btn').textContent = signupMode ? 'Hai già un account? Accedi' : 'Crea un account';
+}
+
+async function applySupabaseSession(session) {
+    if (!session?.user) {
+        state.currentUser = null;
+        state.currentRole = 'guest';
+        updateUIForAuth();
+        return;
+    }
+    await supabase.rpc('bootstrap_first_admin');
+    const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
+    if (error) console.warn(error);
+    state.currentUser = {
+        id: session.user.id,
+        name: profile?.display_name || session.user.email?.split('@')[0] || 'Utente',
+        email: session.user.email,
+        role: profile?.role || 'driver',
+        driverId: profile?.driver_id || null
+    };
+    state.currentRole = state.currentUser.role;
+    updateUIForAuth();
+}
+
+async function handleSignup() {
+    if (!supabase) return showToast('Supabase non disponibile.', 'error');
+    const email = document.getElementById('login-email')?.value?.trim();
+    const password = document.getElementById('login-password')?.value;
+    const displayName = document.getElementById('signup-name')?.value?.trim();
+    if (!email || !password || !displayName) return showToast('Compila nome, email e password.', 'error');
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { display_name: displayName } } });
+    if (error) return showToast(error.message, 'error');
+    if (data.session) {
+        await applySupabaseSession(data.session);
+        showToast('Account creato con successo.', 'success');
+        navigate(state.currentRole === 'admin' ? 'admin' : 'profile');
+    } else {
+        showToast('Account creato. Controlla la tua email per confermare l’accesso.', 'success');
+    }
+}
+
+async function handleLogin() {
+    if (!supabase) return showToast('Supabase non disponibile.', 'error');
+    const email = document.getElementById('login-email')?.value?.trim();
+    const password = document.getElementById('login-password')?.value;
+    if (!email || !password) return showToast('Inserisci email e password.', 'error');
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return showToast('Accesso non riuscito: ' + error.message, 'error');
+    await applySupabaseSession(data.session);
+    showToast('Accesso effettuato.', 'success');
+    navigate(state.currentRole === 'admin' ? 'admin' : 'profile');
+}
+
+function handleGuestLogin() {
+    state.currentUser = { id: null, name: 'Ospite', role: 'guest' };
+    state.currentRole = 'guest';
+    updateUIForAuth();
+    showToast('Accesso come ospite.', 'success');
+    navigate('home');
+}
+
+async function handleLogout() {
+    if (supabase) await supabase.auth.signOut();
+    state.currentUser = null;
+    state.currentRole = 'guest';
+    updateUIForAuth();
+    showToast('Logout effettuato.', 'success');
+    navigate('home');
+}
+
+function updateUIForAuth() {
+    const isLoggedIn = state.currentUser && state.currentRole !== 'guest';
+    const isAdmin = state.currentRole === 'admin';
+    const isDriver = state.currentRole === 'driver';
+    
+    document.getElementById('login-link').style.display = isLoggedIn ? 'none' : 'flex';
+    document.getElementById('profile-link').style.display = isLoggedIn ? 'flex' : 'none';
+    document.getElementById('admin-link').style.display = isAdmin ? 'flex' : 'none';
+    document.getElementById('logout-btn').style.display = isLoggedIn ? 'flex' : 'none';
+    
+    const headerUser = document.getElementById('header-user');
+    if (state.currentUser) {
+        headerUser.textContent = state.currentUser.name;
+    } else {
+        headerUser.textContent = 'Ospite';
+    }
+    
+    const roleBadge = document.getElementById('header-role-badge');
+    if (isAdmin) {
+        roleBadge.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-xs font-medium"><i class="fas fa-crown mr-1"></i>Admin</span>';
+    } else if (isDriver) {
+        roleBadge.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-xs font-medium"><i class="fas fa-helmet-safety mr-1"></i>Pilota</span>';
+    } else {
+        roleBadge.innerHTML = '<span class="px-2 py-0.5 rounded-full bg-gray-500/15 text-gray-400 text-xs font-medium"><i class="fas fa-user mr-1"></i>Ospite</span>';
+    }
+}
+
+// --- PROFILE ---
+function renderProfile() {
+    const container = document.getElementById('page-profile');
+    const user = state.currentUser;
+    
+    if (!user || state.currentRole === 'guest') {
+        container.innerHTML = `
+            <div class="animate-slide-down max-w-md mx-auto">
+                <div class="bg-card rounded-2xl p-8 text-center border border-gray-800/50">
+                    <i class="fas fa-user-lock text-4xl text-gray-600 mb-4"></i>
+                    <h2 class="text-xl font-bold text-white mb-2">Accesso Richiesto</h2>
+                    <p class="text-gray-500 mb-4">Effettua il login per visualizzare il tuo profilo.</p>
+                    <button onclick="navigate('login')" class="btn-f1"><i class="fas fa-sign-in-alt mr-2"></i> Accedi</button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    let driverData = null;
+    if (state.currentRole === 'driver' && user.driverId) {
+        driverData = state.drivers.find(d => d.id === user.driverId);
+    }
+    
+    const standings = calculateDriverStandings();
+    const driverStats = standings.find(s => s.driverId === user.driverId);
+    
+    container.innerHTML = `
+        <div class="animate-slide-down max-w-2xl mx-auto">
+            <div class="bg-card rounded-2xl p-6 md:p-8 border border-gray-800/50">
+                <div class="flex flex-col md:flex-row items-center gap-6 mb-8">
+                    <div class="relative">
+                        <img src="${driverData?.avatar || 'https://picsum.photos/120?random=999'}" alt="${user.name}" class="w-24 h-24 rounded-full object-cover border-4 border-gray-700" id="profile-avatar">
+                        ${state.currentRole === 'driver' ? `
+                            <button onclick="document.getElementById('avatar-upload').click()" class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm cursor-pointer hover:bg-red-600 transition-colors">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                            <input type="file" id="avatar-upload" accept="image/*" class="hidden" onchange="handleAvatarUpload(event)">
+                        ` : ''}
+                    </div>
+                    <div class="text-center md:text-left">
+                        <h1 class="text-2xl font-racing text-white">${driverData?.name || user.name} ${driverData?.surname || ''}</h1>
+                        <div class="flex items-center justify-center md:justify-start gap-2 mt-1 text-gray-400">
+                            <span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${driverData?.color || '#666'}"></span>
+                            ${driverData ? getTeamName(driverData.teamId) : '—'}
+                        </div>
+                        ${driverData ? `
+                            <div class="flex items-center justify-center md:justify-start gap-3 mt-2 text-sm text-gray-500">
+                                <span>#${driverData.number}</span>
+                                <span>${driverData.platform}</span>
+                                <span>${getFlag(driverData.nationality)} ${driverData.nationality}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${state.currentRole === 'admin' ? '<span class="px-3 py-1 rounded-full bg-red-500/15 text-red-400 text-sm font-medium ml-auto"><i class="fas fa-crown mr-1"></i>Admin</span>' : ''}
+                </div>
+                
+                ${driverStats ? `
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        ${[
+                            { label: 'Punti', value: driverStats.points },
+                            { label: 'Vittorie', value: driverStats.wins },
+                            { label: 'Podi', value: driverStats.podiums },
+                            { label: 'Gare', value: driverStats.races }
+                        ].map(s => `
+                            <div class="bg-white/5 rounded-lg p-3 text-center">
+                                <div class="text-xl font-bold text-white">${s.value}</div>
+                                <div class="text-xs text-gray-500">${s.label}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                
+                ${state.currentRole === 'driver' ? `
+                    <div class="border-t border-gray-800/50 pt-6">
+                        <h2 class="font-bold text-white mb-4">Modifica Profilo</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm text-gray-400 block mb-1">Nome</label>
+                                <input type="text" class="input-f1" value="${driverData?.name || ''}" id="profile-name">
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-400 block mb-1">Cognome</label>
+                                <input type="text" class="input-f1" value="${driverData?.surname || ''}" id="profile-surname">
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-400 block mb-1">Numero</label>
+                                <input type="number" class="input-f1" value="${driverData?.number || ''}" id="profile-number">
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-400 block mb-1">Piattaforma</label>
+                                <select class="flag-select" id="profile-platform">
+                                    ${['PC', 'PS5', 'Xbox', 'PS4', 'Nintendo Switch'].map(p => `
+                                        <option value="${p}" ${driverData?.platform === p ? 'selected' : ''}>${p}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-400 block mb-1">Nazionalità</label>
+                                <select class="flag-select" id="profile-nationality">
+                                    ${Object.keys(FLAGS).map(c => `
+                                        <option value="${c}" ${driverData?.nationality === c ? 'selected' : ''}>${FLAGS[c]} ${c}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-sm text-gray-400 block mb-1">Scuderia</label>
+                                <select class="flag-select" id="profile-team">
+                                    ${state.teams.map(t => `
+                                        <option value="${t.id}" ${driverData?.teamId === t.id ? 'selected' : ''}>${t.name}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                        </div>
+                        <button onclick="saveProfile()" class="btn-f1 mt-4"><i class="fas fa-save mr-2"></i> Salva Modifiche</button>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+function saveProfile() {
+    const name = document.getElementById('profile-name')?.value;
+    const surname = document.getElementById('profile-surname')?.value;
+    const number = document.getElementById('profile-number')?.value;
+    const platform = document.getElementById('profile-platform')?.value;
+    const nationality = document.getElementById('profile-nationality')?.value;
+    const teamId = parseInt(document.getElementById('profile-team')?.value);
+    
+    const user = state.currentUser;
+    if (!user || !user.driverId) return;
+    
+    const driverIndex = state.drivers.findIndex(d => d.id === user.driverId);
+    if (driverIndex >= 0) {
+        state.drivers[driverIndex] = {
+            ...state.drivers[driverIndex],
+            name: name || state.drivers[driverIndex].name,
+            surname: surname || state.drivers[driverIndex].surname,
+            number: parseInt(number) || state.drivers[driverIndex].number,
+            platform: platform || state.drivers[driverIndex].platform,
+            nationality: nationality || state.drivers[driverIndex].nationality,
+            teamId: teamId || state.drivers[driverIndex].teamId
+        };
+        showToast('Profilo aggiornato con successo!', 'success');
+    }
+}
+
+function handleAvatarUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const avatar = document.getElementById('profile-avatar');
+        if (avatar) avatar.src = e.target.result;
+        const user = state.currentUser;
+        if (user && user.driverId) {
+            const driverIndex = state.drivers.findIndex(d => d.id === user.driverId);
+            if (driverIndex >= 0) {
+                state.drivers[driverIndex].avatar = e.target.result;
+                showToast('Avatar aggiornato!', 'success');
+            }
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// --- ADMIN PANEL ---
+function renderAdmin() {
+    const container = document.getElementById('page-admin');
+    
+    if (state.currentRole !== 'admin') {
+        container.innerHTML = `
+            <div class="animate-slide-down max-w-md mx-auto">
+                <div class="bg-card rounded-2xl p-8 text-center border border-gray-800/50">
+                    <i class="fas fa-lock text-4xl text-gray-600 mb-4"></i>
+                    <h2 class="text-xl font-bold text-white mb-2">Accesso Negato</h2>
+                    <p class="text-gray-500 mb-4">Solo gli amministratori possono accedere a questo pannello.</p>
+                    <button onclick="navigate('login')" class="btn-f1"><i class="fas fa-sign-in-alt mr-2"></i> Accedi come Admin</button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="animate-slide-down">
+            <h1 class="text-2xl font-racing text-white mb-6 flex items-center gap-2">
+                <i class="fas fa-cog text-f1"></i> Pannello Amministrazione
+            </h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                ${[
+                    { label: 'Gestione Stagioni', icon: 'fa-calendar-alt', desc: 'Crea e modifica stagioni', action: 'showSeasonManager()' },
+                    { label: 'Calendario Gare', icon: 'fa-flag-checkered', desc: 'Aggiungi e modifica gare', action: 'navigate("calendar")' },
+                    { label: 'Piloti', icon: 'fa-helmet-safety', desc: 'Gestisci piloti', action: 'navigate("drivers")' },
+                    { label: 'Scuderie', icon: 'fa-building', desc: 'Gestisci scuderie', action: 'navigate("teams")' },
+                    { label: 'Sistema Punteggio', icon: 'fa-trophy', desc: 'Personalizza punteggi', action: 'showScoringModal()' },
+                    { label: 'Risultati Gare', icon: 'fa-list-ol', desc: 'Inserisci risultati', action: 'showRaceResultSelector()' },
+                    { label: 'News', icon: 'fa-newspaper', desc: 'Pubblica comunicazioni', action: 'navigate("news")' },
+                    { label: 'Regolamento', icon: 'fa-book', desc: 'Modifica regolamento', action: 'showRegulationEditor()' },
+                    { label: 'Import/Export', icon: 'fa-file-export', desc: 'CSV o Excel', action: 'showImportExportModal()' }
+                ].map(item => `
+                    <div class="bg-card rounded-xl p-5 card-hover cursor-pointer" onclick="${item.action}">
+                        <div class="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center text-f1 mb-3">
+                            <i class="fas ${item.icon}"></i>
+                        </div>
+                        <h3 class="font-bold text-white text-sm">${item.label}</h3>
+                        <p class="text-xs text-gray-500 mt-1">${item.desc}</p>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="bg-card rounded-xl p-5">
+                <h2 class="font-bold text-white mb-4">Riepilogo Stagione</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    ${[
+                        { label: 'Gare', value: state.races.length, icon: 'fa-flag-checkered' },
+                        { label: 'Piloti', value: state.drivers.length, icon: 'fa-helmet-safety' },
+                        { label: 'Scuderie', value: state.teams.length, icon: 'fa-building' },
+                        { label: 'Risultati', value: state.raceResults.length, icon: 'fa-list-ol' }
+                    ].map(s => `
+                        <div class="bg-white/5 rounded-lg p-3 text-center">
+                            <i class="fas ${s.icon} text-f1 text-lg mb-1"></i>
+                            <div class="text-xl font-bold text-white">${s.value}</div>
+                            <div class="text-xs text-gray-500">${s.label}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// --- ADMIN MODALS ---
+
+function showAddRaceModal() {
+    const html = `
+        <div class="space-y-4">
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Nome GP</label>
+                <input type="text" class="input-f1" id="race-name" placeholder="es. Gran Premio d'Italia">
+            </div>
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Circuito</label>
+                <select class="flag-select" id="race-circuit">
+                    ${F1_CIRCUITS.map(c => `<option value="${c.name}">${c.name} (${c.country})</option>`).join('')}
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-sm text-gray-400 block mb-1">Data</label>
+                    <input type="date" class="input-f1" id="race-date">
+                </div>
+                <div>
+                    <label class="text-sm text-gray-400 block mb-1">Ora</label>
+                    <input type="time" class="input-f1" id="race-time" value="15:00">
+                </div>
+            </div>
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Numero Giri</label>
+                <input type="number" class="input-f1" id="race-laps" value="50">
+            </div>
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Stato</label>
+                <select class="flag-select" id="race-status">
+                    <option value="upcoming">In programma</option>
+                    <option value="completed">Concluso</option>
+                    <option value="live">In corso</option>
+                </select>
+            </div>
+            <button onclick="saveRace()" class="btn-f1 w-full justify-center py-3"><i class="fas fa-save mr-2"></i> Salva Gara</button>
+        </div>
+    `;
+    openModal('Aggiungi Nuova Gara', html);
+}
+
+function saveRace() {
+    const name = document.getElementById('race-name')?.value;
+    const circuit = document.getElementById('race-circuit')?.value;
+    const date = document.getElementById('race-date')?.value;
+    const time = document.getElementById('race-time')?.value;
+    const laps = parseInt(document.getElementById('race-laps')?.value) || 50;
+    const status = document.getElementById('race-status')?.value;
+    
+    if (!name || !circuit || !date) {
+        showToast('Compila tutti i campi obbligatori.', 'error');
+        return;
+    }
+    
+    const circuitData = F1_CIRCUITS.find(c => c.name === circuit);
+    const newRace = {
+        id: state.races.length + 1,
+        name,
+        circuit,
+        country: circuitData?.country || 'Italia',
+        date,
+        time: time || '15:00',
+        status,
+        seasonId: state.season.id,
+        round: state.races.length + 1,
+        laps
+    };
+    
+    state.races.push(newRace);
+    closeModal();
+    showToast('Gara aggiunta con successo!', 'success');
+    renderCalendar();
+}
+
+function showAddResultModal(raceId) {
+    const race = state.races.find(r => r.id === raceId);
+    if (!race) return;
+    
+    const html = `
+        <div class="space-y-4 max-h-96 overflow-y-auto">
+            <p class="text-sm text-gray-400">Inserisci i risultati per <strong class="text-white">${race.name}</strong></p>
+            <div class="space-y-3">
+                ${state.drivers.map(d => `
+                    <div class="bg-white/5 rounded-lg p-3">
+                        <div class="flex items-center gap-2 mb-2">
+                            <img src="${d.avatar}" alt="" class="w-8 h-8 rounded-full object-cover" loading="lazy">
+                            <span class="text-sm text-white font-medium">${d.name} ${d.surname}</span>
+                            <span class="text-xs text-gray-500">#${d.number}</span>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div>
+                                <label class="text-xs text-gray-500 block">Posizione</label>
+                                <input type="number" class="input-f1 text-sm py-1.5" min="1" max="30" placeholder="Pos" data-driver="${d.id}" data-field="position">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 block">Punti</label>
+                                <input type="number" class="input-f1 text-sm py-1.5" min="0" placeholder="Auto" disabled data-driver="${d.id}" data-field="points">
+                            </div>
+                            <div class="flex items-center gap-2 pt-5">
+                                <label class="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+                                    <input type="checkbox" data-driver="${d.id}" data-field="pole"> Pole
+                                </label>
+                                <label class="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+                                    <input type="checkbox" data-driver="${d.id}" data-field="fastestLap"> GV
+                                </label>
+                                <label class="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+                                    <input type="checkbox" data-driver="${d.id}" data-field="dnf"> Rit
+                                </label>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 block">Penalità</label>
+                                <input type="number" class="input-f1 text-sm py-1.5" min="0" step="0.5" placeholder="0" data-driver="${d.id}" data-field="penalty">
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <button onclick="saveResults(${raceId})" class="btn-f1 w-full justify-center py-3"><i class="fas fa-save mr-2"></i> Salva tutti i risultati</button>
+        </div>
+    `;
+    openModal(`Inserisci Risultati — ${race.name}`, html);
+}
+
+function saveResults(raceId) {
+    const inputs = document.querySelectorAll('[data-driver]');
+    const results = [];
+    let hasData = false;
+    
+    inputs.forEach(input => {
+        const driverId = parseInt(input.dataset.driver);
+        const field = input.dataset.field;
+        if (input.type === 'checkbox') {
+            if (!results.find(r => r.driverId === driverId)) {
+                results.push({ driverId, raceId, position: null, pole: false, fastestLap: false, dnf: false, penalty: 0 });
+            }
+            const result = results.find(r => r.driverId === driverId);
+            result[field] = input.checked;
+            if (input.checked) hasData = true;
+        } else if (input.type === 'number') {
+            const val = input.value ? parseInt(input.value) : null;
+            if (!results.find(r => r.driverId === driverId)) {
+                results.push({ driverId, raceId, position: null, pole: false, fastestLap: false, dnf: false, penalty: 0 });
+            }
+            const result = results.find(r => r.driverId === driverId);
+            result[field] = val;
+            if (val !== null) hasData = true;
+        }
+    });
+    
+    if (!hasData) {
+        showToast('Inserisci almeno un risultato.', 'error');
+        return;
+    }
+    
+    // Remove existing results for this race
+    state.raceResults = state.raceResults.filter(r => r.raceId !== raceId);
+    
+    // Add new results
+    results.forEach(r => {
+        state.raceResults.push(r);
+    });
+    
+    // Auto-update race status
+    const race = state.races.find(r => r.id === raceId);
+    if (race) {
+        race.status = 'completed';
+    }
+    
+    closeModal();
+    showToast('Risultati salvati! Classifiche e statistiche aggiornate.', 'success');
+    renderGrandPrix(raceId);
+}
+
+function showAddDriverModal() {
+    const html = `
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-sm text-gray-400 block mb-1">Nome</label>
+                    <input type="text" class="input-f1" id="driver-name" placeholder="Nome">
+                </div>
+                <div>
+                    <label class="text-sm text-gray-400 block mb-1">Cognome</label>
+                    <input type="text" class="input-f1" id="driver-surname" placeholder="Cognome">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-sm text-gray-400 block mb-1">Numero</label>
+                    <input type="number" class="input-f1" id="driver-number" placeholder="es. 16">
+                </div>
+                <div>
+                    <label class="text-sm text-gray-400 block mb-1">Nazionalità</label>
+                    <select class="flag-select" id="driver-nationality">
+                        ${Object.keys(FLAGS).map(c => `<option value="${c}">${FLAGS[c]} ${c}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Scuderia</label>
+                <select class="flag-select" id="driver-team">
+                    ${state.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                </select>
+            </div>
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Piattaforma</label>
+                <select class="flag-select" id="driver-platform">
+                    ${['PC', 'PS5', 'Xbox', 'PS4', 'Nintendo Switch'].map(p => `<option value="${p}">${p}</option>`).join('')}
+                </select>
+            </div>
+            <button onclick="saveDriver()" class="btn-f1 w-full justify-center py-3"><i class="fas fa-save mr-2"></i> Aggiungi Pilota</button>
+        </div>
+    `;
+    openModal('Aggiungi Nuovo Pilota', html);
+}
+
+function saveDriver() {
+    const name = document.getElementById('driver-name')?.value;
+    const surname = document.getElementById('driver-surname')?.value;
+    const number = parseInt(document.getElementById('driver-number')?.value) || 0;
+    const nationality = document.getElementById('driver-nationality')?.value;
+    const teamId = parseInt(document.getElementById('driver-team')?.value);
+    const platform = document.getElementById('driver-platform')?.value;
+    
+    if (!name || !surname) {
+        showToast('Inserisci nome e cognome.', 'error');
+        return;
+    }
+    
+    const team = state.teams.find(t => t.id === teamId);
+    const newDriver = {
+        id: state.drivers.length + 1,
+        name,
+        surname,
+        number,
+        nationality,
+        teamId,
+        platform,
+        avatar: `https://picsum.photos/200?random=${Math.floor(Math.random() * 1000)}`,
+        color: team?.color || '#666'
+    };
+    
+    state.drivers.push(newDriver);
+    closeModal();
+    showToast('Pilota aggiunto con successo!', 'success');
+    renderDrivers();
+}
+
+function showAddTeamModal() {
+    const html = `
+        <div class="space-y-4">
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Nome Scuderia</label>
+                <input type="text" class="input-f1" id="team-name" placeholder="es. SRT Rosso Corsa">
+            </div>
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Colore</label>
+                <input type="color" class="input-f1 h-12" id="team-color" value="#e10600">
+            </div>
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Paese</label>
+                <select class="flag-select" id="team-country">
+                    ${Object.keys(FLAGS).map(c => `<option value="${c}">${FLAGS[c]} ${c}</option>`).join('')}
+                </select>
+            </div>
+            <button onclick="saveTeam()" class="btn-f1 w-full justify-center py-3"><i class="fas fa-save mr-2"></i> Aggiungi Scuderia</button>
+        </div>
+    `;
+    openModal('Aggiungi Nuova Scuderia', html);
+}
+
+function saveTeam() {
+    const name = document.getElementById('team-name')?.value;
+    const color = document.getElementById('team-color')?.value || '#e10600';
+    const country = document.getElementById('team-country')?.value;
+    
+    if (!name) {
+        showToast('Inserisci il nome della scuderia.', 'error');
+        return;
+    }
+    
+    const newTeam = {
+        id: state.teams.length + 1,
+        name,
+        color,
+        logo: `https://picsum.photos/100?random=${Math.floor(Math.random() * 1000)}`,
+        country
+    };
+    
+    state.teams.push(newTeam);
+    closeModal();
+    showToast('Scuderia aggiunta con successo!', 'success');
+    renderTeams();
+}
+
+function showAddNewsModal() {
+    const html = `
+        <div class="space-y-4">
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Titolo</label>
+                <input type="text" class="input-f1" id="news-title" placeholder="Titolo della news">
+            </div>
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Categoria</label>
+                <select class="flag-select" id="news-category">
+                    ${['Gara', 'Team', 'Annuncio', 'Comunicato', 'Risultati'].map(c => `<option value="${c}">${c}</option>`).join('')}
+                </select>
+            </div>
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Estratto</label>
+                <textarea class="input-f1" id="news-excerpt" rows="2" placeholder="Breve descrizione..."></textarea>
+            </div>
+            <div>
+                <label class="text-sm text-gray-400 block mb-1">Contenuto</label>
+                <textarea class="input-f1" id="news-content" rows="4" placeholder="Contenuto completo..."></textarea>
+            </div>
+            <button onclick="saveNews()" class="btn-f1 w-full justify-center py-3"><i class="fas fa-save mr-2"></i> Pubblica News</button>
+        </div>
+    `;
+    openModal('Nuova News', html);
+}
+
+function saveNews() {
+    const title = document.getElementById('news-title')?.value;
+    const category = document.getElementById('news-category')?.value;
+    const excerpt = document.getElementById('news-excerpt')?.value;
+    const content = document.getElementById('news-content')?.value;
+    
+    if (!title) {
+        showToast('Inserisci un titolo.', 'error');
+        return;
+    }
+    
+    const newNews = {
+        id: state.news.length + 1,
+        title,
+        date: new Date().toISOString().split('T')[0],
+        category,
+        excerpt: excerpt || title,
+        content: content || excerpt || title,
+        image: `https://picsum.photos/800/400?random=${Math.floor(Math.random() * 1000)}`,
+        author: state.currentUser?.name || 'Admin'
+    };
+    
+    state.news.unshift(newNews);
+    closeModal();
+    showToast('News pubblicata con successo!', 'success');
+    renderNews();
+}
+
+function showSeasonManager() {
+    const html = `
+        <div class="space-y-4">
+            <div class="bg-white/5 rounded-lg p-4">
+                <h4 class="font-semibold text-white mb-2">Stagione Corrente</h4>
+                <p class="text-gray-400">${state.season.name} (${state.season.year})</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-sm text-gray-400 block mb-1">Nome Stagione</label>
+                    <input type="text" class="input-f1" id="season-name" value="${state.season.name}">
+                </div>
+                <div>
+                    <label class="text-sm text-gray-400 block mb-1">Anno</label>
+                    <input type="number" class="input-f1" id="season-year" value="${state.season.year}">
+                </div>
+            </div>
+            <button onclick="saveSeason()" class="btn-f1 w-full justify-center py-3"><i class="fas fa-save mr-2"></i> Salva Stagione</button>
+        </div>
+    `;
+    openModal('Gestione Stagioni', html);
+}
+
+function saveSeason() {
+    const name = document.getElementById('season-name')?.value;
+    const year = parseInt(document.getElementById('season-year')?.value) || 2025;
+    state.season.name = name || state.season.name;
+    state.season.year = year;
+    closeModal();
+    showToast('Stagione aggiornata!', 'success');
+}
+
+function showScoringModal() {
+    const html = `
+        <div class="space-y-4 max-h-96 overflow-y-auto">
+            <p class="text-sm text-gray-400">Personalizza il sistema di punteggio</p>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                ${DEFAULT_SCORING.points.map((p, i) => `
+                    <div>
+                        <label class="text-xs text-gray-500 block">${i + 1}°</label>
+                        <input type="number" class="input-f1 text-sm py-1.5" value="${p}" data-pos="${i}" id="score-pos-${i}">
+                    </div>
+                `).join('')}
+            </div>
+            <div class="border-t border-gray-800/50 pt-4">
+                <h4 class="text-sm font-semibold text-white mb-2">Bonus</h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-gray-500 block">Pole Position</label>
+                        <input type="number" class="input-f1 text-sm py-1.5" value="${DEFAULT_SCORING.poleBonus}" id="bonus-pole">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 block">Giro Veloce</label>
+                        <input type="number" class="input-f1 text-sm py-1.5" value="${DEFAULT_SCORING.fastestLapBonus}" id="bonus-fastlap">
+                    </div>
+                </div>
+            </div>
+            <button onclick="saveScoring()" class="btn-f1 w-full justify-center py-3"><i class="fas fa-save mr-2"></i> Salva Punteggio</button>
+        </div>
+    `;
+    openModal('Sistema di Punteggio', html);
+}
+
+function saveScoring() {
+    for (let i = 0; i < 20; i++) {
+        const el = document.getElementById(`score-pos-${i}`);
+        if (el) {
+            DEFAULT_SCORING.points[i] = parseInt(el.value) || 0;
+        }
+    }
+    DEFAULT_SCORING.poleBonus = parseInt(document.getElementById('bonus-pole')?.value) || 0;
+    DEFAULT_SCORING.fastestLapBonus = parseInt(document.getElementById('bonus-fastlap')?.value) || 0;
+    closeModal();
+    showToast('Sistema di punteggio aggiornato!', 'success');
+}
+
+function showRaceResultSelector() {
+    const races = state.races;
+    const html = `
+        <div class="space-y-3">
+            <p class="text-sm text-gray-400">Seleziona una gara per inserire i risultati</p>
+            ${races.map(r => `
+                <div class="bg-white/5 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-colors" onclick="closeModal(); navigate('grand-prix', {id: ${r.id}})">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flag" style="background-image:url('${getFlagUrl(r.country)}')"></span>
+                        <span class="text-white font-medium">${r.name}</span>
+                        <span class="text-xs text-gray-500 ml-auto">${r.date}</span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">${r.circuit} · Round ${r.round}</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    openModal('Seleziona Gara', html);
+}
+
+function showRegulationEditor() {
+    const html = `
+        <div class="space-y-4">
+            ${state.regulations.map(reg => `
+                <div class="bg-white/5 rounded-lg p-4">
+                    <label class="text-sm text-gray-400 block mb-1">${reg.title}</label>
+                    <textarea class="input-f1" rows="3" id="reg-${reg.id}">${reg.content || ''}</textarea>
+                </div>
+            `).join('')}
+            <button onclick="saveRegulations()" class="btn-f1 w-full justify-center py-3"><i class="fas fa-save mr-2"></i> Salva Regolamento</button>
+        </div>
+    `;
+    openModal('Modifica Regolamento', html);
+}
+
+function saveRegulations() {
+    state.regulations.forEach(reg => {
+        const el = document.getElementById(`reg-${reg.id}`);
+        if (el) reg.content = el.value;
+    });
+    closeModal();
+    showToast('Regolamento aggiornato!', 'success');
+}
+
+function showImportExportModal() {
+    const html = `
+        <div class="space-y-6">
+            <div class="bg-white/5 rounded-lg p-4">
+                <h4 class="font-semibold text-white mb-2"><i class="fas fa-download mr-2 text-f1"></i> Esporta Dati</h4>
+                <div class="flex gap-2 mt-2">
+                    <button onclick="exportCSV('drivers')" class="btn-f1-outline text-sm py-1.5 px-3"><i class="fas fa-file-csv mr-1"></i> Classifica Piloti</button>
+                    <button onclick="exportCSV('constructors')" class="btn-f1-outline text-sm py-1.5 px-3"><i class="fas fa-file-csv mr-1"></i> Costruttori</button>
+                    <button onclick="exportCSV('races')" class="btn-f1-outline text-sm py-1.5 px-3"><i class="fas fa-file-csv mr-1"></i> Gare</button>
+                </div>
+            </div>
+            <div class="bg-white/5 rounded-lg p-4">
+                <h4 class="font-semibold text-white mb-2"><i class="fas fa-upload mr-2 text-f1"></i> Importa Dati</h4>
+                <p class="text-xs text-gray-500 mb-2">Carica file CSV per importare piloti, gare o risultati.</p>
+                <input type="file" accept=".csv" class="input-f1 text-sm" id="import-file" onchange="handleImport(event)">
+                <button onclick="document.getElementById('import-file').click()" class="btn-f1-outline text-sm py-1.5 px-3 mt-2"><i class="fas fa-file-upload mr-1"></i> Seleziona File</button>
+            </div>
+        </div>
+    `;
+    openModal('Importa / Esporta', html);
+}
+
+function exportCSV(type) {
+    let data = [];
+    let headers = [];
+    let filename = '';
+    
+    if (type === 'drivers') {
+        const standings = calculateDriverStandings();
+        headers = ['Pos', 'Pilota', 'Scuderia', 'Punti', 'Vittorie', 'Podi', 'Pole', 'GV', 'Gare', 'Ritiri', 'Distacco'];
+        data = standings.map(d => [d.position, d.name, d.teamName, d.points, d.wins, d.podiums, d.poles, d.fastestLaps, d.races, d.retirements, d.gap]);
+        filename = 'classifica_piloti.csv';
+    } else if (type === 'constructors') {
+        const standings = calculateConstructorStandings();
+        headers = ['Pos', 'Scuderia', 'Piloti', 'Punti', 'Vittorie', 'Podi'];
+        data = standings.map(s => [s.position, s.name, s.drivers, s.points, s.wins, s.podiums]);
+        filename = 'classifica_costruttori.csv';
+    } else if (type === 'races') {
+        headers = ['Round', 'Nome', 'Circuito', 'Paese', 'Data', 'Ora', 'Stato', 'Giri'];
+        data = state.races.map(r => [r.round, r.name, r.circuit, r.country, r.date, r.time, r.status, r.laps]);
+        filename = 'calendario_gare.csv';
+    }
+    
+    if (data.length === 0) {
+        showToast('Nessun dato da esportare.', 'error');
+        return;
+    }
+    
+    const csvContent = [headers.join(','), ...data.map(row => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showToast('File CSV esportato con successo!', 'success');
+}
+
+function handleImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    showToast('Importazione dati non ancora implementata nella demo.', 'info');
+}
+
+// ============================================================
+// EVENT DELEGATION
+// ============================================================
+document.addEventListener('click', function(e) {
+    // Sidebar navigation
+    const sidebarLink = e.target.closest('.sidebar-link');
+    if (sidebarLink) {
+        e.preventDefault();
+        const page = sidebarLink.dataset.page;
+        navigate(page);
+        return;
+    }
+    
+    // Logout
+    const logoutBtn = e.target.closest('#logout-btn');
+    if (logoutBtn) {
+        e.preventDefault();
+        handleLogout();
+        return;
+    }
+    
+    // Smooth scroll for anchor links
+    const anchor = e.target.closest('a[href^="#"]');
+    if (anchor) {
+        e.preventDefault();
+        const target = document.querySelector(anchor.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+});
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Hide loading
+    document.getElementById('page-loading').style.display = 'none';
+    
+    // Set default page
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-home').classList.add('active');
+    document.querySelector('.sidebar-link[data-page="home"]')?.classList.add('active');
+    
+    // Update UI for auth
+    updateUIForAuth();
+    
+    // Render home
+    renderHome();
+    initializeSupabase();
+    
+    // Set page titles
+    document.querySelectorAll('.page').forEach(page => {
+        const id = page.id.replace('page-', '');
+        const names = {
+            home: 'Home',
+            'drivers-standings': 'Classifica Piloti',
+            'constructors-standings': 'Classifica Costruttori',
+            calendar: 'Calendario',
+            'grand-prix': 'Gran Premio',
+            drivers: 'Piloti',
+            teams: 'Scuderie',
+            statistics: 'Statistiche',
+            records: 'Record Piste',
+            'hall-of-fame': 'Albo d\'Oro',
+            regulations: 'Regolamento',
+            news: 'News',
+            login: 'Login',
+            profile: 'Profilo',
+            admin: 'Amministrazione'
+        };
+        page.setAttribute('data-title', names[id] || id);
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+});
+
+// ============================================================
+// SUPABASE INTEGRATION
+// ============================================================
+async function syncWithSupabase() {
+    if (!supabase) return;
+    try {
+        const [driversRes, teamsRes, racesRes, resultsRes, newsRes, seasonsRes] = await Promise.all([
+            supabase.from('drivers').select('*').order('id'),
+            supabase.from('teams').select('*').order('id'),
+            supabase.from('races').select('*').order('round'),
+            supabase.from('race_results').select('*').order('id'),
+            supabase.from('news').select('*').order('published_at', { ascending: false }),
+            supabase.from('seasons').select('*').eq('is_active', true).limit(1)
+        ]);
+        if (teamsRes.data?.length) state.teams = teamsRes.data.map(t => ({...t}));
+        if (driversRes.data?.length) state.drivers = driversRes.data.map(d => ({
+            ...d, teamId: d.team_id, platform: d.platform || 'Crossplay'
+        }));
+        if (racesRes.data?.length) state.races = racesRes.data.map(r => ({
+            ...r, seasonId: r.season_id, date: r.race_date, time: r.race_time
+        }));
+        if (resultsRes.data?.length) state.raceResults = resultsRes.data.map(r => ({
+            ...r, raceId: r.race_id, driverId: r.driver_id,
+            gridPosition: r.grid_position, fastestLap: r.fastest_lap,
+            penaltySeconds: r.penalty_seconds
+        }));
+        if (newsRes.data?.length) state.news = newsRes.data.map(n => ({
+            ...n, date: n.published_at?.slice(0,10)
+        }));
+        if (seasonsRes.data?.[0]) state.season = {
+            id: seasonsRes.data[0].id, name: seasonsRes.data[0].name,
+            year: seasonsRes.data[0].year, isActive: seasonsRes.data[0].is_active
+        };
+        renderHome();
+        console.log('✅ Dati sincronizzati da Supabase');
+    } catch (err) {
+        console.warn('⚠️ Sincronizzazione Supabase non riuscita:', err);
+    }
+}
+
+async function initializeSupabase() {
+    if (!supabase) return;
+    await syncWithSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    await applySupabaseSession(session);
+    supabase.auth.onAuthStateChange(async (_event, newSession) => {
+        await applySupabaseSession(newSession);
+    });
+}
+
+console.log('🚗 SRT Santena Racing Team — F1 Championship System');
+console.log('📊 Sistema di gestione campionato pronto.');
+console.log('🔐 Autenticazione Supabase attiva.');
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
+}
+</script>
+</body>
+</html>

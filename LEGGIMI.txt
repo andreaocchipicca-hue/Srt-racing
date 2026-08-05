@@ -1,0 +1,12 @@
+SRT Racing Web App V3 — collegata a Supabase
+
+1. In Supabase apri SQL Editor > New query.
+2. Copia e incolla tutto il contenuto di database.sql e premi Run.
+3. In Authentication > URL Configuration imposta:
+   Site URL: https://gleeful-piroshki-eacd6f.netlify.app
+   Redirect URLs: https://gleeful-piroshki-eacd6f.netlify.app/**
+4. Carica su Netlify tutti i file di questa cartella sostituendo il deploy precedente.
+5. Apri il sito, vai su Login e crea il PRIMO account: diventerà automaticamente Admin.
+6. Gli account creati successivamente avranno ruolo Pilota.
+
+Nota: la publishable key è prevista per essere usata nel browser. Non inserire mai service_role o secret key nel sito.
