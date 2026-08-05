@@ -86,7 +86,7 @@
     <button data-page="calendar">Calendario</button>
     <button data-page="standings">Classifiche</button>
     <button data-page="statistics">Statistiche</button>
-    <button data-page="news">News</button>
+    <button data-page="news">News</button><button data-page="regulations">Regolamento</button>
     <button data-page="login" id="loginNav">Login</button>
     <button data-page="admin" id="adminNav" class="hidden">Admin</button>
   </nav>
@@ -97,7 +97,7 @@
   <div class="hero">
     <img src="icon-512.png" alt="Logo SRT">
     <div>
-      <div class="eyebrow">Season 2 • Versione professionale</div>
+      <div class="eyebrow">Season 2 • Versione 4</div>
       <h1>SRT Racing</h1>
       <p id="championshipInfo">Caricamento delle informazioni del campionato...</p>
       <div class="hero-actions">
@@ -170,6 +170,12 @@
   <div id="newsGrid" class="grid"></div><div id="newsEmpty" class="card empty"><strong>Nessuna news pubblicata</strong>Puoi crearne una dal pannello Admin.</div>
 </section>
 
+
+<section id="regulations" class="section">
+  <div class="section-head"><div><h2>Regolamento</h2><p>Regole ufficiali della Season 2.</p></div></div>
+  <div id="regulationsContent" class="card"><div class="empty"><strong>Regolamento non ancora pubblicato</strong>L’Admin potrà inserirlo dal pannello di gestione.</div></div>
+</section>
+
 <section id="login" class="section">
   <div class="card auth">
     <h2 id="authTitle">Accedi</h2><div id="authMsg"></div>
@@ -184,15 +190,30 @@
   <div class="section-head"><div><h2>Pannello Admin</h2><p>Gestisci la Season 2 direttamente dal telefono.</p></div><div class="grow"></div><button class="btn alt small" onclick="loadAll()">Aggiorna dati</button></div>
   <div id="adminMsg"></div>
   <div class="admin-tabs">
-    <button data-admin="settingsPane" class="active">Impostazioni</button>
+    <button data-admin="dashboardPane" class="active">Dashboard</button><button data-admin="settingsPane">Impostazioni</button>
     <button data-admin="teamPane">Scuderie</button>
-    <button data-admin="newsPane">News</button>
+    <button data-admin="newsPane">News</button><button data-admin="regulationsPane">Regolamento</button>
     <button data-admin="driverPane">Piloti</button>
     <button data-admin="racePane">Gare</button>
     <button data-admin="resultPane">Risultati</button>
   </div>
 
-  <div id="settingsPane" class="admin-pane active card">
+
+  <div id="dashboardPane" class="admin-pane active card">
+    <h3>Dashboard Season 2</h3>
+    <div class="stats-grid">
+      <div class="card stat-card"><div class="big" id="adminCountDrivers">0</div><div class="caption">Piloti</div></div>
+      <div class="card stat-card"><div class="big" id="adminCountTeams">0</div><div class="caption">Scuderie</div></div>
+      <div class="card stat-card"><div class="big" id="adminCountRaces">0</div><div class="caption">Gare</div></div>
+      <div class="card stat-card"><div class="big" id="adminCountNews">0</div><div class="caption">News</div></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><h3>Stato campionato</h3><div id="adminSeasonState" class="muted">Caricamento...</div></div>
+      <div class="card"><h3>Ultima attività</h3><div id="adminLastActivity" class="muted">Nessuna attività registrata.</div></div>
+    </div>
+  </div>
+
+  <div id="settingsPane" class="admin-pane card">
     <h3>Impostazioni campionato</h3>
     <form id="settingsForm" class="form-grid">
       <div class="field"><label>Nome campionato</label><input name="championship_name" required></div>
@@ -216,7 +237,7 @@
       <div class="field"><label>Nome</label><input name="name" required></div>
       <div class="field"><label>Colore</label><input name="color" value="#e10600"></div>
       <div class="field"><label>Paese</label><input name="country" value="Italia"></div>
-      <div class="field"><label>URL logo</label><input name="logo"></div>
+      <div class="field"><label>Logo scuderia</label><input id="teamLogoFile" type="file" accept="image/*"></div><input type="hidden" name="logo">
       <button class="btn">Salva scuderia</button>
     </form><div id="adminTeams" class="admin-list"></div>
   </div>
@@ -226,9 +247,19 @@
     <form id="newsForm" class="form-grid">
       <div class="field"><label>Titolo</label><input name="title" required></div>
       <div class="field"><label>Categoria</label><input name="category" value="Annuncio"></div>
-      <div class="field full"><label>Testo breve</label><textarea name="excerpt"></textarea></div>
+      <div class="field full"><label>Testo breve</label><textarea name="excerpt"></textarea></div><div class="field full"><label>Immagine news</label><input id="newsImageFile" type="file" accept="image/*"></div><input type="hidden" name="image">
       <button class="btn">Pubblica</button>
     </form><div id="adminNews" class="admin-list"></div>
+  </div>
+
+
+  <div id="regulationsPane" class="admin-pane card">
+    <h3>Gestione regolamento</h3>
+    <form id="regulationsForm">
+      <div class="field"><label>Titolo</label><input name="title" value="Regolamento ufficiale Season 2"></div><br>
+      <div class="field"><label>Contenuto</label><textarea name="content" style="min-height:320px" placeholder="Inserisci qui il regolamento completo..."></textarea></div><br>
+      <button class="btn">Salva regolamento</button>
+    </form>
   </div>
 
   <div id="driverPane" class="admin-pane card">
@@ -281,7 +312,7 @@
 const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
 const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let state={teams:[],drivers:[],races:[],results:[],news:[],season:null,settings:null,user:null,profile:null};
+let state={teams:[],drivers:[],races:[],results:[],news:[],regulations:null,season:null,settings:null,user:null,profile:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function go(id){$$('.section').forEach(x=>x.classList.toggle('active',x.id===id));$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));scrollTo({top:0,behavior:'smooth'})}window.go=go;
@@ -294,17 +325,18 @@ function fmtDate(v){return v?new Date(v+'T12:00:00').toLocaleDateString('it-IT')
 
 async function loadAll(){
  try{
-  const [se,te,dr,ra,re,ne,cs]=await Promise.all([
+  const [se,te,dr,ra,re,ne,cs,rg]=await Promise.all([
    db.from('seasons').select('*').eq('is_active',true).limit(1).maybeSingle(),
    db.from('teams').select('*').order('name'),
    db.from('drivers').select('*').order('name'),
    db.from('races').select('*').order('round'),
    db.from('race_results').select('*'),
    db.from('news').select('*').order('published_at',{ascending:false}),
-   db.from('championship_settings').select('*').limit(1).maybeSingle()
+   db.from('championship_settings').select('*').limit(1).maybeSingle(),
+   db.from('regulations').select('*').limit(1).maybeSingle()
   ]);
-  for(const x of [se,te,dr,ra,re,ne,cs])if(x.error)throw x.error;
-  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.news=ne.data||[];state.settings=cs.data||null;
+  for(const x of [se,te,dr,ra,re,ne,cs,rg])if(x.error)throw x.error;
+  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.news=ne.data||[];state.settings=cs.data||null;state.regulations=rg.data||null;
   render();
  }catch(e){console.error(e);msg($('#adminMsg'),'Errore caricamento: '+e.message)}
 }
@@ -316,10 +348,21 @@ function render(){
 
  $('#countDrivers').textContent=state.drivers.filter(d=>d.status!=='suspended').length;
  $('#countTeams').textContent=state.teams.length;$('#countRaces').textContent=state.races.length;
+ $('#adminCountDrivers').textContent=state.drivers.length;
+ $('#adminCountTeams').textContent=state.teams.length;
+ $('#adminCountRaces').textContent=state.races.length;
+ $('#adminCountNews').textContent=state.news.length;
+ $('#adminSeasonState').innerHTML=`<strong>${esc(s.season_name||'Season 2')}</strong><br>${esc(s.status||'Preparazione')} • ${s.registration_open===false?'Iscrizioni chiuse':'Iscrizioni aperte'}`;
+ $('#adminLastActivity').textContent=state.news[0]?`Ultima news: ${state.news[0].title}`:'Nessuna attività registrata.';
+ if(state.regulations){
+   $('#regulationsContent').innerHTML=`<h3>${esc(state.regulations.title)}</h3><div class="muted" style="white-space:pre-wrap;line-height:1.7">${esc(state.regulations.content||'')}</div>`;
+   const rf=$('#regulationsForm'); if(rf){rf.elements.title.value=state.regulations.title||'';rf.elements.content.value=state.regulations.content||''}
+ }
+
  const next=state.races.filter(r=>r.status!=='completed'&&new Date(r.race_date+'T23:59:59')>=new Date()).sort((a,b)=>a.race_date.localeCompare(b.race_date))[0];
  if(next)$('#nextRace').innerHTML=`<strong>Round ${next.round} — ${esc(next.name)}</strong><br><span class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} ${esc(next.race_time||'')}</span>`;
 
- $('#teamsGrid').innerHTML=state.teams.map(t=>`<article class="card team-card" style="--team-color:${esc(t.color||'#e10600')}"><h3>${esc(t.name)}</h3><div class="muted">${esc(t.country||'')}</div><div style="margin-top:12px"><span class="chip">${state.drivers.filter(d=>d.team_id==t.id).length} piloti</span></div></article>`).join('');
+ $('#teamsGrid').innerHTML=state.teams.map(t=>`<article class="card team-card" style="--team-color:${esc(t.color||'#e10600')}">${t.logo?`<img src="${esc(t.logo)}" alt="${esc(t.name)}" style="width:64px;height:64px;object-fit:contain;margin-bottom:10px">`:``}<h3>${esc(t.name)}</h3><div class="muted">${esc(t.country||'')}</div><div style="margin-top:12px"><span class="chip">${state.drivers.filter(d=>d.team_id==t.id).length} piloti</span></div></article>`).join('');
  $('#teamsEmpty').classList.toggle('hidden',state.teams.length>0);
 
  $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${esc(d.ea_id||'—')}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())}</td><td>${esc(teamName(d.team_id))}</td><td>${esc(d.level??100)}</td><td>${esc(d.status||'active')}</td><td>${esc(d.platform||'Crossplay')}</td></tr>`).join('');
@@ -338,8 +381,8 @@ function render(){
  $('#statFastest').textContent=state.results.filter(r=>r.fastest_lap).length;
  $('#statPodiums').textContent=state.results.filter(r=>r.position&&r.position<=3).length;
 
- const newsCards=state.news.map(n=>`<article class="card news-card"><div class="meta">${esc(n.category||'Annuncio')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p><div class="date">${new Date(n.published_at).toLocaleDateString('it-IT')}</div></article>`).join('');
- $('#newsGrid').innerHTML=newsCards;$('#homeNews').innerHTML=state.news.slice(0,3).map(n=>`<article class="card news-card"><div class="meta">${esc(n.category||'Annuncio')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p><div class="date">${new Date(n.published_at).toLocaleDateString('it-IT')}</div></article>`).join('');
+ const newsCards=state.news.map(n=>`<article class="card news-card">${n.image?`<img src="${esc(n.image)}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:12px;margin-bottom:12px">`:``}<div class="meta">${esc(n.category||'Annuncio')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p><div class="date">${new Date(n.published_at).toLocaleDateString('it-IT')}</div></article>`).join('');
+ $('#newsGrid').innerHTML=newsCards;$('#homeNews').innerHTML=state.news.slice(0,3).map(n=>`<article class="card news-card">${n.image?`<img src="${esc(n.image)}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:12px;margin-bottom:12px">`:``}<div class="meta">${esc(n.category||'Annuncio')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p><div class="date">${new Date(n.published_at).toLocaleDateString('it-IT')}</div></article>`).join('');
  $('#newsEmpty').classList.toggle('hidden',state.news.length>0);
  if(!state.news.length)$('#homeNews').innerHTML='<div class="card empty"><strong>Nessuna news</strong>Pubblica il primo annuncio dal pannello Admin.</div>';
 
@@ -354,9 +397,22 @@ const tableMap={team:'teams',driver:'drivers',race:'races',news:'news'};
 async function delItem(type,id){if(!confirm('Eliminare definitivamente?'))return;const{error}=await db.from(tableMap[type]).delete().eq('id',id);if(error)alert(error.message);else loadAll()}window.delItem=delItem;
 async function insertForm(form,table,transform=x=>x){const o=Object.fromEntries(new FormData(form));const{error}=await db.from(table).insert(transform(o,form));if(error)throw error;form.reset();await loadAll()}
 
+
+async function uploadImage(file,folder){
+ if(!file)return null;
+ const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+ const path=`${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+ const up=await db.storage.from('srt-media').upload(path,file,{upsert:false});
+ if(up.error)throw up.error;
+ const pub=db.storage.from('srt-media').getPublicUrl(path);
+ return pub.data.publicUrl;
+}
+
 $('#settingsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));const p={championship_name:o.championship_name,season_name:o.season_name,game_name:o.game_name,race_day:o.race_day,race_time:o.race_time||null,race_length:o.race_length,platform:o.platform,required_level:Number(o.required_level||100),status:o.status,registration_open:o.registration_open==='true',description:o.description,updated_at:new Date().toISOString()};let q=state.settings?.id?await db.from('championship_settings').update(p).eq('id',state.settings.id):await db.from('championship_settings').insert(p);if(q.error)throw q.error;msg($('#adminMsg'),'Impostazioni salvate.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
-$('#teamForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'teams')}catch(x){msg($('#adminMsg'),x.message)}};
-$('#newsForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'news')}catch(x){msg($('#adminMsg'),x.message)}};
+$('#teamForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f));o.logo=await uploadImage($('#teamLogoFile').files[0],'teams');const{error}=await db.from('teams').insert(o);if(error)throw error;f.reset();await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#newsForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f));o.image=await uploadImage($('#newsImageFile').files[0],'news');const{error}=await db.from('news').insert(o);if(error)throw error;f.reset();await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+
+$('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));let q=state.regulations?.id?await db.from('regulations').update({...o,updated_at:new Date().toISOString()}).eq('id',state.regulations.id):await db.from('regulations').insert(o);if(q.error)throw q.error;msg($('#adminMsg'),'Regolamento salvato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 $('#driverForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'drivers',o=>({...o,level:Number(o.level||100),team_id:o.team_id?Number(o.team_id):null}))}catch(x){msg($('#adminMsg'),x.message)}};
 $('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');await insertForm(e.target,'races',o=>({...o,round:Number(o.round),season_id:state.season.id,race_time:o.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
 $('#resultForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f)),p={race_id:Number(o.race_id),driver_id:Number(o.driver_id),position:o.position?Number(o.position):null,points:Number(o.points||0),pole:f.pole.checked,fastest_lap:f.fastest_lap.checked,dnf:f.dnf.checked};const{error}=await db.from('race_results').upsert(p,{onConflict:'race_id,driver_id'});if(error)throw error;await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
