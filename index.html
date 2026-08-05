@@ -62,7 +62,7 @@
 <section id="home" class="section active">
   <div class="hero">
     <img src="icon-512.png" alt="Logo SRT">
-    <div><div class="version">VERSIONE REALE • DATI SUPABASE</div><h1>SRT Racing</h1><p class="muted">La web app ufficiale del campionato. Nessun pilota o gara dimostrativa è contenuto nel codice.</p></div>
+    <div><div class="version">VERSIONE REALE V2 • EA ID E LIVELLO</div><h1>SRT Racing</h1><p class="muted">La web app ufficiale del campionato. Nessun pilota o gara dimostrativa è contenuto nel codice.</p></div>
   </div>
   <div class="grid">
     <div class="card"><div class="muted">Piloti attivi</div><div class="stat" id="countDrivers">0</div></div>
@@ -72,7 +72,7 @@
   <div class="card" style="margin-top:14px"><h2>Prossima gara</h2><div id="nextRace" class="empty">Nessuna gara inserita.</div></div>
 </section>
 
-<section id="drivers" class="section"><h2>Piloti</h2><div class="card table-wrap"><table><thead><tr><th>#</th><th>Pilota</th><th>Scuderia</th><th>Piattaforma</th></tr></thead><tbody id="driversBody"></tbody></table><div id="driversEmpty" class="empty">Nessun pilota inserito.</div></div></section>
+<section id="drivers" class="section"><h2>Piloti</h2><div class="card table-wrap"><table><thead><tr><th>EA ID</th><th>Pilota</th><th>Scuderia</th><th>Livello</th><th>Stato</th><th>Piattaforma</th></tr></thead><tbody id="driversBody"></tbody></table><div id="driversEmpty" class="empty">Nessun pilota inserito.</div></div></section>
 <section id="teams" class="section"><h2>Scuderie</h2><div id="teamsGrid" class="grid"></div><div id="teamsEmpty" class="card empty">Nessuna scuderia inserita.</div></section>
 <section id="calendar" class="section"><h2>Calendario</h2><div class="card table-wrap"><table><thead><tr><th>Round</th><th>Gran Premio</th><th>Circuito</th><th>Data</th><th>Stato</th></tr></thead><tbody id="racesBody"></tbody></table><div id="racesEmpty" class="empty">Nessuna gara inserita.</div></div></section>
 <section id="standings" class="section"><h2>Classifica piloti</h2><div class="card table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Scuderia</th><th>Punti</th><th>Vittorie</th><th>Podi</th></tr></thead><tbody id="standingsBody"></tbody></table><div id="standingsEmpty" class="empty">La classifica apparirà dopo l'inserimento dei risultati.</div></div></section>
@@ -98,7 +98,7 @@
   <h3>Aggiungi scuderia</h3><form id="teamForm" class="form-grid"><div class="field"><label>Nome</label><input name="name" required></div><div class="field"><label>Colore</label><input name="color" value="#e10600"></div><div class="field"><label>Paese</label><input name="country" value="Italia"></div><div class="field"><label>URL logo</label><input name="logo"></div><button class="btn">Salva scuderia</button></form><div id="adminTeams"></div>
  </div>
  <div id="driverPane" class="admin-pane card">
-  <h3>Aggiungi pilota</h3><form id="driverForm" class="form-grid"><div class="field"><label>Nome</label><input name="name" required></div><div class="field"><label>Cognome / nickname</label><input name="surname"></div><div class="field"><label>Numero</label><input name="number" type="number" required></div><div class="field"><label>Nazionalità</label><input name="nationality" value="Italia"></div><div class="field"><label>Scuderia</label><select name="team_id" class="teamSelect"></select></div><div class="field"><label>Piattaforma</label><select name="platform"><option>Crossplay</option><option>PS5</option><option>Xbox</option><option>PC</option></select></div><button class="btn">Salva pilota</button></form><div id="adminDrivers"></div>
+  <h3>Aggiungi pilota</h3><form id="driverForm" class="form-grid"><div class="field"><label>Nome</label><input name="name" required></div><div class="field"><label>Cognome / nickname</label><input name="surname"></div><div class="field"><label>EA ID</label><input name="ea_id" required></div><div class="field"><label>Livello</label><input name="level" type="number" value="100" min="1" max="110"></div><div class="field"><label>Scuderia</label><select name="team_id" class="teamSelect"></select></div><div class="field"><label>Piattaforma</label><select name="platform"><option>Crossplay</option><option>PS5</option><option>Xbox</option><option>PC</option></select></div><div class="field"><label>Stato</label><select name="status"><option value="active">Attivo</option><option value="reserve">Riserva</option><option value="suspended">Sospeso</option></select></div><button class="btn">Salva pilota</button></form><div id="adminDrivers"></div>
  </div>
  <div id="racePane" class="admin-pane card">
   <h3>Aggiungi gara</h3><form id="raceForm" class="form-grid"><div class="field"><label>Round</label><input name="round" type="number" required></div><div class="field"><label>Nome GP</label><input name="name" required></div><div class="field"><label>Circuito</label><input name="circuit" required></div><div class="field"><label>Paese</label><input name="country" required></div><div class="field"><label>Data</label><input name="race_date" type="date" required></div><div class="field"><label>Ora</label><input name="race_time" type="time"></div><div class="field"><label>Stato</label><select name="status"><option value="upcoming">In programma</option><option value="live">In corso</option><option value="completed">Conclusa</option></select></div><button class="btn">Salva gara</button></form><div id="adminRaces"></div>
@@ -114,8 +114,8 @@
 </div>
 
 <script>
-const SUPABASE_URL = "https://flatqxvqjkcxypwlgujs.supabase.co";
-const SUPABASE_KEY = "sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
+const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
+const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let state={teams:[],drivers:[],races:[],results:[],news:[],season:null,user:null,profile:null};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -132,7 +132,7 @@ async function loadAll(){
   const [se,te,dr,ra,re,ne]=await Promise.all([
    db.from('seasons').select('*').eq('is_active',true).limit(1).maybeSingle(),
    db.from('teams').select('*').order('name'),
-   db.from('drivers').select('*').eq('active',true).order('number'),
+   db.from('drivers').select('*').neq('status','suspended').order('name'),
    db.from('races').select('*').order('round'),
    db.from('race_results').select('*'),
    db.from('news').select('*').order('published_at',{ascending:false})
@@ -146,7 +146,7 @@ function render(){
  $('#countDrivers').textContent=state.drivers.length;$('#countTeams').textContent=state.teams.length;$('#countRaces').textContent=state.races.length;
  const next=state.races.filter(r=>r.status!=='completed'&&new Date(r.race_date+'T23:59:59')>=new Date()).sort((a,b)=>a.race_date.localeCompare(b.race_date))[0];
  $('#nextRace').innerHTML=next?`<strong>Round ${next.round} — ${esc(next.name)}</strong><br><span class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} ${esc(next.race_time||'')}</span>`:'Nessuna gara inserita.';
- $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${d.number}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())}</td><td>${esc(teamName(d.team_id))}</td><td>${esc(d.platform)}</td></tr>`).join('');$('#driversEmpty').classList.toggle('hidden',state.drivers.length>0);
+ $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${esc(d.ea_id||'—')}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())}</td><td>${esc(teamName(d.team_id))}</td><td>${esc(d.level??100)}</td><td>${esc(d.status||'active')}</td><td>${esc(d.platform)}</td></tr>`).join('');$('#driversEmpty').classList.toggle('hidden',state.drivers.length>0);
  $('#teamsGrid').innerHTML=state.teams.map(t=>`<div class="card" style="border-top:4px solid ${esc(t.color)}"><h3>${esc(t.name)}</h3><div class="muted">${esc(t.country)}</div><div>${state.drivers.filter(d=>d.team_id==t.id).length} piloti</div></div>`).join('');$('#teamsEmpty').classList.toggle('hidden',state.teams.length>0);
  $('#racesBody').innerHTML=state.races.map(r=>`<tr><td>${r.round}</td><td>${esc(r.name)}</td><td>${esc(r.circuit)}</td><td>${fmtDate(r.race_date)}</td><td>${esc(r.status)}</td></tr>`).join('');$('#racesEmpty').classList.toggle('hidden',state.races.length>0);
  const rows=state.drivers.map(d=>{const rr=state.results.filter(r=>r.driver_id==d.id);return{d,points:rr.reduce((s,r)=>s+Number(r.points||0),0),wins:rr.filter(r=>r.position===1).length,podiums:rr.filter(r=>r.position&&r.position<=3).length}}).sort((a,b)=>b.points-a.points);
@@ -162,7 +162,7 @@ const tableMap={team:'teams',driver:'drivers',race:'races',news:'news'};
 async function delItem(type,id){if(!confirm('Eliminare definitivamente?'))return;const{error}=await db.from(tableMap[type]).delete().eq('id',id);if(error)alert(error.message);else loadAll()} window.delItem=delItem;
 async function submit(form,table,transform=x=>x){const fd=new FormData(form),obj={};for(const [k,v] of fd)obj[k]=v;const payload=transform(obj,form);const{error}=await db.from(table).insert(payload);if(error)throw error;form.reset();await loadAll()}
 $('#teamForm').onsubmit=async e=>{e.preventDefault();try{await submit(e.target,'teams')}catch(x){msg($('#adminMsg'),x.message)}};
-$('#driverForm').onsubmit=async e=>{e.preventDefault();try{await submit(e.target,'drivers',o=>({...o,number:Number(o.number),team_id:o.team_id?Number(o.team_id):null}))}catch(x){msg($('#adminMsg'),x.message)}};
+$('#driverForm').onsubmit=async e=>{e.preventDefault();try{await submit(e.target,'drivers',o=>({...o,level:Number(o.level||100),team_id:o.team_id?Number(o.team_id):null}))}catch(x){msg($('#adminMsg'),x.message)}};
 $('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');await submit(e.target,'races',o=>({...o,round:Number(o.round),season_id:state.season.id,race_time:o.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
 $('#resultForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target;const o=Object.fromEntries(new FormData(f));const p={race_id:Number(o.race_id),driver_id:Number(o.driver_id),position:o.position?Number(o.position):null,points:Number(o.points||0),pole:f.pole.checked,fastest_lap:f.fastest_lap.checked,dnf:f.dnf.checked};const{error}=await db.from('race_results').upsert(p,{onConflict:'race_id,driver_id'});if(error)throw error;await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 $('#newsForm').onsubmit=async e=>{e.preventDefault();try{await submit(e.target,'news')}catch(x){msg($('#adminMsg'),x.message)}};
