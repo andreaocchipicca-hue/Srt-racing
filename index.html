@@ -3,55 +3,89 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#09090d">
-  <meta name="description" content="SRT Santena Racing Team - campionato F1 Crossplay">
-  <title>SRT Racing</title>
+  <meta name="theme-color" content="#08080c">
+  <meta name="description" content="SRT Santena Racing Team - Season 2">
+  <title>SRT Racing — Season 2</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon-192.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root{--bg:#09090d;--panel:#14141c;--panel2:#1b1b25;--line:#30303d;--txt:#fff;--muted:#a5a5b5;--red:#ed1c24;--green:#22c55e}
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,Arial,sans-serif}
-    button,input,select,textarea{font:inherit} button{cursor:pointer}
-    .app{max-width:1180px;margin:auto;min-height:100vh}
-    header{position:sticky;top:0;z-index:20;background:rgba(9,9,13,.94);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-    .head{display:flex;align-items:center;gap:12px;padding:12px 16px} .head img{width:48px;height:48px;border-radius:12px;object-fit:cover}
-    .brand{font-weight:900;letter-spacing:.5px} .sub{font-size:12px;color:var(--muted)} .grow{flex:1}
-    .badge{border:1px solid var(--line);padding:5px 9px;border-radius:999px;font-size:12px;color:var(--muted)}
-    nav{display:flex;overflow:auto;gap:8px;padding:0 12px 12px} nav button{white-space:nowrap;background:var(--panel);color:var(--muted);border:1px solid var(--line);padding:9px 12px;border-radius:10px}
-    nav button.active{background:var(--red);color:white;border-color:var(--red)}
-    main{padding:16px} .hero{display:grid;grid-template-columns:160px 1fr;gap:20px;align-items:center;background:linear-gradient(135deg,#181820,#0e0e14);border:1px solid var(--line);border-radius:20px;padding:20px}
-    .hero img{width:100%;border-radius:18px} h1,h2,h3{margin:0 0 10px} .muted{color:var(--muted)} .version{color:#ff8a8e;font-size:12px;font-weight:800}
-    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px} .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
-    .stat{font-size:28px;font-weight:900} .section{display:none} .section.active{display:block}
-    table{width:100%;border-collapse:collapse} th,td{padding:11px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:14px} th{color:var(--muted);font-size:12px;text-transform:uppercase}
-    .table-wrap{overflow:auto} .empty{padding:30px;text-align:center;color:var(--muted)}
-    .btn{border:0;border-radius:10px;padding:10px 14px;background:var(--red);color:white;font-weight:800} .btn.alt{background:var(--panel2);border:1px solid var(--line)} .btn.danger{background:#7f1d1d}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center} .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-    input,select,textarea{width:100%;background:#0f0f15;color:white;border:1px solid var(--line);border-radius:10px;padding:11px} textarea{min-height:90px}
-    label{font-size:12px;color:var(--muted)} .field{display:grid;gap:5px} .auth{max-width:520px;margin:auto}
-    .notice{padding:12px;border-radius:12px;background:#251417;border:1px solid #5d2228;color:#ffc9cc;margin:10px 0}
-    .success{background:#102417;border-color:#205b32;color:#b9f6c7} .hidden{display:none!important}
-    .admin-tabs{display:flex;gap:8px;overflow:auto;margin-bottom:12px} .admin-tabs button{background:var(--panel2);color:white;border:1px solid var(--line);padding:8px 11px;border-radius:9px}
-    .admin-tabs button.active{background:var(--red)} .admin-pane{display:none} .admin-pane.active{display:block}
-    @media(max-width:760px){.hero{grid-template-columns:90px 1fr;padding:14px}.grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}main{padding:12px}}
+    :root{
+      --bg:#08080c;--surface:#121219;--surface2:#191922;--line:#2c2c39;
+      --text:#f6f6f8;--muted:#a2a2b1;--red:#e10600;--red2:#ff2a22;
+      --green:#1fca68;--gold:#f4c430;--shadow:0 18px 60px rgba(0,0,0,.38)
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:
+      radial-gradient(circle at 80% -10%,rgba(225,6,0,.18),transparent 32%),
+      radial-gradient(circle at 0 35%,rgba(255,255,255,.035),transparent 25%),
+      var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+    button,input,select,textarea{font:inherit}button{cursor:pointer}
+    .app{max-width:1240px;margin:auto;min-height:100vh}
+    header{position:sticky;top:0;z-index:30;background:rgba(8,8,12,.86);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.07)}
+    .topbar{display:flex;align-items:center;gap:12px;padding:12px 16px}
+    .brand-logo{width:52px;height:52px;border-radius:14px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+    .brand-title{font-weight:950;letter-spacing:.8px}.brand-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .grow{flex:1}.badge{border:1px solid var(--line);background:rgba(255,255,255,.035);padding:7px 10px;border-radius:999px;font-size:12px;color:var(--muted)}
+    nav{display:flex;gap:8px;overflow:auto;padding:0 12px 12px;scrollbar-width:none}nav::-webkit-scrollbar{display:none}
+    nav button{white-space:nowrap;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:9px 13px;border-radius:10px;font-weight:750}
+    nav button.active{background:linear-gradient(135deg,var(--red),var(--red2));border-color:transparent;color:white;box-shadow:0 8px 24px rgba(225,6,0,.28)}
+    main{padding:16px}.section{display:none}.section.active{display:block;animation:fade .26s ease}
+    @keyframes fade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+    .hero{position:relative;overflow:hidden;display:grid;grid-template-columns:220px 1fr;gap:26px;align-items:center;min-height:360px;padding:30px;border:1px solid var(--line);border-radius:26px;background:
+      linear-gradient(110deg,rgba(18,18,25,.96),rgba(12,12,17,.75)),
+      repeating-linear-gradient(135deg,transparent 0 18px,rgba(255,255,255,.018) 18px 20px);box-shadow:var(--shadow)}
+    .hero:after{content:"";position:absolute;right:-80px;bottom:-130px;width:440px;height:440px;border:70px solid rgba(225,6,0,.09);border-radius:50%}
+    .hero img{width:100%;border-radius:24px;position:relative;z-index:2;filter:drop-shadow(0 24px 25px rgba(0,0,0,.45))}
+    .eyebrow{font-size:12px;font-weight:900;letter-spacing:1.3px;color:#ff7873;text-transform:uppercase}
+    h1{font-size:clamp(36px,7vw,72px);line-height:.95;margin:10px 0 14px;letter-spacing:-2px}
+    h2{font-size:27px;margin:0 0 14px}h3{margin:0 0 9px}
+    .hero p{font-size:17px;line-height:1.65;color:var(--muted);max-width:680px}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+    .btn{border:0;border-radius:11px;padding:11px 16px;background:linear-gradient(135deg,var(--red),var(--red2));color:white;font-weight:850;box-shadow:0 10px 24px rgba(225,6,0,.23)}
+    .btn.alt{background:var(--surface2);border:1px solid var(--line);box-shadow:none}.btn.danger{background:#7b1c21}.btn.small{padding:7px 10px;font-size:12px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+    .grid.two{grid-template-columns:repeat(2,1fr)}.card{background:linear-gradient(160deg,var(--surface),#101016);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 12px 35px rgba(0,0,0,.18)}
+    .metric{display:flex;align-items:center;justify-content:space-between}.metric .value{font-size:34px;font-weight:950}.metric .label{font-size:13px;color:var(--muted)}
+    .metric .icon{width:43px;height:43px;border-radius:13px;background:rgba(225,6,0,.13);display:grid;place-items:center;font-size:21px}
+    .muted{color:var(--muted)}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:7px}
+    .section-head{display:flex;gap:12px;align-items:end;margin-bottom:14px}.section-head p{margin:0;color:var(--muted)}
+    .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:12px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
+    th{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}tr:last-child td{border-bottom:0}
+    .empty{text-align:center;color:var(--muted);padding:34px}.empty strong{display:block;color:white;font-size:17px;margin-bottom:6px}
+    .team-card{position:relative;overflow:hidden}.team-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--team-color,var(--red))}
+    .news-card{min-height:190px;display:flex;flex-direction:column}.news-card .meta{font-size:12px;color:#ff7772;font-weight:800}.news-card p{color:var(--muted);line-height:1.55}.news-card .date{margin-top:auto;font-size:12px;color:var(--muted)}
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat-card{text-align:center}.stat-card .big{font-size:31px;font-weight:950}.stat-card .caption{font-size:12px;color:var(--muted);text-transform:uppercase}
+    .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.field{display:grid;gap:6px}.field.full{grid-column:1/-1}
+    label{font-size:12px;color:var(--muted);font-weight:700}input,select,textarea{width:100%;background:#0c0c11;color:white;border:1px solid var(--line);border-radius:10px;padding:11px;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(225,6,0,.12)}textarea{min-height:100px;resize:vertical}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.auth{max-width:520px;margin:auto}
+    .notice{padding:12px;border-radius:11px;background:#251317;border:1px solid #5c2429;color:#ffc4c7;margin:10px 0}.notice.success{background:#102619;border-color:#245d38;color:#baf3c8}
+    .hidden{display:none!important}.admin-tabs{display:flex;gap:8px;overflow:auto;margin-bottom:12px}.admin-tabs button{white-space:nowrap;border:1px solid var(--line);background:var(--surface2);color:white;padding:9px 11px;border-radius:10px}.admin-tabs button.active{background:var(--red);border-color:var(--red)}
+    .admin-pane{display:none}.admin-pane.active{display:block}.admin-list{margin-top:14px}.admin-item{display:flex;gap:9px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+    .chip{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;color:var(--muted)}
+    .coming{border:1px dashed #4a4a59;background:rgba(255,255,255,.02)}
+    footer{text-align:center;color:#686878;padding:28px 12px 36px;font-size:12px}
+    @media(max-width:800px){.hero{grid-template-columns:105px 1fr;min-height:auto;padding:18px;gap:16px}.hero h1{font-size:36px;letter-spacing:-1px}.hero p{font-size:14px}.grid,.grid.two,.stats-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}main{padding:12px}.topbar{padding:10px 12px}.brand-logo{width:45px;height:45px}}
   </style>
 </head>
 <body>
 <div class="app">
 <header>
-  <div class="head">
-    <img src="icon-192.png" alt="SRT">
-    <div><div class="brand">SRT SANTENA RACING TEAM</div><div class="sub">F1 Crossplay Championship</div></div>
+  <div class="topbar">
+    <img src="icon-192.png" class="brand-logo" alt="SRT">
+    <div><div class="brand-title">SRT SANTENA RACING TEAM</div><div class="brand-sub">F1 Crossplay Championship</div></div>
     <div class="grow"></div>
     <span id="userBadge" class="badge">Ospite</span>
   </div>
   <nav id="nav">
     <button data-page="home" class="active">Home</button>
-    <button data-page="drivers">Piloti</button>
     <button data-page="teams">Scuderie</button>
+    <button data-page="drivers">Piloti</button>
     <button data-page="calendar">Calendario</button>
-    <button data-page="standings">Classifica</button>
+    <button data-page="standings">Classifiche</button>
+    <button data-page="statistics">Statistiche</button>
     <button data-page="news">News</button>
     <button data-page="login" id="loginNav">Login</button>
     <button data-page="admin" id="adminNav" class="hidden">Admin</button>
@@ -62,125 +96,278 @@
 <section id="home" class="section active">
   <div class="hero">
     <img src="icon-512.png" alt="Logo SRT">
-    <div><div class="version">VERSIONE REALE V2 • EA ID E LIVELLO</div><h1>SRT Racing</h1><p class="muted">La web app ufficiale del campionato. Nessun pilota o gara dimostrativa è contenuto nel codice.</p></div>
+    <div>
+      <div class="eyebrow">Season 2 • Versione professionale</div>
+      <h1>SRT Racing</h1>
+      <p id="championshipInfo">Caricamento delle informazioni del campionato...</p>
+      <div class="hero-actions">
+        <button class="btn" onclick="go('teams')">Scopri le scuderie</button>
+        <button class="btn alt" onclick="go('news')">Ultime news</button>
+      </div>
+    </div>
   </div>
+
   <div class="grid">
-    <div class="card"><div class="muted">Piloti attivi</div><div class="stat" id="countDrivers">0</div></div>
-    <div class="card"><div class="muted">Scuderie</div><div class="stat" id="countTeams">0</div></div>
-    <div class="card"><div class="muted">Gare</div><div class="stat" id="countRaces">0</div></div>
+    <div class="card metric"><div><div class="label">Piloti attivi</div><div class="value" id="countDrivers">0</div></div><div class="icon">👤</div></div>
+    <div class="card metric"><div><div class="label">Scuderie</div><div class="value" id="countTeams">0</div></div><div class="icon">🏎️</div></div>
+    <div class="card metric"><div><div class="label">Gare programmate</div><div class="value" id="countRaces">0</div></div><div class="icon">🏁</div></div>
   </div>
-  <div class="card" style="margin-top:14px"><h2>Prossima gara</h2><div id="nextRace" class="empty">Nessuna gara inserita.</div></div>
+
+  <div class="grid two">
+    <div class="card">
+      <div class="section-head"><div><h2>Prossima gara</h2><p>Il countdown verrà attivato quando sarà deciso il calendario.</p></div></div>
+      <div id="nextRace" class="empty"><strong>Calendario in preparazione</strong>Nessuna gara definitiva è stata inserita.</div>
+    </div>
+    <div class="card">
+      <div class="section-head"><div><h2>Stato Season 2</h2><p>Informazioni aggiornate dall'Admin.</p></div></div>
+      <div id="seasonStatus" class="empty"><strong><span class="status-dot"></span>Preparazione</strong>Il campionato è in fase di organizzazione.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px" class="section-head"><div><h2>Ultime news</h2><p>Comunicazioni ufficiali SRT.</p></div></div>
+  <div id="homeNews" class="grid"></div>
 </section>
 
-<section id="drivers" class="section"><h2>Piloti</h2><div class="card table-wrap"><table><thead><tr><th>EA ID</th><th>Pilota</th><th>Scuderia</th><th>Livello</th><th>Stato</th><th>Piattaforma</th></tr></thead><tbody id="driversBody"></tbody></table><div id="driversEmpty" class="empty">Nessun pilota inserito.</div></div></section>
-<section id="teams" class="section"><h2>Scuderie</h2><div id="teamsGrid" class="grid"></div><div id="teamsEmpty" class="card empty">Nessuna scuderia inserita.</div></section>
-<section id="calendar" class="section"><h2>Calendario</h2><div class="card table-wrap"><table><thead><tr><th>Round</th><th>Gran Premio</th><th>Circuito</th><th>Data</th><th>Stato</th></tr></thead><tbody id="racesBody"></tbody></table><div id="racesEmpty" class="empty">Nessuna gara inserita.</div></div></section>
-<section id="standings" class="section"><h2>Classifica piloti</h2><div class="card table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Scuderia</th><th>Punti</th><th>Vittorie</th><th>Podi</th></tr></thead><tbody id="standingsBody"></tbody></table><div id="standingsEmpty" class="empty">La classifica apparirà dopo l'inserimento dei risultati.</div></div></section>
-<section id="news" class="section"><h2>News</h2><div id="newsGrid" class="grid"></div><div id="newsEmpty" class="card empty">Nessuna notizia pubblicata.</div></section>
+<section id="teams" class="section">
+  <div class="section-head"><div><h2>Scuderie</h2><p>Team iscritti alla Season 2.</p></div></div>
+  <div id="teamsGrid" class="grid"></div><div id="teamsEmpty" class="card empty"><strong>Nessuna scuderia</strong>Aggiungi le scuderie dal pannello Admin.</div>
+</section>
+
+<section id="drivers" class="section">
+  <div class="section-head"><div><h2>Piloti</h2><p>EA ID, livello, scuderia e stato.</p></div></div>
+  <div class="card table-wrap">
+    <table><thead><tr><th>EA ID</th><th>Pilota</th><th>Scuderia</th><th>Livello</th><th>Stato</th><th>Piattaforma</th></tr></thead><tbody id="driversBody"></tbody></table>
+    <div id="driversEmpty" class="empty"><strong>Piloti non ancora decisi</strong>La lista verrà completata quando le iscrizioni saranno definitive.</div>
+  </div>
+</section>
+
+<section id="calendar" class="section">
+  <div class="section-head"><div><h2>Calendario</h2><p>Il calendario ufficiale verrà inserito per ultimo.</p></div></div>
+  <div class="card coming empty"><strong>Calendario Season 2 in preparazione</strong>Questa sezione è già pronta e si popolerà automaticamente quando inserirai le gare.</div>
+</section>
+
+<section id="standings" class="section">
+  <div class="section-head"><div><h2>Classifiche</h2><p>Piloti e costruttori si aggiorneranno con i risultati.</p></div></div>
+  <div class="grid two">
+    <div class="card table-wrap"><h3>Classifica piloti</h3><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Punti</th><th>Vittorie</th></tr></thead><tbody id="standingsBody"></tbody></table><div id="standingsEmpty" class="empty">Nessun risultato disponibile.</div></div>
+    <div class="card table-wrap"><h3>Classifica costruttori</h3><table><thead><tr><th>Pos.</th><th>Scuderia</th><th>Punti</th></tr></thead><tbody id="constructorsBody"></tbody></table><div id="constructorsEmpty" class="empty">Nessun risultato disponibile.</div></div>
+  </div>
+</section>
+
+<section id="statistics" class="section">
+  <div class="section-head"><div><h2>Statistiche</h2><p>La struttura è pronta per la Season 2.</p></div></div>
+  <div class="stats-grid">
+    <div class="card stat-card"><div class="big" id="statWins">0</div><div class="caption">Vittorie registrate</div></div>
+    <div class="card stat-card"><div class="big" id="statPoles">0</div><div class="caption">Pole position</div></div>
+    <div class="card stat-card"><div class="big" id="statFastest">0</div><div class="caption">Giri veloci</div></div>
+    <div class="card stat-card"><div class="big" id="statPodiums">0</div><div class="caption">Podi</div></div>
+  </div>
+  <div class="card empty" style="margin-top:14px"><strong>Statistiche avanzate pronte</strong>Leader, media punti e andamento della stagione compariranno quando inizieranno le gare.</div>
+</section>
+
+<section id="news" class="section">
+  <div class="section-head"><div><h2>News</h2><p>Comunicazioni e annunci ufficiali.</p></div></div>
+  <div id="newsGrid" class="grid"></div><div id="newsEmpty" class="card empty"><strong>Nessuna news pubblicata</strong>Puoi crearne una dal pannello Admin.</div>
+</section>
 
 <section id="login" class="section">
- <div class="card auth">
-  <h2 id="authTitle">Accedi</h2><div id="authMsg"></div>
-  <div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><br>
-  <div class="field"><label>Password</label><input id="password" type="password" minlength="6"></div><br>
-  <div id="nameField" class="field hidden"><label>Nome visualizzato</label><input id="displayName"></div><br>
-  <div class="row"><button class="btn" id="authSubmit">Accedi</button><button class="btn alt" id="authSwitch">Crea account</button><button class="btn danger hidden" id="logoutBtn">Esci</button></div>
- </div>
+  <div class="card auth">
+    <h2 id="authTitle">Accedi</h2><div id="authMsg"></div>
+    <div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><br>
+    <div class="field"><label>Password</label><input id="password" type="password" minlength="6"></div><br>
+    <div id="nameField" class="field hidden"><label>Nome visualizzato</label><input id="displayName"></div><br>
+    <div class="row"><button class="btn" id="authSubmit">Accedi</button><button class="btn alt" id="authSwitch">Crea account</button><button class="btn danger hidden" id="logoutBtn">Esci</button></div>
+  </div>
 </section>
 
 <section id="admin" class="section">
- <div class="row"><div><h2>Pannello Admin</h2><p class="muted">Tutte le modifiche vengono salvate su Supabase.</p></div><div class="grow"></div><button class="btn alt" onclick="loadAll()">Aggiorna</button></div>
- <div id="adminMsg"></div>
- <div class="admin-tabs">
-  <button data-admin="teamPane" class="active">Scuderie</button><button data-admin="driverPane">Piloti</button><button data-admin="racePane">Gare</button><button data-admin="resultPane">Risultati</button><button data-admin="newsPane">News</button>
- </div>
- <div id="teamPane" class="admin-pane active card">
-  <h3>Aggiungi scuderia</h3><form id="teamForm" class="form-grid"><div class="field"><label>Nome</label><input name="name" required></div><div class="field"><label>Colore</label><input name="color" value="#e10600"></div><div class="field"><label>Paese</label><input name="country" value="Italia"></div><div class="field"><label>URL logo</label><input name="logo"></div><button class="btn">Salva scuderia</button></form><div id="adminTeams"></div>
- </div>
- <div id="driverPane" class="admin-pane card">
-  <h3>Aggiungi pilota</h3><form id="driverForm" class="form-grid"><div class="field"><label>Nome</label><input name="name" required></div><div class="field"><label>Cognome / nickname</label><input name="surname"></div><div class="field"><label>EA ID</label><input name="ea_id" required></div><div class="field"><label>Livello</label><input name="level" type="number" value="100" min="1" max="110"></div><div class="field"><label>Scuderia</label><select name="team_id" class="teamSelect"></select></div><div class="field"><label>Piattaforma</label><select name="platform"><option>Crossplay</option><option>PS5</option><option>Xbox</option><option>PC</option></select></div><div class="field"><label>Stato</label><select name="status"><option value="active">Attivo</option><option value="reserve">Riserva</option><option value="suspended">Sospeso</option></select></div><button class="btn">Salva pilota</button></form><div id="adminDrivers"></div>
- </div>
- <div id="racePane" class="admin-pane card">
-  <h3>Aggiungi gara</h3><form id="raceForm" class="form-grid"><div class="field"><label>Round</label><input name="round" type="number" required></div><div class="field"><label>Nome GP</label><input name="name" required></div><div class="field"><label>Circuito</label><input name="circuit" required></div><div class="field"><label>Paese</label><input name="country" required></div><div class="field"><label>Data</label><input name="race_date" type="date" required></div><div class="field"><label>Ora</label><input name="race_time" type="time"></div><div class="field"><label>Stato</label><select name="status"><option value="upcoming">In programma</option><option value="live">In corso</option><option value="completed">Conclusa</option></select></div><button class="btn">Salva gara</button></form><div id="adminRaces"></div>
- </div>
- <div id="resultPane" class="admin-pane card">
-  <h3>Inserisci risultato</h3><form id="resultForm" class="form-grid"><div class="field"><label>Gara</label><select name="race_id" class="raceSelect"></select></div><div class="field"><label>Pilota</label><select name="driver_id" class="driverSelect"></select></div><div class="field"><label>Posizione</label><input name="position" type="number"></div><div class="field"><label>Punti</label><input name="points" type="number" step="0.5" value="0"></div><div class="field"><label><input name="pole" type="checkbox" style="width:auto"> Pole</label></div><div class="field"><label><input name="fastest_lap" type="checkbox" style="width:auto"> Giro veloce</label></div><div class="field"><label><input name="dnf" type="checkbox" style="width:auto"> DNF</label></div><button class="btn">Salva risultato</button></form>
- </div>
- <div id="newsPane" class="admin-pane card">
-  <h3>Pubblica news</h3><form id="newsForm" class="form-grid"><div class="field"><label>Titolo</label><input name="title" required></div><div class="field"><label>Categoria</label><input name="category" value="Annuncio"></div><div class="field" style="grid-column:1/-1"><label>Testo breve</label><textarea name="excerpt"></textarea></div><button class="btn">Pubblica</button></form><div id="adminNews"></div>
- </div>
+  <div class="section-head"><div><h2>Pannello Admin</h2><p>Gestisci la Season 2 direttamente dal telefono.</p></div><div class="grow"></div><button class="btn alt small" onclick="loadAll()">Aggiorna dati</button></div>
+  <div id="adminMsg"></div>
+  <div class="admin-tabs">
+    <button data-admin="settingsPane" class="active">Impostazioni</button>
+    <button data-admin="teamPane">Scuderie</button>
+    <button data-admin="newsPane">News</button>
+    <button data-admin="driverPane">Piloti</button>
+    <button data-admin="racePane">Gare</button>
+    <button data-admin="resultPane">Risultati</button>
+  </div>
+
+  <div id="settingsPane" class="admin-pane active card">
+    <h3>Impostazioni campionato</h3>
+    <form id="settingsForm" class="form-grid">
+      <div class="field"><label>Nome campionato</label><input name="championship_name" required></div>
+      <div class="field"><label>Stagione</label><input name="season_name" value="Season 2" required></div>
+      <div class="field"><label>Gioco</label><input name="game_name" value="F1"></div>
+      <div class="field"><label>Giorno gara</label><input name="race_day" value="Domenica"></div>
+      <div class="field"><label>Ora gara</label><input name="race_time" type="time" value="22:30"></div>
+      <div class="field"><label>Durata gara</label><input name="race_length" value="50%"></div>
+      <div class="field"><label>Piattaforma</label><input name="platform" value="Crossplay"></div>
+      <div class="field"><label>Livello richiesto</label><input name="required_level" type="number" value="100"></div>
+      <div class="field"><label>Stato</label><select name="status"><option>Preparazione</option><option>Iscrizioni aperte</option><option>In corso</option><option>Conclusa</option></select></div>
+      <div class="field"><label>Iscrizioni</label><select name="registration_open"><option value="true">Aperte</option><option value="false">Chiuse</option></select></div>
+      <div class="field full"><label>Descrizione</label><textarea name="description"></textarea></div>
+      <button class="btn">Salva impostazioni</button>
+    </form>
+  </div>
+
+  <div id="teamPane" class="admin-pane card">
+    <h3>Aggiungi scuderia</h3>
+    <form id="teamForm" class="form-grid">
+      <div class="field"><label>Nome</label><input name="name" required></div>
+      <div class="field"><label>Colore</label><input name="color" value="#e10600"></div>
+      <div class="field"><label>Paese</label><input name="country" value="Italia"></div>
+      <div class="field"><label>URL logo</label><input name="logo"></div>
+      <button class="btn">Salva scuderia</button>
+    </form><div id="adminTeams" class="admin-list"></div>
+  </div>
+
+  <div id="newsPane" class="admin-pane card">
+    <h3>Pubblica news</h3>
+    <form id="newsForm" class="form-grid">
+      <div class="field"><label>Titolo</label><input name="title" required></div>
+      <div class="field"><label>Categoria</label><input name="category" value="Annuncio"></div>
+      <div class="field full"><label>Testo breve</label><textarea name="excerpt"></textarea></div>
+      <button class="btn">Pubblica</button>
+    </form><div id="adminNews" class="admin-list"></div>
+  </div>
+
+  <div id="driverPane" class="admin-pane card">
+    <h3>Aggiungi pilota</h3>
+    <form id="driverForm" class="form-grid">
+      <div class="field"><label>Nome</label><input name="name" required></div>
+      <div class="field"><label>Cognome / nickname</label><input name="surname"></div>
+      <div class="field"><label>EA ID</label><input name="ea_id" required></div>
+      <div class="field"><label>Livello</label><input name="level" type="number" value="100"></div>
+      <div class="field"><label>Scuderia</label><select name="team_id" class="teamSelect"></select></div>
+      <div class="field"><label>Piattaforma</label><select name="platform"><option>Crossplay</option><option>PS5</option><option>Xbox</option><option>PC</option></select></div>
+      <div class="field"><label>Stato</label><select name="status"><option value="active">Attivo</option><option value="reserve">Riserva</option><option value="suspended">Sospeso</option></select></div>
+      <button class="btn">Salva pilota</button>
+    </form><div id="adminDrivers" class="admin-list"></div>
+  </div>
+
+  <div id="racePane" class="admin-pane card">
+    <h3>Aggiungi gara</h3>
+    <form id="raceForm" class="form-grid">
+      <div class="field"><label>Round</label><input name="round" type="number" required></div>
+      <div class="field"><label>Nome GP</label><input name="name" required></div>
+      <div class="field"><label>Circuito</label><input name="circuit" required></div>
+      <div class="field"><label>Paese</label><input name="country" required></div>
+      <div class="field"><label>Data</label><input name="race_date" type="date" required></div>
+      <div class="field"><label>Ora</label><input name="race_time" type="time"></div>
+      <div class="field"><label>Stato</label><select name="status"><option value="upcoming">In programma</option><option value="live">In corso</option><option value="completed">Conclusa</option></select></div>
+      <button class="btn">Salva gara</button>
+    </form><div id="adminRaces" class="admin-list"></div>
+  </div>
+
+  <div id="resultPane" class="admin-pane card">
+    <h3>Inserisci risultato</h3>
+    <form id="resultForm" class="form-grid">
+      <div class="field"><label>Gara</label><select name="race_id" class="raceSelect"></select></div>
+      <div class="field"><label>Pilota</label><select name="driver_id" class="driverSelect"></select></div>
+      <div class="field"><label>Posizione</label><input name="position" type="number"></div>
+      <div class="field"><label>Punti</label><input name="points" type="number" step="0.5" value="0"></div>
+      <div class="field"><label><input name="pole" type="checkbox" style="width:auto"> Pole position</label></div>
+      <div class="field"><label><input name="fastest_lap" type="checkbox" style="width:auto"> Giro veloce</label></div>
+      <div class="field"><label><input name="dnf" type="checkbox" style="width:auto"> DNF</label></div>
+      <button class="btn">Salva risultato</button>
+    </form>
+  </div>
 </section>
 </main>
+<footer>© 2026 SRT Santena Racing Team • Season 2 • Crossplay</footer>
 </div>
 
 <script>
 const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
 const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let state={teams:[],drivers:[],races:[],results:[],news:[],season:null,user:null,profile:null};
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let state={teams:[],drivers:[],races:[],results:[],news:[],season:null,settings:null,user:null,profile:null};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function msg(el,text,ok=false){el.innerHTML=`<div class="notice ${ok?'success':''}">${esc(text)}</div>`}
-function page(id){$$('.section').forEach(x=>x.classList.toggle('active',x.id===id));$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));}
-$$('#nav button').forEach(b=>b.onclick=()=>page(b.dataset.page));
+function go(id){$$('.section').forEach(x=>x.classList.toggle('active',x.id===id));$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));scrollTo({top:0,behavior:'smooth'})}window.go=go;
+$$('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
 $$('.admin-tabs button').forEach(b=>b.onclick=()=>{$$('.admin-tabs button').forEach(x=>x.classList.remove('active'));$$('.admin-pane').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#'+b.dataset.admin).classList.add('active')});
+function msg(el,text,ok=false){el.innerHTML=`<div class="notice ${ok?'success':''}">${esc(text)}</div>`}
 function teamName(id){return state.teams.find(t=>t.id==id)?.name||'—'}
-function driverName(id){let d=state.drivers.find(x=>x.id==id);return d?`${d.name} ${d.surname||''}`.trim():'—'}
+function driverName(id){const d=state.drivers.find(x=>x.id==id);return d?`${d.name} ${d.surname||''}`.trim():'—'}
 function fmtDate(v){return v?new Date(v+'T12:00:00').toLocaleDateString('it-IT'):''}
+
 async function loadAll(){
  try{
-  const [se,te,dr,ra,re,ne]=await Promise.all([
+  const [se,te,dr,ra,re,ne,cs]=await Promise.all([
    db.from('seasons').select('*').eq('is_active',true).limit(1).maybeSingle(),
    db.from('teams').select('*').order('name'),
-   db.from('drivers').select('*').neq('status','suspended').order('name'),
+   db.from('drivers').select('*').order('name'),
    db.from('races').select('*').order('round'),
    db.from('race_results').select('*'),
-   db.from('news').select('*').order('published_at',{ascending:false})
+   db.from('news').select('*').order('published_at',{ascending:false}),
+   db.from('championship_settings').select('*').limit(1).maybeSingle()
   ]);
-  for(const x of [se,te,dr,ra,re,ne]) if(x.error) throw x.error;
-  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.news=ne.data||[];
+  for(const x of [se,te,dr,ra,re,ne,cs])if(x.error)throw x.error;
+  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.news=ne.data||[];state.settings=cs.data||null;
   render();
  }catch(e){console.error(e);msg($('#adminMsg'),'Errore caricamento: '+e.message)}
 }
+
 function render(){
- $('#countDrivers').textContent=state.drivers.length;$('#countTeams').textContent=state.teams.length;$('#countRaces').textContent=state.races.length;
+ const s=state.settings||{};
+ $('#championshipInfo').innerHTML=`<strong>${esc(s.season_name||'Season 2')}</strong><br>${esc(s.race_day||'Domenica')} alle ${String(s.race_time||'22:30').slice(0,5)} • Gara ${esc(s.race_length||'50%')} • ${esc(s.platform||'Crossplay')} • Livello ${esc(s.required_level||100)}<br><span class="muted">${esc(s.description||'Campionato Formula 1 Crossplay organizzato da SRT Santena Racing Team.')}</span>`;
+ $('#seasonStatus').innerHTML=`<strong><span class="status-dot"></span>${esc(s.status||'Preparazione')}</strong>${s.registration_open===false?'<br><span class="muted">Iscrizioni chiuse</span>':'<br><span class="muted">Iscrizioni aperte</span>'}`;
+
+ $('#countDrivers').textContent=state.drivers.filter(d=>d.status!=='suspended').length;
+ $('#countTeams').textContent=state.teams.length;$('#countRaces').textContent=state.races.length;
  const next=state.races.filter(r=>r.status!=='completed'&&new Date(r.race_date+'T23:59:59')>=new Date()).sort((a,b)=>a.race_date.localeCompare(b.race_date))[0];
- $('#nextRace').innerHTML=next?`<strong>Round ${next.round} — ${esc(next.name)}</strong><br><span class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} ${esc(next.race_time||'')}</span>`:'Nessuna gara inserita.';
- $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${esc(d.ea_id||'—')}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())}</td><td>${esc(teamName(d.team_id))}</td><td>${esc(d.level??100)}</td><td>${esc(d.status||'active')}</td><td>${esc(d.platform)}</td></tr>`).join('');$('#driversEmpty').classList.toggle('hidden',state.drivers.length>0);
- $('#teamsGrid').innerHTML=state.teams.map(t=>`<div class="card" style="border-top:4px solid ${esc(t.color)}"><h3>${esc(t.name)}</h3><div class="muted">${esc(t.country)}</div><div>${state.drivers.filter(d=>d.team_id==t.id).length} piloti</div></div>`).join('');$('#teamsEmpty').classList.toggle('hidden',state.teams.length>0);
- $('#racesBody').innerHTML=state.races.map(r=>`<tr><td>${r.round}</td><td>${esc(r.name)}</td><td>${esc(r.circuit)}</td><td>${fmtDate(r.race_date)}</td><td>${esc(r.status)}</td></tr>`).join('');$('#racesEmpty').classList.toggle('hidden',state.races.length>0);
- const rows=state.drivers.map(d=>{const rr=state.results.filter(r=>r.driver_id==d.id);return{d,points:rr.reduce((s,r)=>s+Number(r.points||0),0),wins:rr.filter(r=>r.position===1).length,podiums:rr.filter(r=>r.position&&r.position<=3).length}}).sort((a,b)=>b.points-a.points);
- $('#standingsBody').innerHTML=rows.filter(x=>x.points||state.results.length).map((x,i)=>`<tr><td>${i+1}</td><td>${esc((x.d.name+' '+(x.d.surname||'')).trim())}</td><td>${esc(teamName(x.d.team_id))}</td><td><strong>${x.points}</strong></td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');$('#standingsEmpty').classList.toggle('hidden',state.results.length>0);
- $('#newsGrid').innerHTML=state.news.map(n=>`<article class="card"><div class="muted">${esc(n.category)} • ${new Date(n.published_at).toLocaleDateString('it-IT')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p></article>`).join('');$('#newsEmpty').classList.toggle('hidden',state.news.length>0);
+ if(next)$('#nextRace').innerHTML=`<strong>Round ${next.round} — ${esc(next.name)}</strong><br><span class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} ${esc(next.race_time||'')}</span>`;
+
+ $('#teamsGrid').innerHTML=state.teams.map(t=>`<article class="card team-card" style="--team-color:${esc(t.color||'#e10600')}"><h3>${esc(t.name)}</h3><div class="muted">${esc(t.country||'')}</div><div style="margin-top:12px"><span class="chip">${state.drivers.filter(d=>d.team_id==t.id).length} piloti</span></div></article>`).join('');
+ $('#teamsEmpty').classList.toggle('hidden',state.teams.length>0);
+
+ $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${esc(d.ea_id||'—')}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())}</td><td>${esc(teamName(d.team_id))}</td><td>${esc(d.level??100)}</td><td>${esc(d.status||'active')}</td><td>${esc(d.platform||'Crossplay')}</td></tr>`).join('');
+ $('#driversEmpty').classList.toggle('hidden',state.drivers.length>0);
+
+ const driverRows=state.drivers.map(d=>{const rr=state.results.filter(r=>r.driver_id==d.id);return{d,points:rr.reduce((a,r)=>a+Number(r.points||0),0),wins:rr.filter(r=>r.position===1).length,podiums:rr.filter(r=>r.position&&r.position<=3).length}}).sort((a,b)=>b.points-a.points);
+ $('#standingsBody').innerHTML=driverRows.filter(x=>x.points||state.results.length).map((x,i)=>`<tr><td>${i+1}</td><td>${esc(driverName(x.d.id))}</td><td><strong>${x.points}</strong></td><td>${x.wins}</td></tr>`).join('');
+ $('#standingsEmpty').classList.toggle('hidden',state.results.length>0);
+
+ const constructorRows=state.teams.map(t=>({t,points:state.results.filter(r=>state.drivers.find(d=>d.id==r.driver_id)?.team_id==t.id).reduce((a,r)=>a+Number(r.points||0),0)})).sort((a,b)=>b.points-a.points);
+ $('#constructorsBody').innerHTML=constructorRows.filter(x=>x.points||state.results.length).map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.t.name)}</td><td><strong>${x.points}</strong></td></tr>`).join('');
+ $('#constructorsEmpty').classList.toggle('hidden',state.results.length>0);
+
+ $('#statWins').textContent=state.results.filter(r=>r.position===1).length;
+ $('#statPoles').textContent=state.results.filter(r=>r.pole).length;
+ $('#statFastest').textContent=state.results.filter(r=>r.fastest_lap).length;
+ $('#statPodiums').textContent=state.results.filter(r=>r.position&&r.position<=3).length;
+
+ const newsCards=state.news.map(n=>`<article class="card news-card"><div class="meta">${esc(n.category||'Annuncio')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p><div class="date">${new Date(n.published_at).toLocaleDateString('it-IT')}</div></article>`).join('');
+ $('#newsGrid').innerHTML=newsCards;$('#homeNews').innerHTML=state.news.slice(0,3).map(n=>`<article class="card news-card"><div class="meta">${esc(n.category||'Annuncio')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p><div class="date">${new Date(n.published_at).toLocaleDateString('it-IT')}</div></article>`).join('');
+ $('#newsEmpty').classList.toggle('hidden',state.news.length>0);
+ if(!state.news.length)$('#homeNews').innerHTML='<div class="card empty"><strong>Nessuna news</strong>Pubblica il primo annuncio dal pannello Admin.</div>';
+
+ const f=$('#settingsForm');if(f){for(const [k,v]of Object.entries(s)){if(f.elements[k])f.elements[k].value=typeof v==='boolean'?String(v):(v??'')}}
  const teamOpts='<option value="">Nessuna</option>'+state.teams.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');$$('.teamSelect').forEach(x=>x.innerHTML=teamOpts);
  $$('.driverSelect').forEach(x=>x.innerHTML=state.drivers.map(d=>`<option value="${d.id}">${esc(driverName(d.id))}</option>`).join(''));
  $$('.raceSelect').forEach(x=>x.innerHTML=state.races.map(r=>`<option value="${r.id}">R${r.round} - ${esc(r.name)}</option>`).join(''));
  $('#adminTeams').innerHTML=adminList(state.teams,'team');$('#adminDrivers').innerHTML=adminList(state.drivers,'driver');$('#adminRaces').innerHTML=adminList(state.races,'race');$('#adminNews').innerHTML=adminList(state.news,'news');
 }
-function adminList(items,type){return items.length?'<div style="margin-top:14px">'+items.map(x=>`<div class="row" style="padding:8px;border-bottom:1px solid var(--line)"><span class="grow">${esc(x.name||x.title||(x.round+' - '+x.circuit))}</span><button class="btn danger" onclick="delItem('${type}',${x.id})">Elimina</button></div>`).join('')+'</div>':''}
+function adminList(items,type){return items.map(x=>`<div class="admin-item"><span class="grow">${esc(x.name||x.title||(x.round+' - '+x.circuit))}</span><button class="btn danger small" onclick="delItem('${type}',${x.id})">Elimina</button></div>`).join('')}
 const tableMap={team:'teams',driver:'drivers',race:'races',news:'news'};
-async function delItem(type,id){if(!confirm('Eliminare definitivamente?'))return;const{error}=await db.from(tableMap[type]).delete().eq('id',id);if(error)alert(error.message);else loadAll()} window.delItem=delItem;
-async function submit(form,table,transform=x=>x){const fd=new FormData(form),obj={};for(const [k,v] of fd)obj[k]=v;const payload=transform(obj,form);const{error}=await db.from(table).insert(payload);if(error)throw error;form.reset();await loadAll()}
-$('#teamForm').onsubmit=async e=>{e.preventDefault();try{await submit(e.target,'teams')}catch(x){msg($('#adminMsg'),x.message)}};
-$('#driverForm').onsubmit=async e=>{e.preventDefault();try{await submit(e.target,'drivers',o=>({...o,level:Number(o.level||100),team_id:o.team_id?Number(o.team_id):null}))}catch(x){msg($('#adminMsg'),x.message)}};
-$('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');await submit(e.target,'races',o=>({...o,round:Number(o.round),season_id:state.season.id,race_time:o.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
-$('#resultForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target;const o=Object.fromEntries(new FormData(f));const p={race_id:Number(o.race_id),driver_id:Number(o.driver_id),position:o.position?Number(o.position):null,points:Number(o.points||0),pole:f.pole.checked,fastest_lap:f.fastest_lap.checked,dnf:f.dnf.checked};const{error}=await db.from('race_results').upsert(p,{onConflict:'race_id,driver_id'});if(error)throw error;await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
-$('#newsForm').onsubmit=async e=>{e.preventDefault();try{await submit(e.target,'news')}catch(x){msg($('#adminMsg'),x.message)}};
+async function delItem(type,id){if(!confirm('Eliminare definitivamente?'))return;const{error}=await db.from(tableMap[type]).delete().eq('id',id);if(error)alert(error.message);else loadAll()}window.delItem=delItem;
+async function insertForm(form,table,transform=x=>x){const o=Object.fromEntries(new FormData(form));const{error}=await db.from(table).insert(transform(o,form));if(error)throw error;form.reset();await loadAll()}
+
+$('#settingsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));const p={championship_name:o.championship_name,season_name:o.season_name,game_name:o.game_name,race_day:o.race_day,race_time:o.race_time||null,race_length:o.race_length,platform:o.platform,required_level:Number(o.required_level||100),status:o.status,registration_open:o.registration_open==='true',description:o.description,updated_at:new Date().toISOString()};let q=state.settings?.id?await db.from('championship_settings').update(p).eq('id',state.settings.id):await db.from('championship_settings').insert(p);if(q.error)throw q.error;msg($('#adminMsg'),'Impostazioni salvate.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#teamForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'teams')}catch(x){msg($('#adminMsg'),x.message)}};
+$('#newsForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'news')}catch(x){msg($('#adminMsg'),x.message)}};
+$('#driverForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'drivers',o=>({...o,level:Number(o.level||100),team_id:o.team_id?Number(o.team_id):null}))}catch(x){msg($('#adminMsg'),x.message)}};
+$('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');await insertForm(e.target,'races',o=>({...o,round:Number(o.round),season_id:state.season.id,race_time:o.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
+$('#resultForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f)),p={race_id:Number(o.race_id),driver_id:Number(o.driver_id),position:o.position?Number(o.position):null,points:Number(o.points||0),pole:f.pole.checked,fastest_lap:f.fastest_lap.checked,dnf:f.dnf.checked};const{error}=await db.from('race_results').upsert(p,{onConflict:'race_id,driver_id'});if(error)throw error;await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+
 let signup=false;
 $('#authSwitch').onclick=()=>{signup=!signup;$('#authTitle').textContent=signup?'Crea account':'Accedi';$('#nameField').classList.toggle('hidden',!signup);$('#authSubmit').textContent=signup?'Registrati':'Accedi';$('#authSwitch').textContent=signup?'Ho già un account':'Crea account'};
-$('#authSubmit').onclick=async()=>{const email=$('#email').value.trim(),password=$('#password').value;try{let r;if(signup)r=await db.auth.signUp({email,password,options:{data:{display_name:$('#displayName').value.trim()||email.split('@')[0]}}});else r=await db.auth.signInWithPassword({email,password});if(r.error)throw r.error;msg($('#authMsg'),signup?'Registrazione completata. Controlla l’email se richiesta.':'Accesso effettuato.',true);await refreshUser();}catch(e){msg($('#authMsg'),e.message)}};
-$('#logoutBtn').onclick=async()=>{await db.auth.signOut();await refreshUser();page('home')};
-async function refreshUser(){
- const{data:{user}}=await db.auth.getUser();state.user=user;state.profile=null;
- if(user){
-  await db.rpc('bootstrap_first_admin');
-  const{data}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();state.profile=data;
- }
- const role=state.profile?.role;$('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':' • Pilota'):'Ospite';
- $('#adminNav').classList.toggle('hidden',role!=='admin');$('#logoutBtn').classList.toggle('hidden',!user);$('#authSubmit').classList.toggle('hidden',!!user);$('#authSwitch').classList.toggle('hidden',!!user);
- if(user)$('#authTitle').textContent='Account';
-}
+$('#authSubmit').onclick=async()=>{try{const email=$('#email').value.trim(),password=$('#password').value;const r=signup?await db.auth.signUp({email,password,options:{data:{display_name:$('#displayName').value.trim()||email.split('@')[0]}}}):await db.auth.signInWithPassword({email,password});if(r.error)throw r.error;msg($('#authMsg'),signup?'Registrazione completata.':'Accesso effettuato.',true);await refreshUser()}catch(e){msg($('#authMsg'),e.message)}};
+$('#logoutBtn').onclick=async()=>{await db.auth.signOut();await refreshUser();go('home')};
+async function refreshUser(){const{data:{user}}=await db.auth.getUser();state.user=user;state.profile=null;if(user){const{data}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();state.profile=data}const role=state.profile?.role;$('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':' • Pilota'):'Ospite';$('#adminNav').classList.toggle('hidden',role!=='admin');$('#logoutBtn').classList.toggle('hidden',!user);$('#authSubmit').classList.toggle('hidden',!!user);$('#authSwitch').classList.toggle('hidden',!!user);if(user)$('#authTitle').textContent='Account'}
 db.auth.onAuthStateChange(()=>refreshUser());
 (async()=>{await refreshUser();await loadAll();if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js')})();
 </script>
-</body></html>
+</body>
+</html>
