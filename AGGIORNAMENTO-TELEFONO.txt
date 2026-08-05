@@ -1,0 +1,10 @@
+VERSIONE 4 - DATI REALI
+
+Su GitHub sostituisci almeno questi 2 file:
+1. index.html
+2. service-worker.js
+
+Apri ogni file nel repository, premi i tre puntini / matita, elimina il vecchio contenuto oppure usa Upload files per sovrascriverlo, quindi Commit changes.
+Netlify pubblicherà automaticamente.
+
+Dopo il deploy: apri il sito, fai Login e crea il primo account Admin. Dal pannello Admin puoi aggiungere scuderie, piloti, gare, risultati e news: ora vengono salvati su Supabase.

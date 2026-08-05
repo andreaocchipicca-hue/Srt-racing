@@ -433,66 +433,25 @@ const F1_CIRCUITS = [
     { name: 'Vålerbanen', country: 'Norvegia', city: 'Våler', length: '2.700 km' }
 ];
 
-// Sample data for initial state (will be replaced by Supabase data)
+// Stato iniziale reale: i dati del campionato arrivano esclusivamente da Supabase.
 let appState = {
     currentUser: null,
     currentRole: 'guest',
     currentPage: 'home',
     session: null,
-    season: {
-        id: 1,
-        name: 'Stagione 2025',
-        year: 2025,
-        isActive: true
-    },
-    drivers: [
-        { id: 1, name: 'Marco Rossi', surname: 'Rossi', number: 16, nationality: 'Italia', teamId: 1, platform: 'PC', avatar: 'https://picsum.photos/200?random=101', color: '#e10600' },
-        { id: 2, name: 'Luca Bianchi', surname: 'Bianchi', number: 27, nationality: 'Italia', teamId: 1, platform: 'PS5', avatar: 'https://picsum.photos/200?random=102', color: '#e10600' },
-        { id: 3, name: 'Alessandro Verdi', surname: 'Verdi', number: 44, nationality: 'Italia', teamId: 2, platform: 'PC', avatar: 'https://picsum.photos/200?random=103', color: '#00d2ff' },
-        { id: 4, name: 'Giovanni Neri', surname: 'Neri', number: 55, nationality: 'Italia', teamId: 2, platform: 'Xbox', avatar: 'https://picsum.photos/200?random=104', color: '#00d2ff' },
-        { id: 5, name: 'Francesco Gialli', surname: 'Gialli', number: 77, nationality: 'Italia', teamId: 3, platform: 'PS5', avatar: 'https://picsum.photos/200?random=105', color: '#ffd700' },
-        { id: 6, name: 'Andrea Blu', surname: 'Blu', number: 63, nationality: 'Italia', teamId: 3, platform: 'PC', avatar: 'https://picsum.photos/200?random=106', color: '#ffd700' },
-        { id: 7, name: 'Matteo Viola', surname: 'Viola', number: 4, nationality: 'Italia', teamId: 4, platform: 'Xbox', avatar: 'https://picsum.photos/200?random=107', color: '#9b59b6' },
-        { id: 8, name: 'Stefano Argento', surname: 'Argento', number: 22, nationality: 'Italia', teamId: 4, platform: 'PC', avatar: 'https://picsum.photos/200?random=108', color: '#9b59b6' },
-        { id: 9, name: 'Davide Rosa', surname: 'Rosa', number: 88, nationality: 'Italia', teamId: 5, platform: 'PS5', avatar: 'https://picsum.photos/200?random=109', color: '#ff69b4' },
-        { id: 10, name: 'Nicola Arancio', surname: 'Arancio', number: 99, nationality: 'Italia', teamId: 5, platform: 'PC', avatar: 'https://picsum.photos/200?random=110', color: '#ff69b4' }
-    ],
-    teams: [
-        { id: 1, name: 'SRT Rosso Corsa', color: '#e10600', logo: 'https://picsum.photos/100?random=201', country: 'Italia' },
-        { id: 2, name: 'SRT Blu Racing', color: '#00d2ff', logo: 'https://picsum.photos/100?random=202', country: 'Italia' },
-        { id: 3, name: 'SRT Oro Team', color: '#ffd700', logo: 'https://picsum.photos/100?random=203', country: 'Italia' },
-        { id: 4, name: 'SRT Viola Speed', color: '#9b59b6', logo: 'https://picsum.photos/100?random=204', country: 'Italia' },
-        { id: 5, name: 'SRT Rosa Racing', color: '#ff69b4', logo: 'https://picsum.photos/100?random=205', country: 'Italia' }
-    ],
-    races: [
-        { id: 1, name: 'Gran Premio d\'Italia', circuit: 'Autodromo Nazionale di Monza', country: 'Italia', date: '2025-03-16', time: '15:00', status: 'completed', seasonId: 1, round: 1, laps: 53 },
-        { id: 2, name: 'Gran Premio di Monaco', circuit: 'Circuit de Monaco', country: 'Monaco', date: '2025-04-06', time: '15:00', status: 'completed', seasonId: 1, round: 2, laps: 78 },
-        { id: 3, name: 'Gran Premio di Silverstone', circuit: 'Silverstone Circuit', country: 'Regno Unito', date: '2025-05-11', time: '15:00', status: 'upcoming', seasonId: 1, round: 3, laps: 52 },
-        { id: 4, name: 'Gran Premio del Belgio', circuit: 'Spa-Francorchamps', country: 'Belgio', date: '2025-06-08', time: '15:00', status: 'upcoming', seasonId: 1, round: 4, laps: 44 },
-        { id: 5, name: 'Gran Premio di Spagna', circuit: 'Circuit de Barcelona-Catalunya', country: 'Spagna', date: '2025-06-29', time: '15:00', status: 'upcoming', seasonId: 1, round: 5, laps: 66 },
-        { id: 6, name: 'Gran Premio del Giappone', circuit: 'Suzuka International Racing Course', country: 'Giappone', date: '2025-07-20', time: '07:00', status: 'upcoming', seasonId: 1, round: 6, laps: 53 },
-        { id: 7, name: 'Gran Premio d\'Australia', circuit: 'Melbourne Grand Prix Circuit', country: 'Australia', date: '2025-08-10', time: '07:00', status: 'upcoming', seasonId: 1, round: 7, laps: 58 },
-        { id: 8, name: 'Gran Premio di Singapore', circuit: 'Marina Bay Street Circuit', country: 'Singapore', date: '2025-09-14', time: '14:00', status: 'upcoming', seasonId: 1, round: 8, laps: 62 },
-        { id: 9, name: 'Gran Premio del Brasile', circuit: 'Interlagos Circuit', country: 'Brasile', date: '2025-10-05', time: '18:00', status: 'upcoming', seasonId: 1, round: 9, laps: 71 },
-        { id: 10, name: 'Gran Premio degli Stati Uniti', circuit: 'Circuit of the Americas', country: 'Stati Uniti', date: '2025-10-26', time: '21:00', status: 'upcoming', seasonId: 1, round: 10, laps: 56 }
-    ],
+    season: { id: null, name: 'Season 1', year: 2026, isActive: true },
+    drivers: [],
+    teams: [],
+    races: [],
     raceResults: [],
-    news: [
-        { id: 1, title: 'Grande vittoria per Marco Rossi a Monza!', date: '2025-03-16', category: 'Gara', excerpt: 'Marco Rossi domina il GP d\'Italia con una prestazione eccezionale.', content: '…', image: 'https://picsum.photos/800/400?random=301', author: 'Admin' },
-        { id: 2, title: 'Il SRT Racing Team svela la nuova livrea 2025', date: '2025-03-01', category: 'Team', excerpt: 'Presentata la nuova colorazione per la stagione 2025.', content: '…', image: 'https://picsum.photos/800/400?random=302', author: 'Admin' },
-        { id: 3, title: 'Calendario 2025 ufficiale', date: '2025-02-15', category: 'Annuncio', excerpt: 'Pubblicato il calendario completo della stagione 2025.', content: '…', image: 'https://picsum.photos/800/400?random=303', author: 'Admin' }
-    ],
+    news: [],
     regulations: [
-        { id: 1, title: 'Regolamento Sportivo', content: '…', icon: 'fa-flag-checkered' },
-        { id: 2, title: 'Sistema di Punteggio', content: '…', icon: 'fa-trophy' },
-        { id: 3, title: 'Regole di Gara', content: '…', icon: 'fa-gavel' },
-        { id: 4, title: 'Penalità e Sanzioni', content: '…', icon: 'fa-exclamation-triangle' }
+        { id: 1, title: 'Regolamento Sportivo', content: 'Da compilare dal pannello Admin.', icon: 'fa-flag-checkered' },
+        { id: 2, title: 'Sistema di Punteggio', content: 'Configurabile dal pannello Admin.', icon: 'fa-trophy' },
+        { id: 3, title: 'Regole di Gara', content: 'Da compilare dal pannello Admin.', icon: 'fa-gavel' },
+        { id: 4, title: 'Penalità e Sanzioni', content: 'Da compilare dal pannello Admin.', icon: 'fa-exclamation-triangle' }
     ],
-    hallOfFame: [
-        { id: 1, season: '2024', champion: 'Marco Rossi', team: 'SRT Rosso Corsa', points: 285, image: 'https://picsum.photos/200?random=401' },
-        { id: 2, season: '2023', champion: 'Luca Bianchi', team: 'SRT Blu Racing', points: 262, image: 'https://picsum.photos/200?random=402' },
-        { id: 3, season: '2022', champion: 'Alessandro Verdi', team: 'SRT Oro Team', points: 248, image: 'https://picsum.photos/200?random=403' }
-    ],
+    hallOfFame: [],
     trackRecords: [],
     scoringSystem: {}
 };
@@ -2076,7 +2035,7 @@ function renderProfile() {
                             <div>
                                 <label class="text-sm text-gray-400 block mb-1">Piattaforma</label>
                                 <select class="flag-select" id="profile-platform">
-                                    ${['PC', 'PS5', 'Xbox', 'PS4', 'Nintendo Switch'].map(p => `
+                                    ${['Crossplay', 'PC', 'PS5', 'Xbox'].map(p => `
                                         <option value="${p}" ${driverData?.platform === p ? 'selected' : ''}>${p}</option>
                                     `).join('')}
                                 </select>
@@ -2261,36 +2220,32 @@ function showAddRaceModal() {
     openModal('Aggiungi Nuova Gara', html);
 }
 
-function saveRace() {
-    const name = document.getElementById('race-name')?.value;
+async function saveRace() {
+    if (!supabase || state.currentRole !== 'admin') return showToast('Accesso Admin richiesto.', 'error');
+    const name = document.getElementById('race-name')?.value?.trim();
     const circuit = document.getElementById('race-circuit')?.value;
     const date = document.getElementById('race-date')?.value;
-    const time = document.getElementById('race-time')?.value;
-    const laps = parseInt(document.getElementById('race-laps')?.value) || 50;
-    const status = document.getElementById('race-status')?.value;
-    
-    if (!name || !circuit || !date) {
-        showToast('Compila tutti i campi obbligatori.', 'error');
-        return;
-    }
-    
+    const time = document.getElementById('race-time')?.value || '22:30';
+    const laps = parseInt(document.getElementById('race-laps')?.value) || null;
+    const status = document.getElementById('race-status')?.value || 'upcoming';
+    if (!name || !circuit || !date) return showToast('Compila tutti i campi obbligatori.', 'error');
     const circuitData = F1_CIRCUITS.find(c => c.name === circuit);
-    const newRace = {
-        id: state.races.length + 1,
+    const payload = {
+        season_id: state.season.id,
+        round: state.races.length + 1,
         name,
         circuit,
         country: circuitData?.country || 'Italia',
-        date,
-        time: time || '15:00',
+        race_date: date,
+        race_time: time,
         status,
-        seasonId: state.season.id,
-        round: state.races.length + 1,
         laps
     };
-    
-    state.races.push(newRace);
+    const { error } = await supabase.from('races').insert(payload);
+    if (error) return showToast('Errore salvataggio gara: ' + error.message, 'error');
+    await syncWithSupabase();
     closeModal();
-    showToast('Gara aggiunta con successo!', 'success');
+    showToast('Gara salvata nel database.', 'success');
     renderCalendar();
 }
 
@@ -2343,53 +2298,36 @@ function showAddResultModal(raceId) {
     openModal(`Inserisci Risultati — ${race.name}`, html);
 }
 
-function saveResults(raceId) {
+async function saveResults(raceId) {
+    if (!supabase || state.currentRole !== 'admin') return showToast('Accesso Admin richiesto.', 'error');
     const inputs = document.querySelectorAll('[data-driver]');
-    const results = [];
-    let hasData = false;
-    
+    const byDriver = new Map();
     inputs.forEach(input => {
-        const driverId = parseInt(input.dataset.driver);
+        const driverId = Number(input.dataset.driver);
+        if (!byDriver.has(driverId)) byDriver.set(driverId, { race_id: raceId, driver_id: driverId, position: null, pole: false, fastest_lap: false, dnf: false, penalty_seconds: 0 });
+        const row = byDriver.get(driverId);
         const field = input.dataset.field;
-        if (input.type === 'checkbox') {
-            if (!results.find(r => r.driverId === driverId)) {
-                results.push({ driverId, raceId, position: null, pole: false, fastestLap: false, dnf: false, penalty: 0 });
-            }
-            const result = results.find(r => r.driverId === driverId);
-            result[field] = input.checked;
-            if (input.checked) hasData = true;
-        } else if (input.type === 'number') {
-            const val = input.value ? parseInt(input.value) : null;
-            if (!results.find(r => r.driverId === driverId)) {
-                results.push({ driverId, raceId, position: null, pole: false, fastestLap: false, dnf: false, penalty: 0 });
-            }
-            const result = results.find(r => r.driverId === driverId);
-            result[field] = val;
-            if (val !== null) hasData = true;
-        }
+        if (field === 'position') row.position = input.value ? Number(input.value) : null;
+        if (field === 'pole') row.pole = input.checked;
+        if (field === 'fastestLap') row.fastest_lap = input.checked;
+        if (field === 'dnf') row.dnf = input.checked;
+        if (field === 'penalty') row.penalty_seconds = input.value ? Number(input.value) : 0;
     });
-    
-    if (!hasData) {
-        showToast('Inserisci almeno un risultato.', 'error');
-        return;
-    }
-    
-    // Remove existing results for this race
-    state.raceResults = state.raceResults.filter(r => r.raceId !== raceId);
-    
-    // Add new results
-    results.forEach(r => {
-        state.raceResults.push(r);
+    const scoring = state.scoringSystem?.points?.length ? state.scoringSystem : DEFAULT_SCORING;
+    const rows = [...byDriver.values()].filter(r => r.position !== null || r.pole || r.fastest_lap || r.dnf);
+    if (!rows.length) return showToast('Inserisci almeno un risultato.', 'error');
+    rows.forEach(r => {
+        const base = r.position ? (scoring.points[r.position - 1] || 0) : 0;
+        r.points = base + (r.pole ? scoring.poleBonus : 0) + (r.fastest_lap ? scoring.fastestLapBonus : 0);
     });
-    
-    // Auto-update race status
-    const race = state.races.find(r => r.id === raceId);
-    if (race) {
-        race.status = 'completed';
-    }
-    
+    const del = await supabase.from('race_results').delete().eq('race_id', raceId);
+    if (del.error) return showToast('Errore aggiornamento risultati: ' + del.error.message, 'error');
+    const ins = await supabase.from('race_results').insert(rows);
+    if (ins.error) return showToast('Errore salvataggio risultati: ' + ins.error.message, 'error');
+    await supabase.from('races').update({ status: 'completed' }).eq('id', raceId);
+    await syncWithSupabase();
     closeModal();
-    showToast('Risultati salvati! Classifiche e statistiche aggiornate.', 'success');
+    showToast('Risultati salvati nel database.', 'success');
     renderGrandPrix(raceId);
 }
 
@@ -2421,13 +2359,13 @@ function showAddDriverModal() {
             <div>
                 <label class="text-sm text-gray-400 block mb-1">Scuderia</label>
                 <select class="flag-select" id="driver-team">
-                    ${state.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                    <option value="">Nessuna scuderia</option>${state.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
                 </select>
             </div>
             <div>
                 <label class="text-sm text-gray-400 block mb-1">Piattaforma</label>
                 <select class="flag-select" id="driver-platform">
-                    ${['PC', 'PS5', 'Xbox', 'PS4', 'Nintendo Switch'].map(p => `<option value="${p}">${p}</option>`).join('')}
+                    ${['Crossplay', 'PC', 'PS5', 'Xbox'].map(p => `<option value="${p}">${p}</option>`).join('')}
                 </select>
             </div>
             <button onclick="saveDriver()" class="btn-f1 w-full justify-center py-3"><i class="fas fa-save mr-2"></i> Aggiungi Pilota</button>
@@ -2436,35 +2374,23 @@ function showAddDriverModal() {
     openModal('Aggiungi Nuovo Pilota', html);
 }
 
-function saveDriver() {
-    const name = document.getElementById('driver-name')?.value;
-    const surname = document.getElementById('driver-surname')?.value;
-    const number = parseInt(document.getElementById('driver-number')?.value) || 0;
-    const nationality = document.getElementById('driver-nationality')?.value;
-    const teamId = parseInt(document.getElementById('driver-team')?.value);
-    const platform = document.getElementById('driver-platform')?.value;
-    
-    if (!name || !surname) {
-        showToast('Inserisci nome e cognome.', 'error');
-        return;
-    }
-    
+async function saveDriver() {
+    if (!supabase || state.currentRole !== 'admin') return showToast('Accesso Admin richiesto.', 'error');
+    const name = document.getElementById('driver-name')?.value?.trim();
+    const surname = document.getElementById('driver-surname')?.value?.trim() || '';
+    const number = Number(document.getElementById('driver-number')?.value);
+    const nationality = document.getElementById('driver-nationality')?.value || 'Italia';
+    const teamIdValue = document.getElementById('driver-team')?.value;
+    const platform = document.getElementById('driver-platform')?.value || 'Crossplay';
+    if (!name || !number) return showToast('Inserisci nome e numero del pilota.', 'error');
+    const teamId = teamIdValue ? Number(teamIdValue) : null;
     const team = state.teams.find(t => t.id === teamId);
-    const newDriver = {
-        id: state.drivers.length + 1,
-        name,
-        surname,
-        number,
-        nationality,
-        teamId,
-        platform,
-        avatar: `https://picsum.photos/200?random=${Math.floor(Math.random() * 1000)}`,
-        color: team?.color || '#666'
-    };
-    
-    state.drivers.push(newDriver);
+    const payload = { name, surname, number, nationality, team_id: teamId, platform, avatar: null, color: team?.color || '#e10600', active: true };
+    const { error } = await supabase.from('drivers').insert(payload);
+    if (error) return showToast('Errore salvataggio pilota: ' + error.message, 'error');
+    await syncWithSupabase();
     closeModal();
-    showToast('Pilota aggiunto con successo!', 'success');
+    showToast('Pilota salvato nel database.', 'success');
     renderDrivers();
 }
 
@@ -2491,27 +2417,17 @@ function showAddTeamModal() {
     openModal('Aggiungi Nuova Scuderia', html);
 }
 
-function saveTeam() {
-    const name = document.getElementById('team-name')?.value;
+async function saveTeam() {
+    if (!supabase || state.currentRole !== 'admin') return showToast('Accesso Admin richiesto.', 'error');
+    const name = document.getElementById('team-name')?.value?.trim();
     const color = document.getElementById('team-color')?.value || '#e10600';
-    const country = document.getElementById('team-country')?.value;
-    
-    if (!name) {
-        showToast('Inserisci il nome della scuderia.', 'error');
-        return;
-    }
-    
-    const newTeam = {
-        id: state.teams.length + 1,
-        name,
-        color,
-        logo: `https://picsum.photos/100?random=${Math.floor(Math.random() * 1000)}`,
-        country
-    };
-    
-    state.teams.push(newTeam);
+    const country = document.getElementById('team-country')?.value || 'Italia';
+    if (!name) return showToast('Inserisci il nome della scuderia.', 'error');
+    const { error } = await supabase.from('teams').insert({ name, color, country, logo: null });
+    if (error) return showToast('Errore salvataggio scuderia: ' + error.message, 'error');
+    await syncWithSupabase();
     closeModal();
-    showToast('Scuderia aggiunta con successo!', 'success');
+    showToast('Scuderia salvata nel database.', 'success');
     renderTeams();
 }
 
@@ -2542,31 +2458,18 @@ function showAddNewsModal() {
     openModal('Nuova News', html);
 }
 
-function saveNews() {
-    const title = document.getElementById('news-title')?.value;
-    const category = document.getElementById('news-category')?.value;
-    const excerpt = document.getElementById('news-excerpt')?.value;
-    const content = document.getElementById('news-content')?.value;
-    
-    if (!title) {
-        showToast('Inserisci un titolo.', 'error');
-        return;
-    }
-    
-    const newNews = {
-        id: state.news.length + 1,
-        title,
-        date: new Date().toISOString().split('T')[0],
-        category,
-        excerpt: excerpt || title,
-        content: content || excerpt || title,
-        image: `https://picsum.photos/800/400?random=${Math.floor(Math.random() * 1000)}`,
-        author: state.currentUser?.name || 'Admin'
-    };
-    
-    state.news.unshift(newNews);
+async function saveNews() {
+    if (!supabase || state.currentRole !== 'admin') return showToast('Accesso Admin richiesto.', 'error');
+    const title = document.getElementById('news-title')?.value?.trim();
+    const category = document.getElementById('news-category')?.value || 'Annuncio';
+    const excerpt = document.getElementById('news-excerpt')?.value?.trim();
+    const content = document.getElementById('news-content')?.value?.trim();
+    if (!title) return showToast('Inserisci un titolo.', 'error');
+    const { error } = await supabase.from('news').insert({ title, category, excerpt: excerpt || title, content: content || excerpt || title, image: null, author: state.currentUser?.name || 'Admin' });
+    if (error) return showToast('Errore pubblicazione news: ' + error.message, 'error');
+    await syncWithSupabase();
     closeModal();
-    showToast('News pubblicata con successo!', 'success');
+    showToast('News pubblicata nel database.', 'success');
     renderNews();
 }
 
@@ -2842,37 +2745,30 @@ document.addEventListener('DOMContentLoaded', function() {
 async function syncWithSupabase() {
     if (!supabase) return;
     try {
-        const [driversRes, teamsRes, racesRes, resultsRes, newsRes, seasonsRes] = await Promise.all([
+        const [driversRes, teamsRes, racesRes, resultsRes, newsRes, seasonsRes, scoringRes] = await Promise.all([
             supabase.from('drivers').select('*').order('id'),
             supabase.from('teams').select('*').order('id'),
             supabase.from('races').select('*').order('round'),
             supabase.from('race_results').select('*').order('id'),
             supabase.from('news').select('*').order('published_at', { ascending: false }),
-            supabase.from('seasons').select('*').eq('is_active', true).limit(1)
+            supabase.from('seasons').select('*').eq('is_active', true).limit(1),
+            supabase.from('scoring_settings').select('*').limit(1)
         ]);
-        if (teamsRes.data?.length) state.teams = teamsRes.data.map(t => ({...t}));
-        if (driversRes.data?.length) state.drivers = driversRes.data.map(d => ({
-            ...d, teamId: d.team_id, platform: d.platform || 'Crossplay'
-        }));
-        if (racesRes.data?.length) state.races = racesRes.data.map(r => ({
-            ...r, seasonId: r.season_id, date: r.race_date, time: r.race_time
-        }));
-        if (resultsRes.data?.length) state.raceResults = resultsRes.data.map(r => ({
-            ...r, raceId: r.race_id, driverId: r.driver_id,
-            gridPosition: r.grid_position, fastestLap: r.fastest_lap,
-            penaltySeconds: r.penalty_seconds
-        }));
-        if (newsRes.data?.length) state.news = newsRes.data.map(n => ({
-            ...n, date: n.published_at?.slice(0,10)
-        }));
-        if (seasonsRes.data?.[0]) state.season = {
-            id: seasonsRes.data[0].id, name: seasonsRes.data[0].name,
-            year: seasonsRes.data[0].year, isActive: seasonsRes.data[0].is_active
-        };
+        const errors = [driversRes, teamsRes, racesRes, resultsRes, newsRes, seasonsRes, scoringRes].map(x => x.error).filter(Boolean);
+        if (errors.length) throw errors[0];
+        state.teams = (teamsRes.data || []).map(t => ({ ...t }));
+        state.drivers = (driversRes.data || []).map(d => ({ ...d, teamId: d.team_id, platform: d.platform || 'Crossplay' }));
+        state.races = (racesRes.data || []).map(r => ({ ...r, seasonId: r.season_id, date: r.race_date, time: r.race_time }));
+        state.raceResults = (resultsRes.data || []).map(r => ({ ...r, raceId: r.race_id, driverId: r.driver_id, gridPosition: r.grid_position, fastestLap: r.fastest_lap, penaltySeconds: r.penalty_seconds }));
+        state.news = (newsRes.data || []).map(n => ({ ...n, date: n.published_at?.slice(0, 10) }));
+        if (seasonsRes.data?.[0]) state.season = { id: seasonsRes.data[0].id, name: seasonsRes.data[0].name, year: seasonsRes.data[0].year, isActive: seasonsRes.data[0].is_active };
+        if (scoringRes.data?.[0]) state.scoringSystem = { points: scoringRes.data[0].position_points, poleBonus: Number(scoringRes.data[0].pole_bonus), fastestLapBonus: Number(scoringRes.data[0].fastest_lap_bonus), attendanceBonus: Number(scoringRes.data[0].attendance_bonus) };
         renderHome();
-        console.log('✅ Dati sincronizzati da Supabase');
+        if (state.currentPage && state.currentPage !== 'home') navigate(state.currentPage);
+        console.log('✅ Dati reali sincronizzati da Supabase');
     } catch (err) {
         console.warn('⚠️ Sincronizzazione Supabase non riuscita:', err);
+        showToast('Impossibile caricare i dati dal database.', 'error');
     }
 }
 

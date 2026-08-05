@@ -1,4 +1,4 @@
-const CACHE_NAME = 'srt-racing-v3';
+const CACHE_NAME = 'srt-racing-v4';
 const ASSETS = [
   './',
   './index.html',
