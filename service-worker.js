@@ -1,4 +1,4 @@
-const CACHE = 'srt-season2-v3-20260805';
+const CACHE='srt-professional-v4-20260806';
 
 const CORE = [
   '/',
