@@ -1,4 +1,4 @@
-const CACHE='srt-v5b-race-control-20260806';
+const CACHE='srt-v5c-classifiche-profili-20260806';
 
 const CORE = [
   '/',
