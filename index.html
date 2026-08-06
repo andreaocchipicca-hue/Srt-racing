@@ -169,7 +169,7 @@
   <div class="hero">
     <img src="icon-512.png" alt="Logo SRT">
     <div>
-      <div class="eyebrow">Season 2 • Versione 5D — Disciplina e Hall of Fame</div>
+      <div class="eyebrow">Season 2 • Versione 5D.1 — 22 piloti e movimento classifica</div>
       <h1>SRT Racing</h1>
       <p id="championshipInfo">Caricamento delle informazioni del campionato...</p>
       <div class="hero-actions">
@@ -332,6 +332,10 @@
       <div class="card stat-card"><div class="big" id="adminCountTeams">0</div><div class="caption">Scuderie</div></div>
       <div class="card stat-card"><div class="big" id="adminCountRaces">0</div><div class="caption">Gare</div></div>
       <div class="card stat-card"><div class="big" id="adminCountNews">0</div><div class="caption">News</div></div>
+    </div>
+    <div class="row" style="margin:14px 0">
+      <button class="btn alt" id="rebuildStandingsBtn">Ricostruisci movimento classifica</button>
+      <span class="muted">Usalo dopo aver importato o corretto vecchi GP.</span>
     </div>
     <div class="grid two">
       <div class="card"><h3>Stato campionato</h3><div id="adminSeasonState" class="muted">Caricamento...</div></div>
@@ -545,7 +549,7 @@ async function loadAll(){
 function licenseColor(points){return points>=21?'license-green':points>=11?'license-yellow':'license-red'}
 function movementForDriver(driverId){
  const rounds=[...new Set(state.standingsHistory.map(x=>x.round))].sort((a,b)=>a-b);
- if(rounds.length<2)return {text:'—',cls:'movement-flat'};
+ if(rounds.length<2)return {text:'Nuovo',cls:'movement-flat'};
  const last=rounds[rounds.length-1],prev=rounds[rounds.length-2];
  const a=state.standingsHistory.find(x=>x.round===last&&x.driver_id==driverId);
  const b=state.standingsHistory.find(x=>x.round===prev&&x.driver_id==driverId);
@@ -637,12 +641,12 @@ function render(){
 
  const f=$('#settingsForm');if(f){for(const [k,v]of Object.entries(s)){if(f.elements[k])f.elements[k].value=typeof v==='boolean'?String(v):(v??'')}}
 
- const scoring=state.scoring||{position_points:[25,18,15,12,10,8,6,5,4,3,2,1,0,0,0,0,0,0,0,0],pole_bonus:1,fastest_lap_bonus:1,attendance_bonus:0,dnf_keeps_points:false};
+ const scoring=state.scoring||{position_points:[25,18,15,12,10,8,6,5,4,3,2,1,0,0,0,0,0,0,0,0,0,0],pole_bonus:1,fastest_lap_bonus:1,attendance_bonus:0,dnf_keeps_points:false};
  let posPoints=Array.isArray(scoring.position_points)?[...scoring.position_points]:[25,18,15,12,10,8,6,5,4,3,2,1];
- while(posPoints.length<20)posPoints.push(0);
+ while(posPoints.length<22)posPoints.push(0);
  const pg=$('#positionPointsGrid');
  if(pg){
-   pg.innerHTML=posPoints.slice(0,20).map((p,i)=>`<div class="field"><label>${i+1}° posto</label><input name="pos_${i+1}" type="number" step="0.5" value="${Number(p||0)}"></div>`).join('');
+   pg.innerHTML=posPoints.slice(0,22).map((p,i)=>`<div class="field"><label>${i+1}° posto</label><input name="pos_${i+1}" type="number" step="0.5" value="${Number(p||0)}"></div>`).join('');
    const sf=$('#scoringForm');
    sf.elements.pole_bonus.value=scoring.pole_bonus??1;
    sf.elements.fastest_lap_bonus.value=scoring.fastest_lap_bonus??1;
@@ -714,7 +718,7 @@ $('#scoringForm').onsubmit=async e=>{
    if(!state.season)throw new Error('Nessuna stagione attiva.');
    const f=e.target;
    const position_points=[];
-   for(let i=1;i<=20;i++)position_points.push(Number(f.elements[`pos_${i}`].value||0));
+   for(let i=1;i<=22;i++)position_points.push(Number(f.elements[`pos_${i}`].value||0));
    const payload={
      season_id:state.season.id,
      position_points,
@@ -740,6 +744,63 @@ $('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.f
 $('#driverForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'drivers',o=>({...o,level:Number(o.level||100),team_id:o.team_id?Number(o.team_id):null}))}catch(x){msg($('#adminMsg'),x.message)}};
 $('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');await insertForm(e.target,'races',o=>({...o,round:Number(o.round),season_id:state.season.id,race_time:o.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
 
+
+
+async function rebuildStandingsHistory(showMessage=true){
+ try{
+  if(!state.profile || state.profile.role!=='admin')throw new Error('Operazione riservata all’Admin.');
+  if(!state.season)throw new Error('Nessuna stagione attiva.');
+
+  const publishedRaces=[...state.races]
+   .filter(r=>r.results_status==='published' || state.results.some(x=>x.race_id==r.id && x.is_published===true))
+   .sort((a,b)=>Number(a.round)-Number(b.round));
+
+  const del=await db.from('standings_history').delete().eq('season_id',state.season.id);
+  if(del.error)throw del.error;
+
+  const cumulative=new Map(state.drivers.map(d=>[d.id,0]));
+  const rows=[];
+
+  for(const race of publishedRaces){
+   const rr=state.results.filter(x=>x.race_id==race.id && x.is_published===true);
+   rr.forEach(result=>{
+    cumulative.set(result.driver_id,Number(cumulative.get(result.driver_id)||0)+Number(result.points||0));
+   });
+
+   const ranking=[...state.drivers]
+    .map(driver=>({driver,points:Number(cumulative.get(driver.id)||0)}))
+    .sort((a,b)=>b.points-a.points || a.driver.name.localeCompare(b.driver.name,'it'));
+
+   ranking.forEach((item,index)=>{
+    rows.push({
+     season_id:state.season.id,
+     race_id:race.id,
+     round:Number(race.round),
+     driver_id:item.driver.id,
+     position:index+1,
+     points:item.points
+    });
+   });
+  }
+
+  if(rows.length){
+   const ins=await db.from('standings_history').upsert(rows,{onConflict:'race_id,driver_id'});
+   if(ins.error)throw ins.error;
+  }
+
+  const sh=await db.from('standings_history').select('*').eq('season_id',state.season.id).order('round');
+  if(sh.error)throw sh.error;
+  state.standingsHistory=sh.data||[];
+  render();
+
+  if(showMessage)msg($('#adminMsg'),'Movimento classifica ricostruito correttamente.',true);
+  return true;
+ }catch(e){
+  if(showMessage)msg($('#adminMsg'),e.message);
+  return false;
+ }
+}
+window.rebuildStandingsHistory=rebuildStandingsHistory;
 
 function raceControlScoring(){
  const s=state.scoring||{};
@@ -915,10 +976,8 @@ async function saveRaceControl(isPublished){
 
    if(isPublished){
      await loadAll();
-     const ds=buildDriverStats();
-     const history=ds.map((x,i)=>({season_id:state.season.id,race_id:race.id,round:race.round,driver_id:x.driver.id,position:i+1,points:x.points}));
-     const hq=await db.from('standings_history').upsert(history,{onConflict:'race_id,driver_id'});
-     if(hq.error)throw hq.error;
+     const rebuilt=await rebuildStandingsHistory(false);
+     if(!rebuilt)throw new Error('Impossibile ricostruire il movimento classifica.');
    }
    msg($('#adminMsg'),isPublished?'GP pubblicato: classifiche e statistiche aggiornate.':'Bozza salvata correttamente.',true);
    await loadAll();
@@ -933,10 +992,13 @@ async function cancelRaceControl(){
  if(del.error){msg($('#adminMsg'),del.error.message);return}
  const upd=await db.from('races').update({results_status:'empty',result_notes:null,published_at:null,status:'upcoming'}).eq('id',race.id);
  if(upd.error){msg($('#adminMsg'),upd.error.message);return}
- msg($('#adminMsg'),'GP annullato. Risultati eliminati e classifiche ricalcolate.',true);
  await loadAll();
+ await rebuildStandingsHistory(false);
+ msg($('#adminMsg'),'GP annullato. Risultati eliminati e movimento classifica ricalcolato.',true);
 }
 
+
+$('#rebuildStandingsBtn').onclick=()=>rebuildStandingsHistory(true);
 
 $('#closeSeasonBtn').onclick=async()=>{
  if(!confirm('Concludere la stagione e assegnare i titoli nella Hall of Fame?'))return;
