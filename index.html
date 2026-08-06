@@ -115,6 +115,31 @@
       .profile-avatar{width:120px;height:120px}
       .profile-stats,.record-grid,.podium{grid-template-columns:1fr 1fr}
     }
+
+    .license-wrap{margin-top:12px}
+    .license-bar{height:14px;border-radius:999px;background:#24242f;overflow:hidden;border:1px solid var(--line)}
+    .license-fill{height:100%;transition:width .25s ease}
+    .license-green{background:linear-gradient(90deg,#1fca68,#79e99f)}
+    .license-yellow{background:linear-gradient(90deg,#d4a72c,#ffe27a)}
+    .license-red{background:linear-gradient(90deg,#b91c1c,#ff6b6b)}
+    .discipline-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .warning-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:#2b2410;color:#ffe59a;border:1px solid #66531b;font-size:12px;font-weight:800}
+    .movement-up{color:#68e391;font-weight:900}.movement-down{color:#ff7772;font-weight:900}.movement-flat{color:var(--muted)}
+    .team-logo-mini{width:28px;height:28px;object-fit:contain;vertical-align:middle;margin-right:7px}
+    .podium-stage{display:grid;grid-template-columns:1fr 1.08fr 1fr;align-items:end;gap:10px;margin-top:14px}
+    .podium-step{border-radius:16px 16px 8px 8px;border:1px solid var(--line);background:linear-gradient(180deg,#1a1a23,#111117);text-align:center;padding:14px}
+    .podium-step.first{min-height:190px;background:linear-gradient(180deg,rgba(231,196,91,.22),#111117)}
+    .podium-step.second{min-height:155px}.podium-step.third{min-height:130px}
+    .podium-medal{font-size:28px}.podium-name{font-size:18px;font-weight:950;margin-top:8px}
+    .hof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .hof-card{position:relative;overflow:hidden}
+    .hof-card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(225,6,0,.08),transparent);pointer-events:none}
+    .champion-crown{font-size:32px}
+    @media(max-width:800px){
+      .discipline-grid,.hof-grid{grid-template-columns:1fr}
+      .podium-stage{grid-template-columns:1fr}
+      .podium-step.first,.podium-step.second,.podium-step.third{min-height:auto}
+    }
   </style>
 </head>
 <body>
@@ -132,7 +157,7 @@
     <button data-page="drivers">Piloti</button>
     <button data-page="calendar">Calendario</button>
     <button data-page="standings">Classifiche</button>
-    <button data-page="statistics">Statistiche</button><button data-page="profiles">Profili</button><button data-page="archive">Archivio GP</button>
+    <button data-page="statistics">Statistiche</button><button data-page="profiles">Profili</button><button data-page="archive">Archivio GP</button><button data-page="halloffame">Hall of Fame</button>
     <button data-page="news">News</button><button data-page="regulations">Regolamento</button>
     <button data-page="login" id="loginNav">Login</button>
     <button data-page="admin" id="adminNav" class="hidden">Admin</button>
@@ -144,7 +169,7 @@
   <div class="hero">
     <img src="icon-512.png" alt="Logo SRT">
     <div>
-      <div class="eyebrow">Season 2 • Versione 5C — Classifiche e Profili</div>
+      <div class="eyebrow">Season 2 • Versione 5D — Disciplina e Hall of Fame</div>
       <h1>SRT Racing</h1>
       <p id="championshipInfo">Caricamento delle informazioni del campionato...</p>
       <div class="hero-actions">
@@ -242,6 +267,12 @@
         </div>
       </div>
     </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Disciplina</h3>
+      <div class="row"><span id="profileWarnings" class="warning-badge">0 warning</span><span id="profileLicenseText" class="chip">30/30 punti</span></div>
+      <div class="license-wrap"><div class="license-bar"><div id="profileLicenseFill" class="license-fill license-green" style="width:100%"></div></div></div>
+      <div id="profileDisciplineHistory" class="admin-list"></div>
+    </div>
     <div style="margin-top:16px"><h3>Storico risultati</h3><div class="table-wrap"><table><thead><tr><th>GP</th><th>Pos.</th><th>Punti</th><th>Pole</th><th>GV</th><th>DNF</th><th>Penalità</th></tr></thead><tbody id="profileResultsBody"></tbody></table></div></div>
   </div>
   <div id="profilesEmpty" class="card empty"><strong>Nessun pilota disponibile</strong></div>
@@ -251,6 +282,13 @@
   <div class="section-head"><div><h2>Archivio Gran Premi</h2><p>Podio, pole, giro veloce e risultati completi.</p></div></div>
   <div id="gpArchive" class="gp-archive"></div>
   <div id="archiveEmpty" class="card empty"><strong>Nessun GP pubblicato</strong></div>
+</section>
+
+
+<section id="halloffame" class="section">
+  <div class="section-head"><div><h2>Hall of Fame</h2><p>Campioni e record storici del campionato SRT.</p></div></div>
+  <div id="hallOfFameGrid" class="hof-grid"></div>
+  <div id="hallOfFameEmpty" class="card empty"><strong>Nessun titolo assegnato</strong>La Hall of Fame si popolerà quando una stagione verrà conclusa.</div>
 </section>
 
 <section id="news" class="section">
@@ -280,7 +318,7 @@
   <div class="admin-tabs">
     <button data-admin="dashboardPane" class="active">Dashboard</button><button data-admin="settingsPane">Impostazioni</button><button data-admin="scoringPane">Punteggi</button>
     <button data-admin="teamPane">Scuderie</button>
-    <button data-admin="newsPane">News</button><button data-admin="regulationsPane">Regolamento</button>
+    <button data-admin="newsPane">News</button><button data-admin="regulationsPane">Regolamento</button><button data-admin="disciplinePane">Disciplina</button>
     <button data-admin="driverPane">Piloti</button>
     <button data-admin="racePane">Gare</button>
     <button data-admin="resultPane">Race Control</button>
@@ -315,7 +353,7 @@
       <div class="field"><label>Stato</label><select name="status"><option>Preparazione</option><option>Iscrizioni aperte</option><option>In corso</option><option>Conclusa</option></select></div>
       <div class="field"><label>Iscrizioni</label><select name="registration_open"><option value="true">Aperte</option><option value="false">Chiuse</option></select></div>
       <div class="field full"><label>Descrizione</label><textarea name="description"></textarea></div>
-      <button class="btn">Salva impostazioni</button>
+      <div class="row"><button class="btn">Salva impostazioni</button><button type="button" class="btn alt" id="closeSeasonBtn">Concludi stagione e assegna titoli</button></div>
     </form>
   </div>
 
@@ -365,6 +403,30 @@
       <div class="field"><label>Contenuto</label><textarea name="content" style="min-height:320px" placeholder="Inserisci qui il regolamento completo..."></textarea></div><br>
       <button class="btn">Salva regolamento</button>
     </form>
+  </div>
+
+
+  <div id="disciplinePane" class="admin-pane card">
+    <h3>Gestione disciplinare</h3>
+    <div class="discipline-grid">
+      <form id="warningForm" class="card">
+        <h3>Aggiungi warning</h3>
+        <div class="field"><label>Pilota</label><select name="driver_id" class="driverSelect"></select></div><br>
+        <div class="field"><label>Gran Premio</label><select name="race_id" class="raceSelect"></select></div><br>
+        <div class="field"><label>Motivazione</label><textarea name="reason" required></textarea></div><br>
+        <button class="btn">Aggiungi warning</button>
+      </form>
+      <form id="licenseForm" class="card">
+        <h3>Modifica patente</h3>
+        <div class="field"><label>Pilota</label><select name="driver_id" class="driverSelect"></select></div><br>
+        <div class="field"><label>Gran Premio</label><select name="race_id" class="raceSelect"></select></div><br>
+        <div class="field"><label>Operazione</label><select name="operation"><option value="subtract">Togli punti</option><option value="restore">Restituisci punti</option></select></div><br>
+        <div class="field"><label>Punti</label><input name="points" type="number" min="1" max="30" value="1"></div><br>
+        <div class="field"><label>Motivazione</label><textarea name="reason" required></textarea></div><br>
+        <button class="btn">Aggiorna patente</button>
+      </form>
+    </div>
+    <div id="disciplineAdminList" class="admin-list"></div>
   </div>
 
   <div id="driverPane" class="admin-pane card">
@@ -445,7 +507,7 @@
 const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
 const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let state={teams:[],drivers:[],races:[],results:[],news:[],regulations:null,scoring:null,season:null,settings:null,user:null,profile:null,raceControlRaceId:null};
+let state={teams:[],drivers:[],races:[],results:[],news:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function go(id){$$('.section').forEach(x=>x.classList.toggle('active',x.id===id));$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));scrollTo({top:0,behavior:'smooth'})}window.go=go;
@@ -458,7 +520,7 @@ function fmtDate(v){return v?new Date(v+'T12:00:00').toLocaleDateString('it-IT')
 
 async function loadAll(){
  try{
-  const [se,te,dr,ra,re,ne,cs,rg,sc]=await Promise.all([
+  const [se,te,dr,ra,re,ne,cs,rg,sc,di,hf,sh]=await Promise.all([
    db.from('seasons').select('*').eq('is_active',true).limit(1).maybeSingle(),
    db.from('teams').select('*').order('name'),
    db.from('drivers').select('*').order('name'),
@@ -467,14 +529,35 @@ async function loadAll(){
    db.from('news').select('*').order('published_at',{ascending:false}),
    db.from('championship_settings').select('*').limit(1).maybeSingle(),
    db.from('regulations').select('*').limit(1).maybeSingle(),
-   db.from('scoring_settings').select('*').limit(1).maybeSingle()
+   db.from('scoring_settings').select('*').limit(1).maybeSingle(),
+   db.from('discipline_events').select('*').order('created_at',{ascending:false}),
+   db.from('hall_of_fame').select('*').order('season_name',{ascending:false}),
+   db.from('standings_history').select('*').order('round')
   ]);
-  for(const x of [se,te,dr,ra,re,ne,cs,rg,sc])if(x.error)throw x.error;
-  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.news=ne.data||[];state.settings=cs.data||null;state.regulations=rg.data||null;state.scoring=sc.data||null;
+  for(const x of [se,te,dr,ra,re,ne,cs,rg,sc,di,hf,sh])if(x.error)throw x.error;
+  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.news=ne.data||[];state.settings=cs.data||null;state.regulations=rg.data||null;state.scoring=sc.data||null;state.discipline=di.data||[];state.hallOfFame=hf.data||[];state.standingsHistory=sh.data||[];
   render();
  }catch(e){console.error(e);msg($('#adminMsg'),'Errore caricamento: '+e.message)}
 }
 
+
+
+function licenseColor(points){return points>=21?'license-green':points>=11?'license-yellow':'license-red'}
+function movementForDriver(driverId){
+ const rounds=[...new Set(state.standingsHistory.map(x=>x.round))].sort((a,b)=>a-b);
+ if(rounds.length<2)return {text:'—',cls:'movement-flat'};
+ const last=rounds[rounds.length-1],prev=rounds[rounds.length-2];
+ const a=state.standingsHistory.find(x=>x.round===last&&x.driver_id==driverId);
+ const b=state.standingsHistory.find(x=>x.round===prev&&x.driver_id==driverId);
+ if(!a||!b)return {text:'—',cls:'movement-flat'};
+ const diff=b.position-a.position;
+ return diff>0?{text:`▲ +${diff}`,cls:'movement-up'}:diff<0?{text:`▼ ${diff}`,cls:'movement-down'}:{text:'—',cls:'movement-flat'};
+}
+function driverDiscipline(driverId){
+ const d=state.drivers.find(x=>x.id==driverId);
+ const events=state.discipline.filter(x=>x.driver_id==driverId);
+ return {points:d?.license_points??30,warnings:events.filter(x=>x.event_type==='warning').length,events};
+}
 
 function publishedResults(){return state.results.filter(r=>r.is_published!==false)}
 function buildDriverStats(){
@@ -495,6 +578,11 @@ function renderProfile(id){
  $('#profileAvatar').src=d.avatar||'icon-192.png';$('#profileTeam').textContent=teamName(d.team_id);$('#profileName').textContent=driverName(d.id);
  $('#profileEaId').textContent='EA ID: '+(d.ea_id||'—');$('#profileLevel').textContent='Livello '+(d.level||100);$('#profilePlatform').textContent=d.platform||'Crossplay';
  $('#profilePoints').textContent=s?.points||0;$('#profileWins').textContent=s?.wins||0;$('#profilePodiums').textContent=s?.podiums||0;$('#profilePoles').textContent=s?.poles||0;
+ const disc=driverDiscipline(d.id);
+ $('#profileWarnings').textContent=disc.warnings+' warning';
+ $('#profileLicenseText').textContent=disc.points+'/30 punti';
+ const fill=$('#profileLicenseFill');fill.style.width=(disc.points/30*100)+'%';fill.className='license-fill '+licenseColor(disc.points);
+ $('#profileDisciplineHistory').innerHTML=disc.events.map(ev=>`<div class="admin-item"><span class="grow"><strong>${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti tolti':'Punti restituiti'}</strong><br><span class="muted">${esc(ev.reason)}${ev.race_id?' • '+esc(state.races.find(r=>r.id==ev.race_id)?.name||'GP'):''}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
  $('#profileResultsBody').innerHTML=(s?.results||[]).sort((a,b)=>Number(state.races.find(r=>r.id==a.race_id)?.round||0)-Number(state.races.find(r=>r.id==b.race_id)?.round||0)).map(r=>{const gp=state.races.find(x=>x.id==r.race_id);return `<tr><td>${esc(gp?.name||'GP')}</td><td>${r.position??'—'}</td><td><strong>${Number(r.points||0)}</strong></td><td>${r.pole?'Sì':'—'}</td><td>${r.fastest_lap?'Sì':'—'}</td><td>${r.dnf?'Sì':'—'}</td><td>${Number(r.penalty_points||0)} pt / ${Number(r.penalty_seconds||0)} s</td></tr>`}).join('')||'<tr><td colspan="7">Nessun risultato.</td></tr>'
 }
 window.renderProfile=renderProfile;
@@ -531,7 +619,7 @@ function render(){
 
  const driverStats=buildDriverStats(),teamStats=buildTeamStats(driverStats),published=publishedResults();
  const leader=driverStats[0]?.points||0,teamLeader=teamStats[0]?.points||0;
- $('#standingsBody').innerHTML=driverStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td><button class="driver-link" onclick="go('profiles');document.querySelector('#profileDriverSelect').value='${x.driver.id}';renderProfile(${x.driver.id})">${esc(driverName(x.driver.id))}</button><div class="gap-leader">${esc(x.driver.ea_id||'')}</div></td><td>${esc(teamName(x.driver.team_id))}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(leader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
+ $('#standingsBody').innerHTML=driverStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${state.teams.find(t=>t.id==x.driver.team_id)?.logo?`<img class="team-logo-mini" src="${esc(state.teams.find(t=>t.id==x.driver.team_id).logo)}" alt="">`:''}<button class="driver-link" onclick="go('profiles');document.querySelector('#profileDriverSelect').value='${x.driver.id}';renderProfile(${x.driver.id})">${esc(driverName(x.driver.id))}</button><div class="gap-leader">${esc(x.driver.ea_id||'')} • <span class="${movementForDriver(x.driver.id).cls}">${movementForDriver(x.driver.id).text}</span></div></td><td>${esc(teamName(x.driver.team_id))}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(leader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
  $('#standingsEmpty').classList.toggle('hidden',published.length>0);
  $('#constructorsBody').innerHTML=teamStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${esc(x.team.name)}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(teamLeader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
  $('#constructorsEmpty').classList.toggle('hidden',published.length>0);
@@ -572,7 +660,14 @@ function render(){
  $('#profilesEmpty').classList.toggle('hidden',state.drivers.length>0);
  const prs=state.races.filter(r=>r.results_status==='published'||state.results.some(x=>x.race_id==r.id&&x.is_published===true)).sort((a,b)=>Number(b.round)-Number(a.round));
  $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
- $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium">${[1,2,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div><span class="muted">${p}° posto</span><strong>${x?esc(driverName(x.driver_id)):'—'}</strong></div>`}).join('')}</div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+ $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
+      ${[2,1,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div class="podium-step ${p===1?'first':p===2?'second':'third'}"><div class="podium-medal">${p===1?'🥇':p===2?'🥈':'🥉'}</div><div class="podium-name">${x?esc(driverName(x.driver_id)):'—'}</div><div class="muted">${x?esc(teamName(state.drivers.find(d=>d.id==x.driver_id)?.team_id)):'—'}</div></div>`}).join('')}
+    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+
+
+ $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
+ $('#hallOfFameEmpty').classList.toggle('hidden',state.hallOfFame.length>0);
+ $('#hallOfFameGrid').innerHTML=state.hallOfFame.map(h=>`<article class="card hof-card"><div class="champion-crown">👑</div><div class="eyebrow">${esc(h.season_name)}</div><h3>${esc(h.title)}</h3><div class="record-name">${esc(h.winner_name)}</div><div class="muted">${esc(h.details||'')}</div></article>`).join('');
 
  renderRaceControl();
 }
@@ -818,6 +913,13 @@ async function saveRaceControl(isPublished){
    const upd=await db.from('races').update(raceUpdate).eq('id',race.id);
    if(upd.error)throw upd.error;
 
+   if(isPublished){
+     await loadAll();
+     const ds=buildDriverStats();
+     const history=ds.map((x,i)=>({season_id:state.season.id,race_id:race.id,round:race.round,driver_id:x.driver.id,position:i+1,points:x.points}));
+     const hq=await db.from('standings_history').upsert(history,{onConflict:'race_id,driver_id'});
+     if(hq.error)throw hq.error;
+   }
    msg($('#adminMsg'),isPublished?'GP pubblicato: classifiche e statistiche aggiornate.':'Bozza salvata correttamente.',true);
    await loadAll();
  }catch(e){msg($('#adminMsg'),e.message)}
@@ -835,6 +937,23 @@ async function cancelRaceControl(){
  await loadAll();
 }
 
+
+$('#closeSeasonBtn').onclick=async()=>{
+ if(!confirm('Concludere la stagione e assegnare i titoli nella Hall of Fame?'))return;
+ try{
+  const ds=buildDriverStats(),ts=buildTeamStats(ds);
+  if(!ds.length||!ds[0].points)throw new Error('Non ci sono risultati sufficienti.');
+  const rows=[
+   {season_name:state.settings?.season_name||state.season?.name||'Season',title:'Campione Piloti',winner_name:driverName(ds[0].driver.id),details:ds[0].points+' punti'},
+   {season_name:state.settings?.season_name||state.season?.name||'Season',title:'Campione Costruttori',winner_name:ts[0]?.team.name||'—',details:(ts[0]?.points||0)+' punti'},
+   {season_name:state.settings?.season_name||state.season?.name||'Season',title:'Record Vittorie',winner_name:driverName([...ds].sort((a,b)=>b.wins-a.wins)[0].driver.id),details:Math.max(...ds.map(x=>x.wins))+' vittorie'}
+  ];
+  const q=await db.from('hall_of_fame').upsert(rows,{onConflict:'season_name,title'});if(q.error)throw q.error;
+  await db.from('championship_settings').update({status:'Conclusa',registration_open:false}).eq('id',state.settings.id);
+  msg($('#adminMsg'),'Stagione conclusa e Hall of Fame aggiornata.',true);await loadAll();
+ }catch(x){msg($('#adminMsg'),x.message)}
+};
+
 $('#profileDriverSelect').addEventListener('change',e=>renderProfile(Number(e.target.value)));
 
 $('#raceControlRace').addEventListener('change',e=>{
@@ -845,7 +964,14 @@ $('#raceControlRace').addEventListener('change',e=>{
  $('#profilesEmpty').classList.toggle('hidden',state.drivers.length>0);
  const prs=state.races.filter(r=>r.results_status==='published'||state.results.some(x=>x.race_id==r.id&&x.is_published===true)).sort((a,b)=>Number(b.round)-Number(a.round));
  $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
- $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium">${[1,2,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div><span class="muted">${p}° posto</span><strong>${x?esc(driverName(x.driver_id)):'—'}</strong></div>`}).join('')}</div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+ $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
+      ${[2,1,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div class="podium-step ${p===1?'first':p===2?'second':'third'}"><div class="podium-medal">${p===1?'🥇':p===2?'🥈':'🥉'}</div><div class="podium-name">${x?esc(driverName(x.driver_id)):'—'}</div><div class="muted">${x?esc(teamName(state.drivers.find(d=>d.id==x.driver_id)?.team_id)):'—'}</div></div>`}).join('')}
+    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+
+
+ $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
+ $('#hallOfFameEmpty').classList.toggle('hidden',state.hallOfFame.length>0);
+ $('#hallOfFameGrid').innerHTML=state.hallOfFame.map(h=>`<article class="card hof-card"><div class="champion-crown">👑</div><div class="eyebrow">${esc(h.season_name)}</div><h3>${esc(h.title)}</h3><div class="record-name">${esc(h.winner_name)}</div><div class="muted">${esc(h.details||'')}</div></article>`).join('');
 
  renderRaceControl();
 });
@@ -854,6 +980,30 @@ $('#publishRaceBtn').onclick=()=>{
  if(confirm('Pubblicare definitivamente questo GP?'))saveRaceControl(true);
 };
 $('#cancelRaceBtn').onclick=cancelRaceControl;
+
+
+$('#warningForm').onsubmit=async e=>{
+ e.preventDefault();
+ try{
+  const o=Object.fromEntries(new FormData(e.target));
+  const payload={driver_id:Number(o.driver_id),race_id:o.race_id?Number(o.race_id):null,event_type:'warning',points_change:0,reason:o.reason};
+  const q=await db.from('discipline_events').insert(payload);if(q.error)throw q.error;
+  msg($('#adminMsg'),'Warning aggiunto.',true);e.target.reset();await loadAll();
+ }catch(x){msg($('#adminMsg'),x.message)}
+};
+
+$('#licenseForm').onsubmit=async e=>{
+ e.preventDefault();
+ try{
+  const o=Object.fromEntries(new FormData(e.target)),driver=state.drivers.find(d=>d.id==Number(o.driver_id));
+  if(!driver)throw new Error('Pilota non trovato.');
+  const amount=Number(o.points||0),change=o.operation==='subtract'?-amount:amount;
+  const newPoints=Math.min(30,Math.max(1,Number(driver.license_points??30)+change));
+  const upd=await db.from('drivers').update({license_points:newPoints}).eq('id',driver.id);if(upd.error)throw upd.error;
+  const q=await db.from('discipline_events').insert({driver_id:driver.id,race_id:o.race_id?Number(o.race_id):null,event_type:'license',points_change:newPoints-Number(driver.license_points??30),reason:o.reason});if(q.error)throw q.error;
+  msg($('#adminMsg'),'Patente aggiornata.',true);e.target.reset();await loadAll();
+ }catch(x){msg($('#adminMsg'),x.message)}
+};
 
 let signup=false;
 $('#authSwitch').onclick=()=>{signup=!signup;$('#authTitle').textContent=signup?'Crea account':'Accedi';$('#nameField').classList.toggle('hidden',!signup);$('#authSubmit').textContent=signup?'Registrati':'Accedi';$('#authSwitch').textContent=signup?'Ho già un account':'Crea account'};
