@@ -68,6 +68,25 @@
     .coming{border:1px dashed #4a4a59;background:rgba(255,255,255,.02)}
     footer{text-align:center;color:#686878;padding:28px 12px 36px;font-size:12px}
     @media(max-width:800px){.hero{grid-template-columns:105px 1fr;min-height:auto;padding:18px;gap:16px}.hero h1{font-size:36px;letter-spacing:-1px}.hero p{font-size:14px}.grid,.grid.two,.stats-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}main{padding:12px}.topbar{padding:10px 12px}.brand-logo{width:45px;height:45px}}
+
+    .race-control-toolbar{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
+    .race-control-list{display:grid;gap:10px;margin-top:14px}
+    .race-row{display:grid;grid-template-columns:58px minmax(140px,1.4fr) 92px 92px 92px 105px 105px;gap:8px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:14px;background:#0e0e14}
+    .race-position{font-size:24px;font-weight:950;text-align:center;padding-bottom:8px}
+    .race-actions{display:flex;gap:10px;flex-wrap:wrap;position:sticky;bottom:10px;background:rgba(8,8,12,.94);backdrop-filter:blur(12px);padding:12px;border:1px solid var(--line);border-radius:15px;margin-top:14px;z-index:10}
+    .race-status{padding:8px 11px;border-radius:999px;font-size:12px;font-weight:850;border:1px solid var(--line)}
+    .race-status.draft{background:#2b2410;color:#ffe59a;border-color:#66531b}
+    .race-status.published{background:#102619;color:#baf3c8;border-color:#245d38}
+    .race-status.empty{background:#17171f;color:var(--muted)}
+    .race-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+    .race-summary .card{padding:12px}
+    @media(max-width:900px){
+      .race-control-toolbar{grid-template-columns:1fr}
+      .race-row{grid-template-columns:48px 1fr 78px;align-items:end}
+      .race-row .wide-mobile{grid-column:2/4}
+      .race-summary{grid-template-columns:1fr 1fr}
+    }
+
   </style>
 </head>
 <body>
@@ -97,7 +116,7 @@
   <div class="hero">
     <img src="icon-512.png" alt="Logo SRT">
     <div>
-      <div class="eyebrow">Season 2 • Versione 5A — Punti automatici</div>
+      <div class="eyebrow">Season 2 • Versione 5B — Race Control</div>
       <h1>SRT Racing</h1>
       <p id="championshipInfo">Caricamento delle informazioni del campionato...</p>
       <div class="hero-actions">
@@ -195,7 +214,7 @@
     <button data-admin="newsPane">News</button><button data-admin="regulationsPane">Regolamento</button>
     <button data-admin="driverPane">Piloti</button>
     <button data-admin="racePane">Gare</button>
-    <button data-admin="resultPane">Risultati</button>
+    <button data-admin="resultPane">Race Control</button>
   </div>
 
 
@@ -308,17 +327,45 @@
   </div>
 
   <div id="resultPane" class="admin-pane card">
-    <h3>Inserisci risultato</h3>
-    <form id="resultForm" class="form-grid">
-      <div class="field"><label>Gara</label><select name="race_id" class="raceSelect"></select></div>
-      <div class="field"><label>Pilota</label><select name="driver_id" class="driverSelect"></select></div>
-      <div class="field"><label>Posizione</label><input name="position" type="number"></div>
-      <div class="field"><label>Punti calcolati</label><input id="calculatedPoints" type="number" step="0.5" value="0" readonly></div><div class="field"><label>Penalità punti</label><input name="penalty_points" type="number" step="0.5" value="0"></div>
-      <div class="field"><label><input name="pole" type="checkbox" style="width:auto"> Pole position</label></div>
-      <div class="field"><label><input name="fastest_lap" type="checkbox" style="width:auto"> Giro veloce</label></div>
-      <div class="field"><label><input name="dnf" type="checkbox" style="width:auto"> DNF</label></div>
-      <button class="btn">Salva risultato</button>
-    </form>
+    <div class="section-head">
+      <div>
+        <h3>Race Control</h3>
+        <p>Inserisci tutti i risultati, salva una bozza e pubblica il GP solo dopo il controllo.</p>
+      </div>
+      <div class="grow"></div>
+      <span id="raceControlStatus" class="race-status empty">Nessun GP selezionato</span>
+    </div>
+
+    <div class="race-control-toolbar">
+      <div class="field">
+        <label>Gran Premio</label>
+        <select id="raceControlRace"></select>
+      </div>
+      <div class="field">
+        <label>Note gara</label>
+        <input id="raceControlNotes" placeholder="Facoltative">
+      </div>
+    </div>
+
+    <div class="race-summary">
+      <div class="card"><div class="muted">Piloti</div><strong id="rcDriversCount">0</strong></div>
+      <div class="card"><div class="muted">Risultati compilati</div><strong id="rcFilledCount">0</strong></div>
+      <div class="card"><div class="muted">Pole</div><strong id="rcPoleName">—</strong></div>
+      <div class="card"><div class="muted">Giro veloce</div><strong id="rcFastestName">—</strong></div>
+    </div>
+
+    <div id="raceControlEmpty" class="empty">
+      <strong>Race Control in attesa</strong>
+      Inserisci prima almeno una gara e un pilota.
+    </div>
+
+    <div id="raceControlList" class="race-control-list"></div>
+
+    <div id="raceControlActions" class="race-actions hidden">
+      <button class="btn alt" id="saveDraftBtn">💾 Salva bozza</button>
+      <button class="btn" id="publishRaceBtn">🚀 Pubblica GP</button>
+      <button class="btn danger" id="cancelRaceBtn">↩ Annulla GP</button>
+    </div>
   </div>
 </section>
 </main>
@@ -329,7 +376,7 @@
 const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
 const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let state={teams:[],drivers:[],races:[],results:[],news:[],regulations:null,scoring:null,season:null,settings:null,user:null,profile:null};
+let state={teams:[],drivers:[],races:[],results:[],news:[],regulations:null,scoring:null,season:null,settings:null,user:null,profile:null,raceControlRaceId:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function go(id){$$('.section').forEach(x=>x.classList.toggle('active',x.id===id));$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));scrollTo({top:0,behavior:'smooth'})}window.go=go;
@@ -386,18 +433,19 @@ function render(){
  $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${esc(d.ea_id||'—')}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())}</td><td>${esc(teamName(d.team_id))}</td><td>${esc(d.level??100)}</td><td>${esc(d.status||'active')}</td><td>${esc(d.platform||'Crossplay')}</td></tr>`).join('');
  $('#driversEmpty').classList.toggle('hidden',state.drivers.length>0);
 
- const driverRows=state.drivers.map(d=>{const rr=state.results.filter(r=>r.driver_id==d.id);return{d,points:rr.reduce((a,r)=>a+Number(r.points||0),0),wins:rr.filter(r=>r.position===1).length,podiums:rr.filter(r=>r.position&&r.position<=3).length}}).sort((a,b)=>b.points-a.points);
+ const publishedResults=state.results.filter(r=>r.is_published!==false);
+ const driverRows=state.drivers.map(d=>{const rr=publishedResults.filter(r=>r.driver_id==d.id);return{d,points:rr.reduce((a,r)=>a+Number(r.points||0),0),wins:rr.filter(r=>r.position===1).length,podiums:rr.filter(r=>r.position&&r.position<=3).length}}).sort((a,b)=>b.points-a.points);
  $('#standingsBody').innerHTML=driverRows.filter(x=>x.points||state.results.length).map((x,i)=>`<tr><td>${i+1}</td><td>${esc(driverName(x.d.id))}</td><td><strong>${x.points}</strong></td><td>${x.wins}</td></tr>`).join('');
- $('#standingsEmpty').classList.toggle('hidden',state.results.length>0);
+ $('#standingsEmpty').classList.toggle('hidden',publishedResults.length>0);
 
- const constructorRows=state.teams.map(t=>({t,points:state.results.filter(r=>state.drivers.find(d=>d.id==r.driver_id)?.team_id==t.id).reduce((a,r)=>a+Number(r.points||0),0)})).sort((a,b)=>b.points-a.points);
+ const constructorRows=state.teams.map(t=>({t,points:publishedResults.filter(r=>state.drivers.find(d=>d.id==r.driver_id)?.team_id==t.id).reduce((a,r)=>a+Number(r.points||0),0)})).sort((a,b)=>b.points-a.points);
  $('#constructorsBody').innerHTML=constructorRows.filter(x=>x.points||state.results.length).map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.t.name)}</td><td><strong>${x.points}</strong></td></tr>`).join('');
- $('#constructorsEmpty').classList.toggle('hidden',state.results.length>0);
+ $('#constructorsEmpty').classList.toggle('hidden',publishedResults.length>0);
 
- $('#statWins').textContent=state.results.filter(r=>r.position===1).length;
- $('#statPoles').textContent=state.results.filter(r=>r.pole).length;
- $('#statFastest').textContent=state.results.filter(r=>r.fastest_lap).length;
- $('#statPodiums').textContent=state.results.filter(r=>r.position&&r.position<=3).length;
+ $('#statWins').textContent=publishedResults.filter(r=>r.position===1).length;
+ $('#statPoles').textContent=publishedResults.filter(r=>r.pole).length;
+ $('#statFastest').textContent=publishedResults.filter(r=>r.fastest_lap).length;
+ $('#statPodiums').textContent=publishedResults.filter(r=>r.position&&r.position<=3).length;
 
  const newsCards=state.news.map(n=>`<article class="card news-card">${n.image?`<img src="${esc(n.image)}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:12px;margin-bottom:12px">`:``}<div class="meta">${esc(n.category||'Annuncio')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p><div class="date">${new Date(n.published_at).toLocaleDateString('it-IT')}</div></article>`).join('');
  $('#newsGrid').innerHTML=newsCards;$('#homeNews').innerHTML=state.news.slice(0,3).map(n=>`<article class="card news-card">${n.image?`<img src="${esc(n.image)}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:12px;margin-bottom:12px">`:``}<div class="meta">${esc(n.category||'Annuncio')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p><div class="date">${new Date(n.published_at).toLocaleDateString('it-IT')}</div></article>`).join('');
@@ -423,6 +471,7 @@ function render(){
  $$('.driverSelect').forEach(x=>x.innerHTML=state.drivers.map(d=>`<option value="${d.id}">${esc(driverName(d.id))}</option>`).join(''));
  $$('.raceSelect').forEach(x=>x.innerHTML=state.races.map(r=>`<option value="${r.id}">R${r.round} - ${esc(r.name)}</option>`).join(''));
  $('#adminTeams').innerHTML=adminList(state.teams,'team');$('#adminDrivers').innerHTML=adminList(state.drivers,'driver');$('#adminRaces').innerHTML=adminList(state.races,'race');$('#adminNews').innerHTML=adminList(state.news,'news');
+ renderRaceControl();
 }
 function adminList(items,type){return items.map(x=>`<div class="admin-item"><span class="grow">${esc(x.name||x.title||(x.round+' - '+x.circuit))}</span><button class="btn danger small" onclick="delItem('${type}',${x.id})">Elimina</button></div>`).join('')}
 const tableMap={team:'teams',driver:'drivers',race:'races',news:'news'};
@@ -492,8 +541,206 @@ $('#newsForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Obje
 $('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));let q=state.regulations?.id?await db.from('regulations').update({...o,updated_at:new Date().toISOString()}).eq('id',state.regulations.id):await db.from('regulations').insert(o);if(q.error)throw q.error;msg($('#adminMsg'),'Regolamento salvato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 $('#driverForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'drivers',o=>({...o,level:Number(o.level||100),team_id:o.team_id?Number(o.team_id):null}))}catch(x){msg($('#adminMsg'),x.message)}};
 $('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');await insertForm(e.target,'races',o=>({...o,round:Number(o.round),season_id:state.season.id,race_time:o.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
-$('#resultForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f)),p={race_id:Number(o.race_id),driver_id:Number(o.driver_id),position:o.position?Number(o.position):null,points:calculateAutomaticPoints(f),pole:f.pole.checked,fastest_lap:f.fastest_lap.checked,dnf:f.dnf.checked,penalty_points:Number(o.penalty_points||0)};const{error}=await db.from('race_results').upsert(p,{onConflict:'race_id,driver_id'});if(error)throw error;msg($('#adminMsg'),'Risultato salvato con punti automatici.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
-['change','input'].forEach(ev=>$('#resultForm').addEventListener(ev,()=>calculateAutomaticPoints($('#resultForm'))));
+
+
+function raceControlScoring(){
+ const s=state.scoring||{};
+ return {
+   position_points:Array.isArray(s.position_points)?s.position_points:[25,18,15,12,10,8,6,5,4,3,2,1],
+   pole_bonus:Number(s.pole_bonus||0),
+   fastest_lap_bonus:Number(s.fastest_lap_bonus||0),
+   attendance_bonus:Number(s.attendance_bonus||0),
+   dnf_keeps_points:Boolean(s.dnf_keeps_points)
+ };
+}
+
+function calculateRaceControlPoints(row){
+ const s=raceControlScoring();
+ const position=Number(row.querySelector('[data-field="position"]').value||0);
+ const dnf=row.querySelector('[data-field="dnf"]').checked;
+ const pole=row.querySelector('[data-field="pole"]').checked;
+ const fastest=row.querySelector('[data-field="fastest_lap"]').checked;
+ const penalty=Number(row.querySelector('[data-field="penalty_points"]').value||0);
+ let points=position>0?Number(s.position_points[position-1]||0):0;
+
+ if(dnf && !s.dnf_keeps_points) points=0;
+ if(!dnf || s.dnf_keeps_points){
+   if(pole)points+=s.pole_bonus;
+   if(fastest)points+=s.fastest_lap_bonus;
+   points+=s.attendance_bonus;
+ }
+ return Math.max(0,points-penalty);
+}
+
+function selectedRace(){
+ return state.races.find(r=>r.id==state.raceControlRaceId)||null;
+}
+
+function renderRaceControl(){
+ const raceSelect=$('#raceControlRace');
+ const list=$('#raceControlList');
+ const empty=$('#raceControlEmpty');
+ const actions=$('#raceControlActions');
+
+ if(!raceSelect||!list)return;
+
+ raceSelect.innerHTML='<option value="">Seleziona un GP</option>'+state.races.map(r=>`<option value="${r.id}">R${r.round} — ${esc(r.name)}</option>`).join('');
+
+ if(state.raceControlRaceId && state.races.some(r=>r.id==state.raceControlRaceId)){
+   raceSelect.value=String(state.raceControlRaceId);
+ }else{
+   state.raceControlRaceId=Number(raceSelect.value)||null;
+ }
+
+ const race=selectedRace();
+ const canUse=Boolean(race&&state.drivers.length);
+ empty.classList.toggle('hidden',canUse);
+ actions.classList.toggle('hidden',!canUse);
+ list.innerHTML='';
+
+ if(!canUse){
+   $('#raceControlStatus').className='race-status empty';
+   $('#raceControlStatus').textContent='Nessun GP selezionato';
+   $('#rcDriversCount').textContent=state.drivers.length;
+   $('#rcFilledCount').textContent='0';
+   $('#rcPoleName').textContent='—';
+   $('#rcFastestName').textContent='—';
+   return;
+ }
+
+ const raceResults=state.results.filter(r=>r.race_id==race.id);
+ const isPublished=raceResults.some(r=>r.is_published===true)||race.results_status==='published';
+ $('#raceControlStatus').className='race-status '+(isPublished?'published':raceResults.length?'draft':'empty');
+ $('#raceControlStatus').textContent=isPublished?'Pubblicato':raceResults.length?'Bozza salvata':'Nuovo GP';
+ $('#raceControlNotes').value=race.result_notes||'';
+
+ const sortedDrivers=[...state.drivers].sort((a,b)=>{
+   const ar=raceResults.find(r=>r.driver_id==a.id);
+   const br=raceResults.find(r=>r.driver_id==b.id);
+   return Number(ar?.position||999)-Number(br?.position||999);
+ });
+
+ list.innerHTML=sortedDrivers.map((d,index)=>{
+   const rr=raceResults.find(r=>r.driver_id==d.id)||{};
+   return `<div class="race-row" data-driver-id="${d.id}">
+     <div class="race-position">${index+1}</div>
+     <div class="field wide-mobile">
+       <label>Pilota</label>
+       <div style="padding:10px;border:1px solid var(--line);border-radius:10px;background:#15151d">
+         <strong>${esc(driverName(d.id))}</strong><br><span class="muted">${esc(d.ea_id||'EA ID non inserito')} • ${esc(teamName(d.team_id))}</span>
+       </div>
+     </div>
+     <div class="field"><label>Pos.</label><input data-field="position" type="number" min="1" max="30" value="${rr.position||index+1}"></div>
+     <div class="field"><label>Pole</label><input data-field="pole" type="checkbox" ${rr.pole?'checked':''}></div>
+     <div class="field"><label>Giro V.</label><input data-field="fastest_lap" type="checkbox" ${rr.fastest_lap?'checked':''}></div>
+     <div class="field"><label>DNF</label><input data-field="dnf" type="checkbox" ${rr.dnf?'checked':''}></div>
+     <div class="field"><label>Pen. punti</label><input data-field="penalty_points" type="number" step="0.5" value="${Number(rr.penalty_points||0)}"></div>
+     <div class="field"><label>Pen. secondi</label><input data-field="penalty_seconds" type="number" step="0.5" value="${Number(rr.penalty_seconds||0)}"></div>
+     <div class="field wide-mobile"><label>Note pilota</label><input data-field="notes" value="${esc(rr.notes||'')}"></div>
+     <div class="field"><label>Punti</label><input data-field="points" type="number" readonly value="${Number(rr.points||0)}"></div>
+   </div>`;
+ }).join('');
+
+ list.querySelectorAll('.race-row').forEach(row=>{
+   const update=()=>row.querySelector('[data-field="points"]').value=calculateRaceControlPoints(row);
+   row.addEventListener('input',update);
+   row.addEventListener('change',(event)=>{
+     const field=event?.target?.dataset?.field;
+     if(field==='pole' && event.target.checked){
+       list.querySelectorAll('[data-field="pole"]').forEach(x=>{if(x!==event.target)x.checked=false});
+     }
+     if(field==='fastest_lap' && event.target.checked){
+       list.querySelectorAll('[data-field="fastest_lap"]').forEach(x=>{if(x!==event.target)x.checked=false});
+     }
+     update();
+     updateRaceControlSummary();
+   });
+   update();
+ });
+
+ $('#rcDriversCount').textContent=state.drivers.length;
+ updateRaceControlSummary();
+}
+
+function updateRaceControlSummary(){
+ const rows=[...document.querySelectorAll('#raceControlList .race-row')];
+ $('#rcFilledCount').textContent=rows.filter(r=>Number(r.querySelector('[data-field="position"]').value)>0).length;
+ const poleRow=rows.find(r=>r.querySelector('[data-field="pole"]').checked);
+ const fastRow=rows.find(r=>r.querySelector('[data-field="fastest_lap"]').checked);
+ $('#rcPoleName').textContent=poleRow?driverName(Number(poleRow.dataset.driverId)):'—';
+ $('#rcFastestName').textContent=fastRow?driverName(Number(fastRow.dataset.driverId)):'—';
+}
+
+function collectRaceControlResults(isPublished){
+ const race=selectedRace();
+ if(!race)throw new Error('Seleziona un Gran Premio.');
+ const rows=[...document.querySelectorAll('#raceControlList .race-row')];
+ const usedPositions=new Set();
+
+ return rows.map(row=>{
+   const position=Number(row.querySelector('[data-field="position"]').value||0);
+   if(position>0){
+     if(usedPositions.has(position))throw new Error(`La posizione ${position} è stata assegnata due volte.`);
+     usedPositions.add(position);
+   }
+   return {
+     race_id:race.id,
+     driver_id:Number(row.dataset.driverId),
+     position:position||null,
+     points:calculateRaceControlPoints(row),
+     pole:row.querySelector('[data-field="pole"]').checked,
+     fastest_lap:row.querySelector('[data-field="fastest_lap"]').checked,
+     dnf:row.querySelector('[data-field="dnf"]').checked,
+     penalty_points:Number(row.querySelector('[data-field="penalty_points"]').value||0),
+     penalty_seconds:Number(row.querySelector('[data-field="penalty_seconds"]').value||0),
+     notes:row.querySelector('[data-field="notes"]').value.trim()||null,
+     is_published:isPublished
+   };
+ });
+}
+
+async function saveRaceControl(isPublished){
+ try{
+   const race=selectedRace();
+   const payload=collectRaceControlResults(isPublished);
+   const {error}=await db.from('race_results').upsert(payload,{onConflict:'race_id,driver_id'});
+   if(error)throw error;
+
+   const raceUpdate={
+     results_status:isPublished?'published':'draft',
+     result_notes:$('#raceControlNotes').value.trim()||null,
+     published_at:isPublished?new Date().toISOString():null,
+     status:isPublished?'completed':race.status
+   };
+   const upd=await db.from('races').update(raceUpdate).eq('id',race.id);
+   if(upd.error)throw upd.error;
+
+   msg($('#adminMsg'),isPublished?'GP pubblicato: classifiche e statistiche aggiornate.':'Bozza salvata correttamente.',true);
+   await loadAll();
+ }catch(e){msg($('#adminMsg'),e.message)}
+}
+
+async function cancelRaceControl(){
+ const race=selectedRace();
+ if(!race)return;
+ if(!confirm(`Annullare tutti i risultati di ${race.name}?`))return;
+ const del=await db.from('race_results').delete().eq('race_id',race.id);
+ if(del.error){msg($('#adminMsg'),del.error.message);return}
+ const upd=await db.from('races').update({results_status:'empty',result_notes:null,published_at:null,status:'upcoming'}).eq('id',race.id);
+ if(upd.error){msg($('#adminMsg'),upd.error.message);return}
+ msg($('#adminMsg'),'GP annullato. Risultati eliminati e classifiche ricalcolate.',true);
+ await loadAll();
+}
+
+$('#raceControlRace').addEventListener('change',e=>{
+ state.raceControlRaceId=Number(e.target.value)||null;
+ renderRaceControl();
+});
+$('#saveDraftBtn').onclick=()=>saveRaceControl(false);
+$('#publishRaceBtn').onclick=()=>{
+ if(confirm('Pubblicare definitivamente questo GP?'))saveRaceControl(true);
+};
+$('#cancelRaceBtn').onclick=cancelRaceControl;
 
 let signup=false;
 $('#authSwitch').onclick=()=>{signup=!signup;$('#authTitle').textContent=signup?'Crea account':'Accedi';$('#nameField').classList.toggle('hidden',!signup);$('#authSubmit').textContent=signup?'Registrati':'Accedi';$('#authSwitch').textContent=signup?'Ho già un account':'Crea account'};
