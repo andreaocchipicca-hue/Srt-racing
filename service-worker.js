@@ -1,4 +1,4 @@
-const CACHE='srt-v5d-disciplina-hof-20260806';
+const CACHE='srt-v5d1-22piloti-movimento-20260806';
 
 const CORE = [
   '/',
