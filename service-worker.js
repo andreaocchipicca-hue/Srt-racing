@@ -1,4 +1,4 @@
-const CACHE='srt-v5d1-22piloti-movimento-20260806';
+const CACHE='srt-v5d2-ruoli-accesso-20260807';
 
 const CORE = [
   '/',
