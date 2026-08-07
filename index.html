@@ -140,6 +140,10 @@
       .podium-stage{grid-template-columns:1fr}
       .podium-step.first,.podium-step.second,.podium-step.third{min-height:auto}
     }
+
+    .role-hidden{display:none !important}
+    body.locked main > section:not(#auth){display:none !important}
+    body.locked nav{display:none !important}
   </style>
 </head>
 <body>
@@ -169,7 +173,7 @@
   <div class="hero">
     <img src="icon-512.png" alt="Logo SRT">
     <div>
-      <div class="eyebrow">Season 2 • Versione 5D.1 — 22 piloti e movimento classifica</div>
+      <div class="eyebrow">Season 2 • Versione 5D.2 — Accesso e ruoli</div>
       <h1>SRT Racing</h1>
       <p id="championshipInfo">Caricamento delle informazioni del campionato...</p>
       <div class="hero-actions">
@@ -514,7 +518,40 @@ const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let state={teams:[],drivers:[],races:[],results:[],news:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function go(id){$$('.section').forEach(x=>x.classList.toggle('active',x.id===id));$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));scrollTo({top:0,behavior:'smooth'})}window.go=go;
+
+const ROLE_ACCESS={
+  guest:['standings','calendar','halloffame'],
+  driver:['home','standings','calendar','statistics','profiles','archive','news','regulations','halloffame'],
+  admin:['home','standings','calendar','statistics','profiles','archive','news','regulations','halloffame','admin']
+};
+function currentRole(){return state.profile?.role||null}
+function allowedPages(){const r=currentRole();return r?(ROLE_ACCESS[r]||[]):[]}
+function applyAccessControl(){
+  const role=currentRole();
+  const logged=Boolean(state.user&&role);
+  document.body.classList.toggle('locked',!logged);
+  $$('#nav button[data-page]').forEach(btn=>{
+    btn.classList.toggle('role-hidden',!logged||!allowedPages().includes(btn.dataset.page));
+  });
+  if(logged){
+    const active=$('.section.active');
+    if(active && !allowedPages().includes(active.id)){
+      const fallback=role==='guest'?'standings':'home';
+      $$('.section').forEach(x=>x.classList.toggle('active',x.id===fallback));
+      $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===fallback));
+    }
+  }
+}
+function go(id){
+  const role=currentRole();
+  if(!state.user||!role) id='auth';
+  else if(!allowedPages().includes(id)) id=role==='guest'?'standings':'home';
+  $$('.section').forEach(x=>x.classList.toggle('active',x.id===id));
+  $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
+  scrollTo({top:0,behavior:'smooth'});
+}
+window.go=go;
+
 $$('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
 $$('.admin-tabs button').forEach(b=>b.onclick=()=>{$$('.admin-tabs button').forEach(x=>x.classList.remove('active'));$$('.admin-pane').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#'+b.dataset.admin).classList.add('active')});
 function msg(el,text,ok=false){el.innerHTML=`<div class="notice ${ok?'success':''}">${esc(text)}</div>`}
@@ -623,7 +660,7 @@ function render(){
 
  const driverStats=buildDriverStats(),teamStats=buildTeamStats(driverStats),published=publishedResults();
  const leader=driverStats[0]?.points||0,teamLeader=teamStats[0]?.points||0;
- $('#standingsBody').innerHTML=driverStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${state.teams.find(t=>t.id==x.driver.team_id)?.logo?`<img class="team-logo-mini" src="${esc(state.teams.find(t=>t.id==x.driver.team_id).logo)}" alt="">`:''}<button class="driver-link" onclick="go('profiles');document.querySelector('#profileDriverSelect').value='${x.driver.id}';renderProfile(${x.driver.id})">${esc(driverName(x.driver.id))}</button><div class="gap-leader">${esc(x.driver.ea_id||'')} • <span class="${movementForDriver(x.driver.id).cls}">${movementForDriver(x.driver.id).text}</span></div></td><td>${esc(teamName(x.driver.team_id))}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(leader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
+ $('#standingsBody').innerHTML=driverStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${state.teams.find(t=>t.id==x.driver.team_id)?.logo?`<img class="team-logo-mini" src="${esc(state.teams.find(t=>t.id==x.driver.team_id).logo)}" alt="">`:''}<button class="driver-link" onclick="if(currentRole()!=='guest'){go('profiles');document.querySelector('#profileDriverSelect').value='${x.driver.id}';renderProfile(${x.driver.id})}">${esc(driverName(x.driver.id))}</button><div class="gap-leader">${esc(x.driver.ea_id||'')} • <span class="${movementForDriver(x.driver.id).cls}">${movementForDriver(x.driver.id).text}</span></div></td><td>${esc(teamName(x.driver.team_id))}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(leader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
  $('#standingsEmpty').classList.toggle('hidden',published.length>0);
  $('#constructorsBody').innerHTML=teamStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${esc(x.team.name)}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(teamLeader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
  $('#constructorsEmpty').classList.toggle('hidden',published.length>0);
@@ -673,6 +710,7 @@ function render(){
  $('#hallOfFameEmpty').classList.toggle('hidden',state.hallOfFame.length>0);
  $('#hallOfFameGrid').innerHTML=state.hallOfFame.map(h=>`<article class="card hof-card"><div class="champion-crown">👑</div><div class="eyebrow">${esc(h.season_name)}</div><h3>${esc(h.title)}</h3><div class="record-name">${esc(h.winner_name)}</div><div class="muted">${esc(h.details||'')}</div></article>`).join('');
 
+ applyAccessControl();
  renderRaceControl();
 }
 function adminList(items,type){return items.map(x=>`<div class="admin-item"><span class="grow">${esc(x.name||x.title||(x.round+' - '+x.circuit))}</span><button class="btn danger small" onclick="delItem('${type}',${x.id})">Elimina</button></div>`).join('')}
