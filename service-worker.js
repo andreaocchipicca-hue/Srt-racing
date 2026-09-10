@@ -1,4 +1,4 @@
-const CACHE='srt-v5d7-auth-navigation-fix';
+const CACHE='srt-v5d9-wild-logos';
 
 const CORE = [
   '/',
