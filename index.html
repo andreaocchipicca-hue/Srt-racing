@@ -530,8 +530,8 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 
 const ROLE_ACCESS={
   guest:['standings','calendar','halloffame'],
-  driver:['home','standings','calendar','statistics','profiles','archive','news','regulations','halloffame'],
-  admin:['home','standings','calendar','statistics','profiles','archive','news','regulations','halloffame','admin']
+  driver:['home','teams','drivers','standings','calendar','statistics','profiles','archive','news','regulations','halloffame'],
+  admin:['home','teams','drivers','standings','calendar','statistics','profiles','archive','news','regulations','halloffame','admin']
 };
 function currentRole(){return state.profile?.role||null}
 function allowedPages(){const r=currentRole();return r?(ROLE_ACCESS[r]||[]):[]}
@@ -1125,7 +1125,7 @@ $('#authSubmit').onclick=async()=>{try{const email=$('#email').value.trim(),pass
 async function logoutUser(){await db.auth.signOut();await refreshUser();go('home')}
 $('#logoutBtn').onclick=logoutUser;
 $('#topLogoutBtn').onclick=logoutUser;
-async function refreshUser(){const{data:{user}}=await db.auth.getUser();state.user=user;state.profile=null;if(user){const{data}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();state.profile=data}const role=state.profile?.role;$('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':' • Pilota'):'Ospite';$('#adminNav').classList.toggle('hidden',role!=='admin');$('#logoutBtn').classList.toggle('hidden',!user);$('#topLogoutBtn').classList.toggle('hidden',!user);$('#authSubmit').classList.toggle('hidden',!!user);$('#authSwitch').classList.toggle('hidden',!!user);if(user)$('#authTitle').textContent='Account'}
+async function refreshUser(){const{data:{user}}=await db.auth.getUser();state.user=user;state.profile=null;if(user){const{data}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();state.profile=data}const role=state.profile?.role;$('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':' • Pilota'):'Ospite';$('#adminNav').classList.toggle('hidden',role!=='admin');$('#logoutBtn').classList.toggle('hidden',!user);$('#topLogoutBtn').classList.toggle('hidden',!user);$('#authSubmit').classList.toggle('hidden',!!user);$('#authSwitch').classList.toggle('hidden',!!user);if(user)$('#authTitle').textContent='Account';applyAccessControl()}
 db.auth.onAuthStateChange(()=>refreshUser());
 (async()=>{await refreshUser();await loadAll();if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js')})();
 </script>
