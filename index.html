@@ -542,7 +542,10 @@ function applyAccessControl(){
   $$('#nav button[data-page]').forEach(btn=>{
     btn.classList.toggle('role-hidden',!logged||!allowedPages().includes(btn.dataset.page));
   });
-  if(logged){
+  if(!logged){
+    $$('.section').forEach(x=>x.classList.toggle('active',x.id==='login'));
+    $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page==='login'));
+  }else{
     const active=$('.section.active');
     if(active && !allowedPages().includes(active.id)){
       const fallback=role==='guest'?'standings':'home';
