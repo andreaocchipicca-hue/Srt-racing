@@ -1,4 +1,4 @@
-const CACHE='srt-v5e1-sky-blue-theme';
+const CACHE='srt-v5e2-hall-of-fame';
 
 const CORE = [
   '/',

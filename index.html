@@ -137,8 +137,10 @@
     .podium-medal{font-size:28px}.podium-name{font-size:18px;font-weight:950;margin-top:8px}
     .hof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
     .hof-card{position:relative;overflow:hidden}
-    .hof-card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(225,6,0,.08),transparent);pointer-events:none}
-    .champion-crown{font-size:32px}
+    .hof-card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(227,27,35,.17),rgba(244,196,48,.07) 48%,transparent);pointer-events:none}
+    .hof-card:after{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#009246,#fff,#ce2b37)}
+    .champion-crown{font-size:36px;filter:drop-shadow(0 4px 8px #0008)}
+    .hof-card .record-name{position:relative;color:#fff}.hof-card .muted{position:relative;margin-top:7px}
     @media(max-width:800px){
       .discipline-grid,.hof-grid{grid-template-columns:1fr}
       .podium-stage{grid-template-columns:1fr}
@@ -178,7 +180,7 @@
   <div class="hero">
     <img src="icon-512.png" alt="Logo SRT">
     <div>
-      <div class="eyebrow">Stagione 2026-2027 • Versione 5D.2 — Accesso e ruoli</div>
+      <div class="eyebrow">Campionato F1 Crossplay • Stagione 2026-2027</div>
       <h1>SRT Racing</h1>
       <p id="championshipInfo">Caricamento delle informazioni del campionato...</p>
       <div class="hero-actions">
@@ -577,24 +579,39 @@ function teamName(id){return state.teams.find(t=>t.id==id)?.name||'—'}
 function driverName(id){const d=state.drivers.find(x=>x.id==id);return d?`${d.name} ${d.surname||''}`.trim():'—'}
 function teamCode(id){const n=teamName(id);const codes={'Aston Martin':'AM','Racing Bulls':'RB','Red Bull':'RBR','McLaren':'MCL','Mercedes':'MER','Ferrari':'FER','Williams':'WIL','Cadillac':'CAD','Haas':'HAS','Audi':'AUD','Alpine':'ALP'};return codes[n]||n.replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase()||'—'}
 const TEAM_LOGOS={
- 'Ferrari':'https://cdn.jsdelivr.net/npm/simple-icons@v15/icons/ferrari.svg',
- 'McLaren':'https://cdn.jsdelivr.net/npm/simple-icons@v15/icons/mclaren.svg',
- 'Cadillac':'https://cdn.jsdelivr.net/npm/simple-icons@v15/icons/cadillac.svg',
+ 'Ferrari':'https://cdn.simpleicons.org/ferrari/FF2800',
+ 'McLaren':'https://cdn.simpleicons.org/mclaren/FF8000',
+ 'Cadillac':'https://cdn.simpleicons.org/cadillac/111111',
  'Haas':'https://commons.wikimedia.org/wiki/Special:Redirect/file/TGR Haas F1 Team Logo (2026).svg',
- 'Red Bull':'https://cdn.jsdelivr.net/npm/simple-icons@v15/icons/redbull.svg',
+ 'Red Bull':'https://cdn.simpleicons.org/redbull/DC0A2D',
  'Audi':'https://commons.wikimedia.org/wiki/Special:Redirect/file/Audif1.com logo17 (cropped).svg',
- 'Aston Martin':'https://cdn.jsdelivr.net/npm/simple-icons@v15/icons/astonmartin.svg',
+ 'Aston Martin':'https://cdn.simpleicons.org/astonmartin/006F62',
  'Racing Bulls':'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 240 90%22%3E%3Cpath fill=%22%23143c8c%22 d=%22M10 18h112l-18 15H26zm18 25h70L82 58H44z%22/%3E%3Ctext x=%22110%22 y=%2262%22 font-family=%22Arial%22 font-size=%2248%22 font-weight=%22900%22 font-style=%22italic%22 fill=%22%23143c8c%22%3ERB%3C/text%3E%3C/svg%3E',
  'Mercedes':'https://commons.wikimedia.org/wiki/Special:Redirect/file/Mercedes AMG Petronas F1 Logo.svg',
  'Alpine':'https://commons.wikimedia.org/wiki/Special:Redirect/file/Alpine F1 Team Logo.svg',
  'Williams':'https://commons.wikimedia.org/wiki/Special:Redirect/file/Atlassian Williams F1 Team logo.svg'
 };
-function teamLogoUrl(t){return t?.logo||TEAM_LOGOS[t?.name]||''}
+function teamLogoUrl(t){return TEAM_LOGOS[t?.name]||t?.logo||''}
 function teamFallback(t,hidden=false){return `<span class="team-symbol${hidden?' logo-fallback':''}" style="--team-color:${esc(t.color||'#e10600')}" title="${esc(t.name)}">${esc(teamCode(t.id))}</span>`}
 function teamSymbol(id){const t=state.teams.find(x=>x.id==id);if(!t)return'';const logo=teamLogoUrl(t);return logo?`<img class="team-logo-mini" src="${esc(logo)}" alt="${esc(t.name)}" title="${esc(t.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'">${teamFallback(t,true)}`:teamFallback(t)}
 function teamLargeLogo(t){const logo=teamLogoUrl(t);return logo?`<img class="team-logo-large" src="${esc(logo)}" alt="${esc(t.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline-flex'">${teamFallback(t,true)}`:teamFallback(t)}
 function resultTeamId(result){return Number(result?.team_id||state.drivers.find(d=>d.id==result?.driver_id)?.team_id)||null}
 function fmtDate(v){return v?new Date(v+'T12:00:00').toLocaleDateString('it-IT'):''}
+function driverStatus(v){return({active:'Attivo',reserve:'Riserva',suspended:'Sospeso'})[v]||v||'—'}
+const HISTORIC_HALL_OF_FAME=[
+ {season_name:'Stagione 2025-2026',title:'Campione Piloti',winner_name:'Angelo Esposito',details:'EA ID: YoUnG Ansheel',icon:'🏆'},
+ {season_name:'Stagione 2025-2026',title:'Campione Costruttori',winner_name:'Ferrari',details:'Andrea Occhipicca • Salvatore Tebaldo',icon:'🏎️'},
+ {season_name:'Stagione 2025-2026',title:'Più GP vinti',winner_name:'Angelo Esposito',details:'12 vittorie • YoUnG Ansheel',icon:'🔥'}
+];
+function hallOfFameEntries(){
+ const old=state.hallOfFame.filter(h=>{const s=String(h.season_name||'').toLowerCase();return !s.includes('prova')&&!s.includes('demo')&&!s.includes('season 2')&&!s.includes('2025-2026')});
+ return [...HISTORIC_HALL_OF_FAME,...old];
+}
+function renderHallOfFame(){
+ const rows=hallOfFameEntries();
+ $('#hallOfFameEmpty').classList.toggle('hidden',rows.length>0);
+ $('#hallOfFameGrid').innerHTML=rows.map(h=>`<article class="card hof-card"><div class="champion-crown">${h.icon||'👑'}</div><div class="eyebrow">${esc(h.season_name)}</div><h3>${esc(h.title)}</h3><div class="record-name">${esc(h.winner_name)}</div><div class="muted">${esc(h.details||'')}</div></article>`).join('');
+}
 
 async function loadAll(){
  try{
@@ -693,7 +710,7 @@ function render(){
  $('#teamsGrid').innerHTML=state.teams.map(t=>`<article class="card team-card" style="--team-color:${esc(t.color||'#e10600')}">${teamLargeLogo(t)}<h3>${esc(t.name)}</h3><div class="muted">${esc(t.country||'')}</div><div style="margin-top:12px"><span class="chip">${state.drivers.filter(d=>d.team_id==t.id).length} piloti ufficiali</span></div></article>`).join('');
  $('#teamsEmpty').classList.toggle('hidden',state.teams.length>0);
 
- $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${esc(d.ea_id||'—')}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())} ${d.is_wild?'<span class="wild-badge">WILD</span>':''}</td><td>${teamSymbol(d.team_id)}${esc(teamName(d.team_id))}</td><td>${esc(d.level??100)}</td><td><span class="chip">${Number(d.absences||0)}/3</span></td><td>${esc(d.status||'active')}</td><td>${esc(d.platform||'Crossplay')}</td></tr>`).join('');
+ $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${esc(d.ea_id||'—')}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())} ${d.is_wild?'<span class="wild-badge">WILD</span>':''}</td><td>${teamSymbol(d.team_id)}${esc(teamName(d.team_id))}</td><td>${esc(d.level??100)}</td><td><span class="chip">${Number(d.absences||0)}/3</span></td><td>${esc(driverStatus(d.status))}</td><td>${esc(d.platform||'Crossplay')}</td></tr>`).join('');
  $('#driversEmpty').classList.toggle('hidden',state.drivers.length>0);
 
 
@@ -749,8 +766,7 @@ function render(){
 
 
  $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
- $('#hallOfFameEmpty').classList.toggle('hidden',state.hallOfFame.length>0);
- $('#hallOfFameGrid').innerHTML=state.hallOfFame.map(h=>`<article class="card hof-card"><div class="champion-crown">👑</div><div class="eyebrow">${esc(h.season_name)}</div><h3>${esc(h.title)}</h3><div class="record-name">${esc(h.winner_name)}</div><div class="muted">${esc(h.details||'')}</div></article>`).join('');
+ renderHallOfFame();
 
  applyAccessControl();
  renderRaceControl();
@@ -1117,8 +1133,7 @@ $('#raceControlRace').addEventListener('change',e=>{
 
 
  $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
- $('#hallOfFameEmpty').classList.toggle('hidden',state.hallOfFame.length>0);
- $('#hallOfFameGrid').innerHTML=state.hallOfFame.map(h=>`<article class="card hof-card"><div class="champion-crown">👑</div><div class="eyebrow">${esc(h.season_name)}</div><h3>${esc(h.title)}</h3><div class="record-name">${esc(h.winner_name)}</div><div class="muted">${esc(h.details||'')}</div></article>`).join('');
+ renderHallOfFame();
 
  renderRaceControl();
 });
