@@ -1,4 +1,4 @@
-const CACHE='srt-v5d4-logout-fix';
+const CACHE='srt-v5d5-login-screen-fix';
 
 const CORE = [
   '/',
