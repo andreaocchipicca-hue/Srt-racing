@@ -1,4 +1,4 @@
-const CACHE='srt-v5d2-ruoli-accesso-20260807';
+const CACHE='srt-v5d3-stagione-2026-2027';
 
 const CORE = [
   '/',

@@ -41,6 +41,7 @@ create table if not exists public.drivers (
   avatar text,
   color text not null default '#e10600',
   active boolean not null default true,
+  absences integer not null default 0 check (absences between 0 and 3),
   created_at timestamptz not null default now(),
   unique(number)
 );
@@ -167,7 +168,7 @@ create policy "admin manage scoring" on public.scoring_settings for all using (p
 create policy "admin manage profiles" on public.profiles for all using (public.is_admin()) with check (public.is_admin());
 
 insert into public.seasons (name, year, is_active)
-select 'Season 1', 2026, true
+select 'Stagione 2026-2027', 2026, true
 where not exists (select 1 from public.seasons);
 
 
