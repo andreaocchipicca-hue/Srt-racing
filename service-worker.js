@@ -1,4 +1,4 @@
-const CACHE='srt-v5d3-stagione-2026-2027';
+const CACHE='srt-v5d4-logout-fix';
 
 const CORE = [
   '/',
