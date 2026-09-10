@@ -553,7 +553,7 @@ function applyAccessControl(){
 }
 function go(id){
   const role=currentRole();
-  if(!state.user||!role) id='auth';
+  if(!state.user||!role) id='login';
   else if(!allowedPages().includes(id)) id=role==='guest'?'standings':'home';
   $$('.section').forEach(x=>x.classList.toggle('active',x.id===id));
   $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
