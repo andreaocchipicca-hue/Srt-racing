@@ -1,0 +1,1130 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#08080c">
+  <meta name="description" content="SRT Santena Racing Team - Stagione 2026-2027">
+  <title>SRT Racing — Stagione 2026-2027</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#08080c;--surface:#121219;--surface2:#191922;--line:#2c2c39;
+      --text:#f6f6f8;--muted:#a2a2b1;--red:#e10600;--red2:#ff2a22;
+      --green:#1fca68;--gold:#f4c430;--shadow:0 18px 60px rgba(0,0,0,.38)
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:
+      radial-gradient(circle at 80% -10%,rgba(225,6,0,.18),transparent 32%),
+      radial-gradient(circle at 0 35%,rgba(255,255,255,.035),transparent 25%),
+      var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+    button,input,select,textarea{font:inherit}button{cursor:pointer}
+    .app{max-width:1240px;margin:auto;min-height:100vh}
+    header{position:sticky;top:0;z-index:30;background:rgba(8,8,12,.86);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.07)}
+    .topbar{display:flex;align-items:center;gap:12px;padding:12px 16px}
+    .brand-logo{width:52px;height:52px;border-radius:14px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.08)}
+    .brand-title{font-weight:950;letter-spacing:.8px}.brand-sub{font-size:12px;color:var(--muted);margin-top:2px}
+    .grow{flex:1}.badge{border:1px solid var(--line);background:rgba(255,255,255,.035);padding:7px 10px;border-radius:999px;font-size:12px;color:var(--muted)}
+    nav{display:flex;gap:8px;overflow:auto;padding:0 12px 12px;scrollbar-width:none}nav::-webkit-scrollbar{display:none}
+    nav button{white-space:nowrap;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:9px 13px;border-radius:10px;font-weight:750}
+    nav button.active{background:linear-gradient(135deg,var(--red),var(--red2));border-color:transparent;color:white;box-shadow:0 8px 24px rgba(225,6,0,.28)}
+    main{padding:16px}.section{display:none}.section.active{display:block;animation:fade .26s ease}
+    @keyframes fade{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+    .hero{position:relative;overflow:hidden;display:grid;grid-template-columns:220px 1fr;gap:26px;align-items:center;min-height:360px;padding:30px;border:1px solid var(--line);border-radius:26px;background:
+      linear-gradient(110deg,rgba(18,18,25,.96),rgba(12,12,17,.75)),
+      repeating-linear-gradient(135deg,transparent 0 18px,rgba(255,255,255,.018) 18px 20px);box-shadow:var(--shadow)}
+    .hero:after{content:"";position:absolute;right:-80px;bottom:-130px;width:440px;height:440px;border:70px solid rgba(225,6,0,.09);border-radius:50%}
+    .hero img{width:100%;border-radius:24px;position:relative;z-index:2;filter:drop-shadow(0 24px 25px rgba(0,0,0,.45))}
+    .eyebrow{font-size:12px;font-weight:900;letter-spacing:1.3px;color:#ff7873;text-transform:uppercase}
+    h1{font-size:clamp(36px,7vw,72px);line-height:.95;margin:10px 0 14px;letter-spacing:-2px}
+    h2{font-size:27px;margin:0 0 14px}h3{margin:0 0 9px}
+    .hero p{font-size:17px;line-height:1.65;color:var(--muted);max-width:680px}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+    .btn{border:0;border-radius:11px;padding:11px 16px;background:linear-gradient(135deg,var(--red),var(--red2));color:white;font-weight:850;box-shadow:0 10px 24px rgba(225,6,0,.23)}
+    .btn.alt{background:var(--surface2);border:1px solid var(--line);box-shadow:none}.btn.danger{background:#7b1c21}.btn.small{padding:7px 10px;font-size:12px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+    .grid.two{grid-template-columns:repeat(2,1fr)}.card{background:linear-gradient(160deg,var(--surface),#101016);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 12px 35px rgba(0,0,0,.18)}
+    .metric{display:flex;align-items:center;justify-content:space-between}.metric .value{font-size:34px;font-weight:950}.metric .label{font-size:13px;color:var(--muted)}
+    .metric .icon{width:43px;height:43px;border-radius:13px;background:rgba(225,6,0,.13);display:grid;place-items:center;font-size:21px}
+    .muted{color:var(--muted)}.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:7px}
+    .section-head{display:flex;gap:12px;align-items:end;margin-bottom:14px}.section-head p{margin:0;color:var(--muted)}
+    .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{padding:12px 9px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
+    th{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}tr:last-child td{border-bottom:0}
+    .empty{text-align:center;color:var(--muted);padding:34px}.empty strong{display:block;color:white;font-size:17px;margin-bottom:6px}
+    .team-card{position:relative;overflow:hidden}.team-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--team-color,var(--red))}
+    .news-card{min-height:190px;display:flex;flex-direction:column}.news-card .meta{font-size:12px;color:#ff7772;font-weight:800}.news-card p{color:var(--muted);line-height:1.55}.news-card .date{margin-top:auto;font-size:12px;color:var(--muted)}
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.stat-card{text-align:center}.stat-card .big{font-size:31px;font-weight:950}.stat-card .caption{font-size:12px;color:var(--muted);text-transform:uppercase}
+    .form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.field{display:grid;gap:6px}.field.full{grid-column:1/-1}
+    label{font-size:12px;color:var(--muted);font-weight:700}input,select,textarea{width:100%;background:#0c0c11;color:white;border:1px solid var(--line);border-radius:10px;padding:11px;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(225,6,0,.12)}textarea{min-height:100px;resize:vertical}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.auth{max-width:520px;margin:auto}
+    .notice{padding:12px;border-radius:11px;background:#251317;border:1px solid #5c2429;color:#ffc4c7;margin:10px 0}.notice.success{background:#102619;border-color:#245d38;color:#baf3c8}
+    .hidden{display:none!important}.admin-tabs{display:flex;gap:8px;overflow:auto;margin-bottom:12px}.admin-tabs button{white-space:nowrap;border:1px solid var(--line);background:var(--surface2);color:white;padding:9px 11px;border-radius:10px}.admin-tabs button.active{background:var(--red);border-color:var(--red)}
+    .admin-pane{display:none}.admin-pane.active{display:block}.admin-list{margin-top:14px}.admin-item{display:flex;gap:9px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+    .chip{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--line);font-size:12px;color:var(--muted)}
+    .coming{border:1px dashed #4a4a59;background:rgba(255,255,255,.02)}
+    footer{text-align:center;color:#686878;padding:28px 12px 36px;font-size:12px}
+    @media(max-width:800px){.hero{grid-template-columns:105px 1fr;min-height:auto;padding:18px;gap:16px}.hero h1{font-size:36px;letter-spacing:-1px}.hero p{font-size:14px}.grid,.grid.two,.stats-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}main{padding:12px}.topbar{padding:10px 12px}.brand-logo{width:45px;height:45px}}
+
+    .race-control-toolbar{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
+    .race-control-list{display:grid;gap:10px;margin-top:14px}
+    .race-row{display:grid;grid-template-columns:58px minmax(140px,1.4fr) 92px 92px 92px 105px 105px;gap:8px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:14px;background:#0e0e14}
+    .race-position{font-size:24px;font-weight:950;text-align:center;padding-bottom:8px}
+    .race-actions{display:flex;gap:10px;flex-wrap:wrap;position:sticky;bottom:10px;background:rgba(8,8,12,.94);backdrop-filter:blur(12px);padding:12px;border:1px solid var(--line);border-radius:15px;margin-top:14px;z-index:10}
+    .race-status{padding:8px 11px;border-radius:999px;font-size:12px;font-weight:850;border:1px solid var(--line)}
+    .race-status.draft{background:#2b2410;color:#ffe59a;border-color:#66531b}
+    .race-status.published{background:#102619;color:#baf3c8;border-color:#245d38}
+    .race-status.empty{background:#17171f;color:var(--muted)}
+    .race-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+    .race-summary .card{padding:12px}
+    @media(max-width:900px){
+      .race-control-toolbar{grid-template-columns:1fr}
+      .race-row{grid-template-columns:48px 1fr 78px;align-items:end}
+      .race-row .wide-mobile{grid-column:2/4}
+      .race-summary{grid-template-columns:1fr 1fr}
+    }
+
+
+    .leader-row{background:linear-gradient(90deg,rgba(225,6,0,.13),transparent)}
+    .rank-badge{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#17171f;border:1px solid var(--line);font-weight:950}
+    .rank-badge.first{background:linear-gradient(135deg,#e7c45b,#8c6f13);color:#111}
+    .gap-leader{font-size:12px;color:var(--muted)}
+    .driver-link{background:none;border:0;color:white;font-weight:850;padding:0;text-align:left}
+    .profile-grid{display:grid;grid-template-columns:180px 1fr;gap:18px}
+    .profile-card{display:none}.profile-card.active{display:block}
+    .profile-avatar{width:180px;height:180px;border-radius:24px;object-fit:cover;background:#17171f;border:1px solid var(--line)}
+    .profile-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+    .record-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .record-card{position:relative;overflow:hidden}
+    .record-title{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+    .record-name{font-size:22px;font-weight:950;margin-top:8px}
+    .record-value{font-size:13px;color:#ff8580;margin-top:4px}
+    .gp-archive{display:grid;gap:12px}
+    .gp-card{border-left:5px solid var(--red)}
+    .gp-top{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .gp-status{margin-left:auto}
+    .podium{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+    .podium>div{padding:10px;border-radius:12px;background:#15151d;border:1px solid var(--line)}
+    .podium strong{display:block;margin-top:4px}
+    .gp-details{display:none;margin-top:12px}.gp-details.active{display:block}
+    @media(max-width:800px){
+      .profile-grid{grid-template-columns:1fr}
+      .profile-avatar{width:120px;height:120px}
+      .profile-stats,.record-grid,.podium{grid-template-columns:1fr 1fr}
+    }
+
+    .license-wrap{margin-top:12px}
+    .license-bar{height:14px;border-radius:999px;background:#24242f;overflow:hidden;border:1px solid var(--line)}
+    .license-fill{height:100%;transition:width .25s ease}
+    .license-green{background:linear-gradient(90deg,#1fca68,#79e99f)}
+    .license-yellow{background:linear-gradient(90deg,#d4a72c,#ffe27a)}
+    .license-red{background:linear-gradient(90deg,#b91c1c,#ff6b6b)}
+    .discipline-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .warning-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:#2b2410;color:#ffe59a;border:1px solid #66531b;font-size:12px;font-weight:800}
+    .movement-up{color:#68e391;font-weight:900}.movement-down{color:#ff7772;font-weight:900}.movement-flat{color:var(--muted)}
+    .team-logo-mini{width:28px;height:28px;object-fit:contain;vertical-align:middle;margin-right:7px}
+    .podium-stage{display:grid;grid-template-columns:1fr 1.08fr 1fr;align-items:end;gap:10px;margin-top:14px}
+    .podium-step{border-radius:16px 16px 8px 8px;border:1px solid var(--line);background:linear-gradient(180deg,#1a1a23,#111117);text-align:center;padding:14px}
+    .podium-step.first{min-height:190px;background:linear-gradient(180deg,rgba(231,196,91,.22),#111117)}
+    .podium-step.second{min-height:155px}.podium-step.third{min-height:130px}
+    .podium-medal{font-size:28px}.podium-name{font-size:18px;font-weight:950;margin-top:8px}
+    .hof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .hof-card{position:relative;overflow:hidden}
+    .hof-card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(225,6,0,.08),transparent);pointer-events:none}
+    .champion-crown{font-size:32px}
+    @media(max-width:800px){
+      .discipline-grid,.hof-grid{grid-template-columns:1fr}
+      .podium-stage{grid-template-columns:1fr}
+      .podium-step.first,.podium-step.second,.podium-step.third{min-height:auto}
+    }
+
+    .role-hidden{display:none !important}
+    body.locked main > section:not(#auth){display:none !important}
+    body.locked nav{display:none !important}
+  </style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="topbar">
+    <img src="icon-192.png" class="brand-logo" alt="SRT">
+    <div><div class="brand-title">SRT SANTENA RACING TEAM</div><div class="brand-sub">F1 Crossplay Championship</div></div>
+    <div class="grow"></div>
+    <span id="userBadge" class="badge">Ospite</span>
+    <button id="topLogoutBtn" class="btn alt small hidden" type="button">Logout</button>
+  </div>
+  <nav id="nav">
+    <button data-page="home" class="active">Home</button>
+    <button data-page="teams">Scuderie</button>
+    <button data-page="drivers">Piloti</button>
+    <button data-page="calendar">Calendario</button>
+    <button data-page="standings">Classifiche</button>
+    <button data-page="statistics">Statistiche</button><button data-page="profiles">Profili</button><button data-page="archive">Archivio GP</button><button data-page="halloffame">Hall of Fame</button>
+    <button data-page="news">News</button><button data-page="regulations">Regolamento</button>
+    <button data-page="login" id="loginNav">Login</button>
+    <button data-page="admin" id="adminNav" class="hidden">Admin</button>
+  </nav>
+</header>
+
+<main>
+<section id="home" class="section active">
+  <div class="hero">
+    <img src="icon-512.png" alt="Logo SRT">
+    <div>
+      <div class="eyebrow">Stagione 2026-2027 • Versione 5D.2 — Accesso e ruoli</div>
+      <h1>SRT Racing</h1>
+      <p id="championshipInfo">Caricamento delle informazioni del campionato...</p>
+      <div class="hero-actions">
+        <button class="btn" onclick="go('teams')">Scopri le scuderie</button>
+        <button class="btn alt" onclick="go('news')">Ultime news</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card metric"><div><div class="label">Piloti attivi</div><div class="value" id="countDrivers">0</div></div><div class="icon">👤</div></div>
+    <div class="card metric"><div><div class="label">Scuderie</div><div class="value" id="countTeams">0</div></div><div class="icon">🏎️</div></div>
+    <div class="card metric"><div><div class="label">Gare programmate</div><div class="value" id="countRaces">0</div></div><div class="icon">🏁</div></div>
+  </div>
+
+  <div class="grid two">
+    <div class="card">
+      <div class="section-head"><div><h2>Prossima gara</h2><p>Il countdown verrà attivato quando sarà deciso il calendario.</p></div></div>
+      <div id="nextRace" class="empty"><strong>Calendario in preparazione</strong>Nessuna gara definitiva è stata inserita.</div>
+    </div>
+    <div class="card">
+      <div class="section-head"><div><h2>Stato Stagione 2026-2027</h2><p>Informazioni aggiornate dall'Admin.</p></div></div>
+      <div id="seasonStatus" class="empty"><strong><span class="status-dot"></span>Preparazione</strong>Il campionato è in fase di organizzazione.</div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px" class="section-head"><div><h2>Ultime news</h2><p>Comunicazioni ufficiali SRT.</p></div></div>
+  <div id="homeNews" class="grid"></div>
+</section>
+
+<section id="teams" class="section">
+  <div class="section-head"><div><h2>Scuderie</h2><p>Team iscritti alla Stagione 2026-2027.</p></div></div>
+  <div id="teamsGrid" class="grid"></div><div id="teamsEmpty" class="card empty"><strong>Nessuna scuderia</strong>Aggiungi le scuderie dal pannello Admin.</div>
+</section>
+
+<section id="drivers" class="section">
+  <div class="section-head"><div><h2>Piloti</h2><p>EA ID, livello, scuderia e stato.</p></div></div>
+  <div class="card table-wrap">
+    <table><thead><tr><th>EA ID</th><th>Pilota</th><th>Scuderia</th><th>Livello</th><th>Assenze</th><th>Stato</th><th>Piattaforma</th></tr></thead><tbody id="driversBody"></tbody></table>
+    <div id="driversEmpty" class="empty"><strong>Piloti non ancora decisi</strong>La lista verrà completata quando le iscrizioni saranno definitive.</div>
+  </div>
+</section>
+
+<section id="calendar" class="section">
+  <div class="section-head"><div><h2>Calendario</h2><p>Il calendario ufficiale verrà inserito per ultimo.</p></div></div>
+  <div class="card coming empty"><strong>Calendario Stagione 2026-2027 in preparazione</strong>Questa sezione è già pronta e si popolerà automaticamente quando inserirai le gare.</div>
+</section>
+
+<section id="standings" class="section">
+  <div class="section-head"><div><h2>Classifiche</h2><p>Aggiornate dopo ogni GP pubblicato.</p></div></div>
+  <div class="grid two">
+    <div class="card table-wrap">
+      <h3>Classifica piloti</h3>
+      <table><thead><tr><th>Pos.</th><th>Pilota</th><th>Scuderia</th><th>Punti</th><th>Gap</th><th>Vittorie</th><th>Podi</th></tr></thead><tbody id="standingsBody"></tbody></table>
+      <div id="standingsEmpty" class="empty">Nessun risultato pubblicato.</div>
+    </div>
+    <div class="card table-wrap">
+      <h3>Classifica costruttori</h3>
+      <table><thead><tr><th>Pos.</th><th>Scuderia</th><th>Punti</th><th>Gap</th><th>Vittorie</th><th>Podi</th></tr></thead><tbody id="constructorsBody"></tbody></table>
+      <div id="constructorsEmpty" class="empty">Nessun risultato pubblicato.</div>
+    </div>
+  </div>
+</section>
+
+<section id="statistics" class="section">
+  <div class="section-head"><div><h2>Statistiche avanzate</h2><p>Record e leader aggiornati automaticamente.</p></div></div>
+  <div class="stats-grid">
+    <div class="card stat-card"><div class="big" id="statWins">0</div><div class="caption">Vittorie</div></div>
+    <div class="card stat-card"><div class="big" id="statPoles">0</div><div class="caption">Pole</div></div>
+    <div class="card stat-card"><div class="big" id="statFastest">0</div><div class="caption">Giri veloci</div></div>
+    <div class="card stat-card"><div class="big" id="statPodiums">0</div><div class="caption">Podi</div></div>
+  </div>
+  <div id="recordsGrid" class="record-grid" style="margin-top:14px"></div>
+  <div class="grid two" style="margin-top:14px">
+    <div class="card table-wrap"><h3>Statistiche piloti</h3><table><thead><tr><th>Pilota</th><th>GP</th><th>Punti</th><th>Media</th><th>V</th><th>Podi</th><th>Pole</th><th>GV</th></tr></thead><tbody id="driverStatsBody"></tbody></table></div>
+    <div class="card table-wrap"><h3>Statistiche scuderie</h3><table><thead><tr><th>Scuderia</th><th>Punti</th><th>V</th><th>Podi</th><th>Pole</th><th>GV</th></tr></thead><tbody id="teamStatsBody"></tbody></table></div>
+  </div>
+</section>
+
+
+<section id="profiles" class="section">
+  <div class="section-head"><div><h2>Profili piloti</h2><p>Statistiche e storico personale.</p></div></div>
+  <div class="card"><div class="field"><label>Seleziona pilota</label><select id="profileDriverSelect"></select></div></div>
+  <div id="profileCard" class="profile-card card" style="margin-top:14px">
+    <div class="profile-grid">
+      <img id="profileAvatar" class="profile-avatar" src="icon-192.png" alt="Profilo pilota">
+      <div>
+        <div class="eyebrow" id="profileTeam">Scuderia</div><h2 id="profileName">Pilota</h2>
+        <div class="row"><span class="chip" id="profileEaId">EA ID</span><span class="chip" id="profileLevel">Livello</span><span class="chip" id="profilePlatform">Crossplay</span><span class="chip" id="profileAbsences">Assenze: 0/3</span></div>
+        <div class="profile-stats">
+          <div class="card stat-card"><div class="big" id="profilePoints">0</div><div class="caption">Punti</div></div>
+          <div class="card stat-card"><div class="big" id="profileWins">0</div><div class="caption">Vittorie</div></div>
+          <div class="card stat-card"><div class="big" id="profilePodiums">0</div><div class="caption">Podi</div></div>
+          <div class="card stat-card"><div class="big" id="profilePoles">0</div><div class="caption">Pole</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Disciplina</h3>
+      <div class="row"><span id="profileWarnings" class="warning-badge">0 warning</span><span id="profileLicenseText" class="chip">30/30 punti</span></div>
+      <div class="license-wrap"><div class="license-bar"><div id="profileLicenseFill" class="license-fill license-green" style="width:100%"></div></div></div>
+      <div id="profileDisciplineHistory" class="admin-list"></div>
+    </div>
+    <div style="margin-top:16px"><h3>Storico risultati</h3><div class="table-wrap"><table><thead><tr><th>GP</th><th>Pos.</th><th>Punti</th><th>Pole</th><th>GV</th><th>DNF</th><th>Penalità</th></tr></thead><tbody id="profileResultsBody"></tbody></table></div></div>
+  </div>
+  <div id="profilesEmpty" class="card empty"><strong>Nessun pilota disponibile</strong></div>
+</section>
+
+<section id="archive" class="section">
+  <div class="section-head"><div><h2>Archivio Gran Premi</h2><p>Podio, pole, giro veloce e risultati completi.</p></div></div>
+  <div id="gpArchive" class="gp-archive"></div>
+  <div id="archiveEmpty" class="card empty"><strong>Nessun GP pubblicato</strong></div>
+</section>
+
+
+<section id="halloffame" class="section">
+  <div class="section-head"><div><h2>Hall of Fame</h2><p>Campioni e record storici del campionato SRT.</p></div></div>
+  <div id="hallOfFameGrid" class="hof-grid"></div>
+  <div id="hallOfFameEmpty" class="card empty"><strong>Nessun titolo assegnato</strong>La Hall of Fame si popolerà quando una stagione verrà conclusa.</div>
+</section>
+
+<section id="news" class="section">
+  <div class="section-head"><div><h2>News</h2><p>Comunicazioni e annunci ufficiali.</p></div></div>
+  <div id="newsGrid" class="grid"></div><div id="newsEmpty" class="card empty"><strong>Nessuna news pubblicata</strong>Puoi crearne una dal pannello Admin.</div>
+</section>
+
+
+<section id="regulations" class="section">
+  <div class="section-head"><div><h2>Regolamento</h2><p>Regole ufficiali della Stagione 2026-2027.</p></div></div>
+  <div id="regulationsContent" class="card"><div class="empty"><strong>Regolamento non ancora pubblicato</strong>L’Admin potrà inserirlo dal pannello di gestione.</div></div>
+</section>
+
+<section id="login" class="section">
+  <div class="card auth">
+    <h2 id="authTitle">Accedi</h2><div id="authMsg"></div>
+    <div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><br>
+    <div class="field"><label>Password</label><input id="password" type="password" minlength="6"></div><br>
+    <div id="nameField" class="field hidden"><label>Nome visualizzato</label><input id="displayName"></div><br>
+    <div class="row"><button class="btn" id="authSubmit">Accedi</button><button class="btn alt" id="authSwitch">Crea account</button><button class="btn danger hidden" id="logoutBtn">Esci</button></div>
+  </div>
+</section>
+
+<section id="admin" class="section">
+  <div class="section-head"><div><h2>Pannello Admin</h2><p>Gestisci la Stagione 2026-2027 direttamente dal telefono.</p></div><div class="grow"></div><button class="btn alt small" onclick="loadAll()">Aggiorna dati</button></div>
+  <div id="adminMsg"></div>
+  <div class="admin-tabs">
+    <button data-admin="dashboardPane" class="active">Dashboard</button><button data-admin="settingsPane">Impostazioni</button><button data-admin="scoringPane">Punteggi</button>
+    <button data-admin="teamPane">Scuderie</button>
+    <button data-admin="newsPane">News</button><button data-admin="regulationsPane">Regolamento</button><button data-admin="disciplinePane">Disciplina</button>
+    <button data-admin="driverPane">Piloti</button>
+    <button data-admin="racePane">Gare</button>
+    <button data-admin="resultPane">Race Control</button>
+  </div>
+
+
+  <div id="dashboardPane" class="admin-pane active card">
+    <h3>Dashboard Stagione 2026-2027</h3>
+    <div class="stats-grid">
+      <div class="card stat-card"><div class="big" id="adminCountDrivers">0</div><div class="caption">Piloti</div></div>
+      <div class="card stat-card"><div class="big" id="adminCountTeams">0</div><div class="caption">Scuderie</div></div>
+      <div class="card stat-card"><div class="big" id="adminCountRaces">0</div><div class="caption">Gare</div></div>
+      <div class="card stat-card"><div class="big" id="adminCountNews">0</div><div class="caption">News</div></div>
+    </div>
+    <div class="row" style="margin:14px 0">
+      <button class="btn alt" id="rebuildStandingsBtn">Ricostruisci movimento classifica</button>
+      <span class="muted">Usalo dopo aver importato o corretto vecchi GP.</span>
+    </div>
+    <div class="grid two">
+      <div class="card"><h3>Stato campionato</h3><div id="adminSeasonState" class="muted">Caricamento...</div></div>
+      <div class="card"><h3>Ultima attività</h3><div id="adminLastActivity" class="muted">Nessuna attività registrata.</div></div>
+    </div>
+  </div>
+
+  <div id="settingsPane" class="admin-pane card">
+    <h3>Impostazioni campionato</h3>
+    <form id="settingsForm" class="form-grid">
+      <div class="field"><label>Nome campionato</label><input name="championship_name" required></div>
+      <div class="field"><label>Stagione</label><input name="season_name" value="Stagione 2026-2027" required></div>
+      <div class="field"><label>Gioco</label><input name="game_name" value="F1"></div>
+      <div class="field"><label>Giorno gara</label><input name="race_day" value="Domenica"></div>
+      <div class="field"><label>Ora gara</label><input name="race_time" type="time" value="22:30"></div>
+      <div class="field"><label>Durata gara</label><input name="race_length" value="50%"></div>
+      <div class="field"><label>Piattaforma</label><input name="platform" value="Crossplay"></div>
+      <div class="field"><label>Livello richiesto</label><input name="required_level" type="number" value="100"></div>
+      <div class="field"><label>Stato</label><select name="status"><option>Preparazione</option><option>Iscrizioni aperte</option><option>In corso</option><option>Conclusa</option></select></div>
+      <div class="field"><label>Iscrizioni</label><select name="registration_open"><option value="true">Aperte</option><option value="false">Chiuse</option></select></div>
+      <div class="field full"><label>Descrizione</label><textarea name="description"></textarea></div>
+      <div class="row"><button class="btn">Salva impostazioni</button><button type="button" class="btn alt" id="closeSeasonBtn">Concludi stagione e assegna titoli</button></div>
+    </form>
+  </div>
+
+
+  <div id="scoringPane" class="admin-pane card">
+    <h3>Sistema punti automatico</h3>
+    <p class="muted">Imposta i punti per ogni posizione. I risultati useranno questi valori automaticamente.</p>
+    <form id="scoringForm">
+      <div id="positionPointsGrid" class="form-grid"></div>
+      <div class="form-grid" style="margin-top:14px">
+        <div class="field"><label>Bonus Pole Position</label><input name="pole_bonus" type="number" step="0.5" value="1"></div>
+        <div class="field"><label>Bonus Giro Veloce</label><input name="fastest_lap_bonus" type="number" step="0.5" value="1"></div>
+        <div class="field"><label>Bonus presenza</label><input name="attendance_bonus" type="number" step="0.5" value="0"></div>
+        <div class="field"><label>DNF</label><select name="dnf_keeps_points"><option value="false">0 punti</option><option value="true">Mantiene i punti della posizione</option></select></div>
+      </div>
+      <div style="margin-top:14px"><button class="btn">Salva sistema punti</button></div>
+    </form>
+    <div class="notice success" style="margin-top:14px">Calcolo: posizione + pole + giro veloce + presenza − penalità punti.</div>
+  </div>
+
+  <div id="teamPane" class="admin-pane card">
+    <h3>Aggiungi scuderia</h3>
+    <form id="teamForm" class="form-grid">
+      <div class="field"><label>Nome</label><input name="name" required></div>
+      <div class="field"><label>Colore</label><input name="color" value="#e10600"></div>
+      <div class="field"><label>Paese</label><input name="country" value="Italia"></div>
+      <div class="field"><label>Logo scuderia</label><input id="teamLogoFile" type="file" accept="image/*"></div><input type="hidden" name="logo">
+      <button class="btn">Salva scuderia</button>
+    </form><div id="adminTeams" class="admin-list"></div>
+  </div>
+
+  <div id="newsPane" class="admin-pane card">
+    <h3>Pubblica news</h3>
+    <form id="newsForm" class="form-grid">
+      <div class="field"><label>Titolo</label><input name="title" required></div>
+      <div class="field"><label>Categoria</label><input name="category" value="Annuncio"></div>
+      <div class="field full"><label>Testo breve</label><textarea name="excerpt"></textarea></div><div class="field full"><label>Immagine news</label><input id="newsImageFile" type="file" accept="image/*"></div><input type="hidden" name="image">
+      <button class="btn">Pubblica</button>
+    </form><div id="adminNews" class="admin-list"></div>
+  </div>
+
+
+  <div id="regulationsPane" class="admin-pane card">
+    <h3>Gestione regolamento</h3>
+    <form id="regulationsForm">
+      <div class="field"><label>Titolo</label><input name="title" value="Regolamento ufficiale Stagione 2026-2027"></div><br>
+      <div class="field"><label>Contenuto</label><textarea name="content" style="min-height:320px" placeholder="Inserisci qui il regolamento completo..."></textarea></div><br>
+      <button class="btn">Salva regolamento</button>
+    </form>
+  </div>
+
+
+  <div id="disciplinePane" class="admin-pane card">
+    <h3>Gestione disciplinare</h3>
+    <div class="discipline-grid">
+      <form id="warningForm" class="card">
+        <h3>Aggiungi warning</h3>
+        <div class="field"><label>Pilota</label><select name="driver_id" class="driverSelect"></select></div><br>
+        <div class="field"><label>Gran Premio</label><select name="race_id" class="raceSelect"></select></div><br>
+        <div class="field"><label>Motivazione</label><textarea name="reason" required></textarea></div><br>
+        <button class="btn">Aggiungi warning</button>
+      </form>
+      <form id="licenseForm" class="card">
+        <h3>Modifica patente</h3>
+        <div class="field"><label>Pilota</label><select name="driver_id" class="driverSelect"></select></div><br>
+        <div class="field"><label>Gran Premio</label><select name="race_id" class="raceSelect"></select></div><br>
+        <div class="field"><label>Operazione</label><select name="operation"><option value="subtract">Togli punti</option><option value="restore">Restituisci punti</option></select></div><br>
+        <div class="field"><label>Punti</label><input name="points" type="number" min="1" max="30" value="1"></div><br>
+        <div class="field"><label>Motivazione</label><textarea name="reason" required></textarea></div><br>
+        <button class="btn">Aggiorna patente</button>
+      </form>
+    </div>
+    <div id="disciplineAdminList" class="admin-list"></div>
+  </div>
+
+  <div id="driverPane" class="admin-pane card">
+    <h3>Aggiungi pilota</h3>
+    <form id="driverForm" class="form-grid">
+      <div class="field"><label>Nome</label><input name="name" required></div>
+      <div class="field"><label>Cognome / nickname</label><input name="surname"></div>
+      <div class="field"><label>EA ID</label><input name="ea_id" required></div>
+      <div class="field"><label>Livello</label><input name="level" type="number" value="100"></div>
+      <div class="field"><label>Scuderia</label><select name="team_id" class="teamSelect"></select></div>
+      <div class="field"><label>Piattaforma</label><select name="platform"><option>Crossplay</option><option>PS5</option><option>Xbox</option><option>PC</option></select></div>
+      <div class="field"><label>Stato</label><select name="status"><option value="active">Attivo</option><option value="reserve">Riserva</option><option value="suspended">Sospeso</option></select></div>
+      <button class="btn">Salva pilota</button>
+    </form>
+    <hr style="margin:24px 0;border:0;border-top:1px solid var(--line)">
+    <h3>Gestione assenze</h3>
+    <form id="absenceForm" class="form-grid">
+      <div class="field"><label>Pilota</label><select name="driver_id" class="driverSelect" required></select></div>
+      <div class="field"><label>Assenze (massimo 3)</label><input name="absences" type="number" min="0" max="3" value="0" required></div>
+      <button class="btn">Salva assenze</button>
+    </form>
+    <div id="adminDrivers" class="admin-list"></div>
+  </div>
+
+  <div id="racePane" class="admin-pane card">
+    <h3>Aggiungi gara</h3>
+    <form id="raceForm" class="form-grid">
+      <div class="field"><label>Round</label><input name="round" type="number" required></div>
+      <div class="field"><label>Nome GP</label><input name="name" required></div>
+      <div class="field"><label>Circuito</label><input name="circuit" required></div>
+      <div class="field"><label>Paese</label><input name="country" required></div>
+      <div class="field"><label>Data</label><input name="race_date" type="date" required></div>
+      <div class="field"><label>Ora</label><input name="race_time" type="time"></div>
+      <div class="field"><label>Stato</label><select name="status"><option value="upcoming">In programma</option><option value="live">In corso</option><option value="completed">Conclusa</option></select></div>
+      <button class="btn">Salva gara</button>
+    </form><div id="adminRaces" class="admin-list"></div>
+  </div>
+
+  <div id="resultPane" class="admin-pane card">
+    <div class="section-head">
+      <div>
+        <h3>Race Control</h3>
+        <p>Inserisci tutti i risultati, salva una bozza e pubblica il GP solo dopo il controllo.</p>
+      </div>
+      <div class="grow"></div>
+      <span id="raceControlStatus" class="race-status empty">Nessun GP selezionato</span>
+    </div>
+
+    <div class="race-control-toolbar">
+      <div class="field">
+        <label>Gran Premio</label>
+        <select id="raceControlRace"></select>
+      </div>
+      <div class="field">
+        <label>Note gara</label>
+        <input id="raceControlNotes" placeholder="Facoltative">
+      </div>
+    </div>
+
+    <div class="race-summary">
+      <div class="card"><div class="muted">Piloti</div><strong id="rcDriversCount">0</strong></div>
+      <div class="card"><div class="muted">Risultati compilati</div><strong id="rcFilledCount">0</strong></div>
+      <div class="card"><div class="muted">Pole</div><strong id="rcPoleName">—</strong></div>
+      <div class="card"><div class="muted">Giro veloce</div><strong id="rcFastestName">—</strong></div>
+    </div>
+
+    <div id="raceControlEmpty" class="empty">
+      <strong>Race Control in attesa</strong>
+      Inserisci prima almeno una gara e un pilota.
+    </div>
+
+    <div id="raceControlList" class="race-control-list"></div>
+
+    <div id="raceControlActions" class="race-actions hidden">
+      <button class="btn alt" id="saveDraftBtn">💾 Salva bozza</button>
+      <button class="btn" id="publishRaceBtn">🚀 Pubblica GP</button>
+      <button class="btn danger" id="cancelRaceBtn">↩ Annulla GP</button>
+    </div>
+  </div>
+</section>
+</main>
+<footer>© 2026 SRT Santena Racing Team • Stagione 2026-2027 • Crossplay</footer>
+</div>
+
+<script>
+const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
+const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let state={teams:[],drivers:[],races:[],results:[],news:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const ROLE_ACCESS={
+  guest:['standings','calendar','halloffame'],
+  driver:['home','standings','calendar','statistics','profiles','archive','news','regulations','halloffame'],
+  admin:['home','standings','calendar','statistics','profiles','archive','news','regulations','halloffame','admin']
+};
+function currentRole(){return state.profile?.role||null}
+function allowedPages(){const r=currentRole();return r?(ROLE_ACCESS[r]||[]):[]}
+function applyAccessControl(){
+  const role=currentRole();
+  const logged=Boolean(state.user&&role);
+  document.body.classList.toggle('locked',!logged);
+  $$('#nav button[data-page]').forEach(btn=>{
+    btn.classList.toggle('role-hidden',!logged||!allowedPages().includes(btn.dataset.page));
+  });
+  if(logged){
+    const active=$('.section.active');
+    if(active && !allowedPages().includes(active.id)){
+      const fallback=role==='guest'?'standings':'home';
+      $$('.section').forEach(x=>x.classList.toggle('active',x.id===fallback));
+      $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===fallback));
+    }
+  }
+}
+function go(id){
+  const role=currentRole();
+  if(!state.user||!role) id='login';
+  else if(!allowedPages().includes(id)) id=role==='guest'?'standings':'home';
+  $$('.section').forEach(x=>x.classList.toggle('active',x.id===id));
+  $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
+  scrollTo({top:0,behavior:'smooth'});
+}
+window.go=go;
+
+$$('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
+$$('.admin-tabs button').forEach(b=>b.onclick=()=>{$$('.admin-tabs button').forEach(x=>x.classList.remove('active'));$$('.admin-pane').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#'+b.dataset.admin).classList.add('active')});
+function msg(el,text,ok=false){el.innerHTML=`<div class="notice ${ok?'success':''}">${esc(text)}</div>`}
+function teamName(id){return state.teams.find(t=>t.id==id)?.name||'—'}
+function driverName(id){const d=state.drivers.find(x=>x.id==id);return d?`${d.name} ${d.surname||''}`.trim():'—'}
+function fmtDate(v){return v?new Date(v+'T12:00:00').toLocaleDateString('it-IT'):''}
+
+async function loadAll(){
+ try{
+  const [se,te,dr,ra,re,ne,cs,rg,sc,di,hf,sh]=await Promise.all([
+   db.from('seasons').select('*').eq('is_active',true).limit(1).maybeSingle(),
+   db.from('teams').select('*').order('name'),
+   db.from('drivers').select('*').order('name'),
+   db.from('races').select('*').order('round'),
+   db.from('race_results').select('*'),
+   db.from('news').select('*').order('published_at',{ascending:false}),
+   db.from('championship_settings').select('*').limit(1).maybeSingle(),
+   db.from('regulations').select('*').limit(1).maybeSingle(),
+   db.from('scoring_settings').select('*').limit(1).maybeSingle(),
+   db.from('discipline_events').select('*').order('created_at',{ascending:false}),
+   db.from('hall_of_fame').select('*').order('season_name',{ascending:false}),
+   db.from('standings_history').select('*').order('round')
+  ]);
+  for(const x of [se,te,dr,ra,re,ne,cs,rg,sc,di,hf,sh])if(x.error)throw x.error;
+  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.news=ne.data||[];state.settings=cs.data||null;state.regulations=rg.data||null;state.scoring=sc.data||null;state.discipline=di.data||[];state.hallOfFame=hf.data||[];state.standingsHistory=sh.data||[];
+  render();
+ }catch(e){console.error(e);msg($('#adminMsg'),'Errore caricamento: '+e.message)}
+}
+
+
+
+function licenseColor(points){return points>=21?'license-green':points>=11?'license-yellow':'license-red'}
+function movementForDriver(driverId){
+ const rounds=[...new Set(state.standingsHistory.map(x=>x.round))].sort((a,b)=>a-b);
+ if(rounds.length<2)return {text:'Nuovo',cls:'movement-flat'};
+ const last=rounds[rounds.length-1],prev=rounds[rounds.length-2];
+ const a=state.standingsHistory.find(x=>x.round===last&&x.driver_id==driverId);
+ const b=state.standingsHistory.find(x=>x.round===prev&&x.driver_id==driverId);
+ if(!a||!b)return {text:'—',cls:'movement-flat'};
+ const diff=b.position-a.position;
+ return diff>0?{text:`▲ +${diff}`,cls:'movement-up'}:diff<0?{text:`▼ ${diff}`,cls:'movement-down'}:{text:'—',cls:'movement-flat'};
+}
+function driverDiscipline(driverId){
+ const d=state.drivers.find(x=>x.id==driverId);
+ const events=state.discipline.filter(x=>x.driver_id==driverId);
+ return {points:d?.license_points??30,warnings:events.filter(x=>x.event_type==='warning').length,events};
+}
+
+function publishedResults(){return state.results.filter(r=>r.is_published!==false)}
+function buildDriverStats(){
+ const results=publishedResults();
+ return state.drivers.map(d=>{
+  const rr=results.filter(r=>r.driver_id==d.id),points=rr.reduce((a,r)=>a+Number(r.points||0),0);
+  return {driver:d,results:rr,points,wins:rr.filter(r=>r.position===1).length,podiums:rr.filter(r=>r.position&&r.position<=3).length,poles:rr.filter(r=>r.pole).length,fastest:rr.filter(r=>r.fastest_lap).length,races:rr.length,average:rr.length?points/rr.length:0};
+ }).sort((a,b)=>b.points-a.points||b.wins-a.wins||b.podiums-a.podiums)
+}
+function buildTeamStats(ds){
+ return state.teams.map(t=>{const a=ds.filter(x=>x.driver.team_id==t.id);return{team:t,points:a.reduce((s,x)=>s+x.points,0),wins:a.reduce((s,x)=>s+x.wins,0),podiums:a.reduce((s,x)=>s+x.podiums,0),poles:a.reduce((s,x)=>s+x.poles,0),fastest:a.reduce((s,x)=>s+x.fastest,0)}}).sort((a,b)=>b.points-a.points||b.wins-a.wins)
+}
+function recordCard(t,n,v){return `<article class="card record-card"><div class="record-title">${esc(t)}</div><div class="record-name">${esc(n||'—')}</div><div class="record-value">${esc(v||'Nessun dato')}</div></article>`}
+function renderProfile(id){
+ const d=state.drivers.find(x=>x.id==id),card=$('#profileCard'),empty=$('#profilesEmpty');
+ if(!d){card.classList.remove('active');empty.classList.remove('hidden');return}
+ const s=buildDriverStats().find(x=>x.driver.id==d.id);empty.classList.add('hidden');card.classList.add('active');
+ $('#profileAvatar').src=d.avatar||'icon-192.png';$('#profileTeam').textContent=teamName(d.team_id);$('#profileName').textContent=driverName(d.id);
+ $('#profileEaId').textContent='EA ID: '+(d.ea_id||'—');$('#profileLevel').textContent='Livello '+(d.level||100);$('#profilePlatform').textContent=d.platform||'Crossplay';
+ $('#profileAbsences').textContent='Assenze: '+Number(d.absences||0)+'/3';
+ $('#profilePoints').textContent=s?.points||0;$('#profileWins').textContent=s?.wins||0;$('#profilePodiums').textContent=s?.podiums||0;$('#profilePoles').textContent=s?.poles||0;
+ const disc=driverDiscipline(d.id);
+ $('#profileWarnings').textContent=disc.warnings+' warning';
+ $('#profileLicenseText').textContent=disc.points+'/30 punti';
+ const fill=$('#profileLicenseFill');fill.style.width=(disc.points/30*100)+'%';fill.className='license-fill '+licenseColor(disc.points);
+ $('#profileDisciplineHistory').innerHTML=disc.events.map(ev=>`<div class="admin-item"><span class="grow"><strong>${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti tolti':'Punti restituiti'}</strong><br><span class="muted">${esc(ev.reason)}${ev.race_id?' • '+esc(state.races.find(r=>r.id==ev.race_id)?.name||'GP'):''}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
+ $('#profileResultsBody').innerHTML=(s?.results||[]).sort((a,b)=>Number(state.races.find(r=>r.id==a.race_id)?.round||0)-Number(state.races.find(r=>r.id==b.race_id)?.round||0)).map(r=>{const gp=state.races.find(x=>x.id==r.race_id);return `<tr><td>${esc(gp?.name||'GP')}</td><td>${r.position??'—'}</td><td><strong>${Number(r.points||0)}</strong></td><td>${r.pole?'Sì':'—'}</td><td>${r.fastest_lap?'Sì':'—'}</td><td>${r.dnf?'Sì':'—'}</td><td>${Number(r.penalty_points||0)} pt / ${Number(r.penalty_seconds||0)} s</td></tr>`}).join('')||'<tr><td colspan="7">Nessun risultato.</td></tr>'
+}
+window.renderProfile=renderProfile;
+function toggleGpDetails(id){document.getElementById('gp-details-'+id)?.classList.toggle('active')}
+window.toggleGpDetails=toggleGpDetails;
+
+function render(){
+ const s=state.settings||{};
+ $('#championshipInfo').innerHTML=`<strong>${esc(s.season_name||'Stagione 2026-2027')}</strong><br>${esc(s.race_day||'Domenica')} alle ${String(s.race_time||'22:30').slice(0,5)} • Gara ${esc(s.race_length||'50%')} • ${esc(s.platform||'Crossplay')} • Livello ${esc(s.required_level||100)}<br><span class="muted">${esc(s.description||'Campionato Formula 1 Crossplay organizzato da SRT Santena Racing Team.')}</span>`;
+ $('#seasonStatus').innerHTML=`<strong><span class="status-dot"></span>${esc(s.status||'Preparazione')}</strong>${s.registration_open===false?'<br><span class="muted">Iscrizioni chiuse</span>':'<br><span class="muted">Iscrizioni aperte</span>'}`;
+
+ $('#countDrivers').textContent=state.drivers.filter(d=>d.status!=='suspended').length;
+ $('#countTeams').textContent=state.teams.length;$('#countRaces').textContent=state.races.length;
+ $('#adminCountDrivers').textContent=state.drivers.length;
+ $('#adminCountTeams').textContent=state.teams.length;
+ $('#adminCountRaces').textContent=state.races.length;
+ $('#adminCountNews').textContent=state.news.length;
+ $('#adminSeasonState').innerHTML=`<strong>${esc(s.season_name||'Stagione 2026-2027')}</strong><br>${esc(s.status||'Preparazione')} • ${s.registration_open===false?'Iscrizioni chiuse':'Iscrizioni aperte'}`;
+ $('#adminLastActivity').textContent=state.news[0]?`Ultima news: ${state.news[0].title}`:'Nessuna attività registrata.';
+ if(state.regulations){
+   $('#regulationsContent').innerHTML=`<h3>${esc(state.regulations.title)}</h3><div class="muted" style="white-space:pre-wrap;line-height:1.7">${esc(state.regulations.content||'')}</div>`;
+   const rf=$('#regulationsForm'); if(rf){rf.elements.title.value=state.regulations.title||'';rf.elements.content.value=state.regulations.content||''}
+ }
+
+ const next=state.races.filter(r=>r.status!=='completed'&&new Date(r.race_date+'T23:59:59')>=new Date()).sort((a,b)=>a.race_date.localeCompare(b.race_date))[0];
+ if(next)$('#nextRace').innerHTML=`<strong>Round ${next.round} — ${esc(next.name)}</strong><br><span class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} ${esc(next.race_time||'')}</span>`;
+
+ $('#teamsGrid').innerHTML=state.teams.map(t=>`<article class="card team-card" style="--team-color:${esc(t.color||'#e10600')}">${t.logo?`<img src="${esc(t.logo)}" alt="${esc(t.name)}" style="width:64px;height:64px;object-fit:contain;margin-bottom:10px">`:``}<h3>${esc(t.name)}</h3><div class="muted">${esc(t.country||'')}</div><div style="margin-top:12px"><span class="chip">${state.drivers.filter(d=>d.team_id==t.id).length} piloti</span></div></article>`).join('');
+ $('#teamsEmpty').classList.toggle('hidden',state.teams.length>0);
+
+ $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${esc(d.ea_id||'—')}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())}</td><td>${esc(teamName(d.team_id))}</td><td>${esc(d.level??100)}</td><td><span class="chip">${Number(d.absences||0)}/3</span></td><td>${esc(d.status||'active')}</td><td>${esc(d.platform||'Crossplay')}</td></tr>`).join('');
+ $('#driversEmpty').classList.toggle('hidden',state.drivers.length>0);
+
+
+ const driverStats=buildDriverStats(),teamStats=buildTeamStats(driverStats),published=publishedResults();
+ const leader=driverStats[0]?.points||0,teamLeader=teamStats[0]?.points||0;
+ $('#standingsBody').innerHTML=driverStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${state.teams.find(t=>t.id==x.driver.team_id)?.logo?`<img class="team-logo-mini" src="${esc(state.teams.find(t=>t.id==x.driver.team_id).logo)}" alt="">`:''}<button class="driver-link" onclick="if(currentRole()!=='guest'){go('profiles');document.querySelector('#profileDriverSelect').value='${x.driver.id}';renderProfile(${x.driver.id})}">${esc(driverName(x.driver.id))}</button><div class="gap-leader">${esc(x.driver.ea_id||'')} • <span class="${movementForDriver(x.driver.id).cls}">${movementForDriver(x.driver.id).text}</span></div></td><td>${esc(teamName(x.driver.team_id))}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(leader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
+ $('#standingsEmpty').classList.toggle('hidden',published.length>0);
+ $('#constructorsBody').innerHTML=teamStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${esc(x.team.name)}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(teamLeader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
+ $('#constructorsEmpty').classList.toggle('hidden',published.length>0);
+ $('#statWins').textContent=published.filter(r=>r.position===1).length;$('#statPoles').textContent=published.filter(r=>r.pole).length;$('#statFastest').textContent=published.filter(r=>r.fastest_lap).length;$('#statPodiums').textContent=published.filter(r=>r.position&&r.position<=3).length;
+ const wl=[...driverStats].sort((a,b)=>b.wins-a.wins)[0],pl=[...driverStats].sort((a,b)=>b.poles-a.poles)[0],pdl=[...driverStats].sort((a,b)=>b.podiums-a.podiums)[0],fl=[...driverStats].sort((a,b)=>b.fastest-a.fastest)[0],al=[...driverStats].filter(x=>x.races).sort((a,b)=>b.average-a.average)[0];
+ $('#recordsGrid').innerHTML=[recordCard('Leader campionato',driverStats[0]?driverName(driverStats[0].driver.id):'—',driverStats[0]?driverStats[0].points+' punti':'Nessun dato'),recordCard('Più vittorie',wl&&wl.wins?driverName(wl.driver.id):'—',wl&&wl.wins?wl.wins+' vittorie':'Nessun dato'),recordCard('Più pole',pl&&pl.poles?driverName(pl.driver.id):'—',pl&&pl.poles?pl.poles+' pole':'Nessun dato'),recordCard('Più podi',pdl&&pdl.podiums?driverName(pdl.driver.id):'—',pdl&&pdl.podiums?pdl.podiums+' podi':'Nessun dato'),recordCard('Più giri veloci',fl&&fl.fastest?driverName(fl.driver.id):'—',fl&&fl.fastest?fl.fastest+' giri veloci':'Nessun dato'),recordCard('Miglior media',al?driverName(al.driver.id):'—',al?al.average.toFixed(2)+' pt/GP':'Nessun dato')].join('');
+ $('#driverStatsBody').innerHTML=driverStats.map(x=>`<tr><td>${esc(driverName(x.driver.id))}</td><td>${x.races}</td><td><strong>${x.points}</strong></td><td>${x.average.toFixed(2)}</td><td>${x.wins}</td><td>${x.podiums}</td><td>${x.poles}</td><td>${x.fastest}</td></tr>`).join('');
+ $('#teamStatsBody').innerHTML=teamStats.map(x=>`<tr><td>${esc(x.team.name)}</td><td><strong>${x.points}</strong></td><td>${x.wins}</td><td>${x.podiums}</td><td>${x.poles}</td><td>${x.fastest}</td></tr>`).join('');
+
+
+ const newsCards=state.news.map(n=>`<article class="card news-card">${n.image?`<img src="${esc(n.image)}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:12px;margin-bottom:12px">`:``}<div class="meta">${esc(n.category||'Annuncio')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p><div class="date">${new Date(n.published_at).toLocaleDateString('it-IT')}</div></article>`).join('');
+ $('#newsGrid').innerHTML=newsCards;$('#homeNews').innerHTML=state.news.slice(0,3).map(n=>`<article class="card news-card">${n.image?`<img src="${esc(n.image)}" alt="" style="width:100%;height:140px;object-fit:cover;border-radius:12px;margin-bottom:12px">`:``}<div class="meta">${esc(n.category||'Annuncio')}</div><h3>${esc(n.title)}</h3><p>${esc(n.excerpt||'')}</p><div class="date">${new Date(n.published_at).toLocaleDateString('it-IT')}</div></article>`).join('');
+ $('#newsEmpty').classList.toggle('hidden',state.news.length>0);
+ if(!state.news.length)$('#homeNews').innerHTML='<div class="card empty"><strong>Nessuna news</strong>Pubblica il primo annuncio dal pannello Admin.</div>';
+
+ const f=$('#settingsForm');if(f){for(const [k,v]of Object.entries(s)){if(f.elements[k])f.elements[k].value=typeof v==='boolean'?String(v):(v??'')}}
+
+ const scoring=state.scoring||{position_points:[25,18,15,12,10,8,6,5,4,3,2,1,0,0,0,0,0,0,0,0,0,0],pole_bonus:1,fastest_lap_bonus:1,attendance_bonus:0,dnf_keeps_points:false};
+ let posPoints=Array.isArray(scoring.position_points)?[...scoring.position_points]:[25,18,15,12,10,8,6,5,4,3,2,1];
+ while(posPoints.length<22)posPoints.push(0);
+ const pg=$('#positionPointsGrid');
+ if(pg){
+   pg.innerHTML=posPoints.slice(0,22).map((p,i)=>`<div class="field"><label>${i+1}° posto</label><input name="pos_${i+1}" type="number" step="0.5" value="${Number(p||0)}"></div>`).join('');
+   const sf=$('#scoringForm');
+   sf.elements.pole_bonus.value=scoring.pole_bonus??1;
+   sf.elements.fastest_lap_bonus.value=scoring.fastest_lap_bonus??1;
+   sf.elements.attendance_bonus.value=scoring.attendance_bonus??0;
+   sf.elements.dnf_keeps_points.value=String(scoring.dnf_keeps_points??false);
+ }
+
+ const teamOpts='<option value="">Nessuna</option>'+state.teams.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');$$('.teamSelect').forEach(x=>x.innerHTML=teamOpts);
+ $$('.driverSelect').forEach(x=>x.innerHTML=state.drivers.map(d=>`<option value="${d.id}">${esc(driverName(d.id))}</option>`).join(''));
+ $$('.raceSelect').forEach(x=>x.innerHTML=state.races.map(r=>`<option value="${r.id}">R${r.round} - ${esc(r.name)}</option>`).join(''));
+ $('#adminTeams').innerHTML=adminList(state.teams,'team');$('#adminDrivers').innerHTML=adminList(state.drivers,'driver');$('#adminRaces').innerHTML=adminList(state.races,'race');$('#adminNews').innerHTML=adminList(state.news,'news');
+
+ const ps=$('#profileDriverSelect');
+ if(ps){const cur=ps.value;ps.innerHTML='<option value="">Seleziona un pilota</option>'+state.drivers.map(d=>`<option value="${d.id}">${esc(driverName(d.id))} — ${esc(d.ea_id||'')}</option>`).join('');if(cur&&state.drivers.some(d=>d.id==cur))ps.value=cur;if(!ps.value&&state.drivers[0])ps.value=String(state.drivers[0].id);if(ps.value)renderProfile(Number(ps.value))}
+ $('#profilesEmpty').classList.toggle('hidden',state.drivers.length>0);
+ const prs=state.races.filter(r=>r.results_status==='published'||state.results.some(x=>x.race_id==r.id&&x.is_published===true)).sort((a,b)=>Number(b.round)-Number(a.round));
+ $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
+ $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
+      ${[2,1,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div class="podium-step ${p===1?'first':p===2?'second':'third'}"><div class="podium-medal">${p===1?'🥇':p===2?'🥈':'🥉'}</div><div class="podium-name">${x?esc(driverName(x.driver_id)):'—'}</div><div class="muted">${x?esc(teamName(state.drivers.find(d=>d.id==x.driver_id)?.team_id)):'—'}</div></div>`}).join('')}
+    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+
+
+ $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
+ $('#hallOfFameEmpty').classList.toggle('hidden',state.hallOfFame.length>0);
+ $('#hallOfFameGrid').innerHTML=state.hallOfFame.map(h=>`<article class="card hof-card"><div class="champion-crown">👑</div><div class="eyebrow">${esc(h.season_name)}</div><h3>${esc(h.title)}</h3><div class="record-name">${esc(h.winner_name)}</div><div class="muted">${esc(h.details||'')}</div></article>`).join('');
+
+ applyAccessControl();
+ renderRaceControl();
+}
+function adminList(items,type){return items.map(x=>`<div class="admin-item"><span class="grow">${esc(x.name||x.title||(x.round+' - '+x.circuit))}</span><button class="btn danger small" onclick="delItem('${type}',${x.id})">Elimina</button></div>`).join('')}
+const tableMap={team:'teams',driver:'drivers',race:'races',news:'news'};
+async function delItem(type,id){if(!confirm('Eliminare definitivamente?'))return;const{error}=await db.from(tableMap[type]).delete().eq('id',id);if(error)alert(error.message);else loadAll()}window.delItem=delItem;
+async function insertForm(form,table,transform=x=>x){const o=Object.fromEntries(new FormData(form));const{error}=await db.from(table).insert(transform(o,form));if(error)throw error;form.reset();await loadAll()}
+
+
+
+function calculateAutomaticPoints(form){
+ const s=state.scoring||{};
+ const arr=Array.isArray(s.position_points)?s.position_points:[25,18,15,12,10,8,6,5,4,3,2,1];
+ const position=Number(form.position.value||0);
+ const dnf=form.dnf.checked;
+ const penalty=Number(form.penalty_points.value||0);
+ let points=position>0?Number(arr[position-1]||0):0;
+ if(dnf && !s.dnf_keeps_points) points=0;
+ if(!dnf || s.dnf_keeps_points){
+   if(form.pole.checked) points+=Number(s.pole_bonus||0);
+   if(form.fastest_lap.checked) points+=Number(s.fastest_lap_bonus||0);
+   points+=Number(s.attendance_bonus||0);
+ }
+ points=Math.max(0,points-penalty);
+ const preview=$('#calculatedPoints');
+ if(preview)preview.value=points;
+ return points;
+}
+
+async function uploadImage(file,folder){
+ if(!file)return null;
+ const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+ const path=`${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+ const up=await db.storage.from('srt-media').upload(path,file,{upsert:false});
+ if(up.error)throw up.error;
+ const pub=db.storage.from('srt-media').getPublicUrl(path);
+ return pub.data.publicUrl;
+}
+
+
+$('#scoringForm').onsubmit=async e=>{
+ e.preventDefault();
+ try{
+   if(!state.season)throw new Error('Nessuna stagione attiva.');
+   const f=e.target;
+   const position_points=[];
+   for(let i=1;i<=22;i++)position_points.push(Number(f.elements[`pos_${i}`].value||0));
+   const payload={
+     season_id:state.season.id,
+     position_points,
+     pole_bonus:Number(f.pole_bonus.value||0),
+     fastest_lap_bonus:Number(f.fastest_lap_bonus.value||0),
+     attendance_bonus:Number(f.attendance_bonus.value||0),
+     dnf_keeps_points:f.dnf_keeps_points.value==='true'
+   };
+   const q=state.scoring?.id
+     ? await db.from('scoring_settings').update(payload).eq('id',state.scoring.id)
+     : await db.from('scoring_settings').insert(payload);
+   if(q.error)throw q.error;
+   msg($('#adminMsg'),'Sistema punti salvato.',true);
+   await loadAll();
+ }catch(x){msg($('#adminMsg'),x.message)}
+};
+
+$('#settingsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));const p={championship_name:o.championship_name,season_name:o.season_name,game_name:o.game_name,race_day:o.race_day,race_time:o.race_time||null,race_length:o.race_length,platform:o.platform,required_level:Number(o.required_level||100),status:o.status,registration_open:o.registration_open==='true',description:o.description,updated_at:new Date().toISOString()};let q=state.settings?.id?await db.from('championship_settings').update(p).eq('id',state.settings.id):await db.from('championship_settings').insert(p);if(q.error)throw q.error;msg($('#adminMsg'),'Impostazioni salvate.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#teamForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f));o.logo=await uploadImage($('#teamLogoFile').files[0],'teams');const{error}=await db.from('teams').insert(o);if(error)throw error;f.reset();await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#newsForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f));o.image=await uploadImage($('#newsImageFile').files[0],'news');const{error}=await db.from('news').insert(o);if(error)throw error;f.reset();await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+
+$('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));let q=state.regulations?.id?await db.from('regulations').update({...o,updated_at:new Date().toISOString()}).eq('id',state.regulations.id):await db.from('regulations').insert(o);if(q.error)throw q.error;msg($('#adminMsg'),'Regolamento salvato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#driverForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'drivers',o=>({...o,level:Number(o.level||100),team_id:o.team_id?Number(o.team_id):null}))}catch(x){msg($('#adminMsg'),x.message)}};
+$('#absenceForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target)),absences=Number(o.absences);if(!Number.isInteger(absences)||absences<0||absences>3)throw new Error('Le assenze devono essere comprese tra 0 e 3.');const{error}=await db.from('drivers').update({absences}).eq('id',Number(o.driver_id));if(error)throw error;msg($('#adminMsg'),'Assenze aggiornate.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');await insertForm(e.target,'races',o=>({...o,round:Number(o.round),season_id:state.season.id,race_time:o.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
+
+
+
+async function rebuildStandingsHistory(showMessage=true){
+ try{
+  if(!state.profile || state.profile.role!=='admin')throw new Error('Operazione riservata all’Admin.');
+  if(!state.season)throw new Error('Nessuna stagione attiva.');
+
+  const publishedRaces=[...state.races]
+   .filter(r=>r.results_status==='published' || state.results.some(x=>x.race_id==r.id && x.is_published===true))
+   .sort((a,b)=>Number(a.round)-Number(b.round));
+
+  const del=await db.from('standings_history').delete().eq('season_id',state.season.id);
+  if(del.error)throw del.error;
+
+  const cumulative=new Map(state.drivers.map(d=>[d.id,0]));
+  const rows=[];
+
+  for(const race of publishedRaces){
+   const rr=state.results.filter(x=>x.race_id==race.id && x.is_published===true);
+   rr.forEach(result=>{
+    cumulative.set(result.driver_id,Number(cumulative.get(result.driver_id)||0)+Number(result.points||0));
+   });
+
+   const ranking=[...state.drivers]
+    .map(driver=>({driver,points:Number(cumulative.get(driver.id)||0)}))
+    .sort((a,b)=>b.points-a.points || a.driver.name.localeCompare(b.driver.name,'it'));
+
+   ranking.forEach((item,index)=>{
+    rows.push({
+     season_id:state.season.id,
+     race_id:race.id,
+     round:Number(race.round),
+     driver_id:item.driver.id,
+     position:index+1,
+     points:item.points
+    });
+   });
+  }
+
+  if(rows.length){
+   const ins=await db.from('standings_history').upsert(rows,{onConflict:'race_id,driver_id'});
+   if(ins.error)throw ins.error;
+  }
+
+  const sh=await db.from('standings_history').select('*').eq('season_id',state.season.id).order('round');
+  if(sh.error)throw sh.error;
+  state.standingsHistory=sh.data||[];
+  render();
+
+  if(showMessage)msg($('#adminMsg'),'Movimento classifica ricostruito correttamente.',true);
+  return true;
+ }catch(e){
+  if(showMessage)msg($('#adminMsg'),e.message);
+  return false;
+ }
+}
+window.rebuildStandingsHistory=rebuildStandingsHistory;
+
+function raceControlScoring(){
+ const s=state.scoring||{};
+ return {
+   position_points:Array.isArray(s.position_points)?s.position_points:[25,18,15,12,10,8,6,5,4,3,2,1],
+   pole_bonus:Number(s.pole_bonus||0),
+   fastest_lap_bonus:Number(s.fastest_lap_bonus||0),
+   attendance_bonus:Number(s.attendance_bonus||0),
+   dnf_keeps_points:Boolean(s.dnf_keeps_points)
+ };
+}
+
+function calculateRaceControlPoints(row){
+ const s=raceControlScoring();
+ const position=Number(row.querySelector('[data-field="position"]').value||0);
+ const dnf=row.querySelector('[data-field="dnf"]').checked;
+ const pole=row.querySelector('[data-field="pole"]').checked;
+ const fastest=row.querySelector('[data-field="fastest_lap"]').checked;
+ const penalty=Number(row.querySelector('[data-field="penalty_points"]').value||0);
+ let points=position>0?Number(s.position_points[position-1]||0):0;
+
+ if(dnf && !s.dnf_keeps_points) points=0;
+ if(!dnf || s.dnf_keeps_points){
+   if(pole)points+=s.pole_bonus;
+   if(fastest)points+=s.fastest_lap_bonus;
+   points+=s.attendance_bonus;
+ }
+ return Math.max(0,points-penalty);
+}
+
+function selectedRace(){
+ return state.races.find(r=>r.id==state.raceControlRaceId)||null;
+}
+
+function renderRaceControl(){
+ const raceSelect=$('#raceControlRace');
+ const list=$('#raceControlList');
+ const empty=$('#raceControlEmpty');
+ const actions=$('#raceControlActions');
+
+ if(!raceSelect||!list)return;
+
+ raceSelect.innerHTML='<option value="">Seleziona un GP</option>'+state.races.map(r=>`<option value="${r.id}">R${r.round} — ${esc(r.name)}</option>`).join('');
+
+ if(state.raceControlRaceId && state.races.some(r=>r.id==state.raceControlRaceId)){
+   raceSelect.value=String(state.raceControlRaceId);
+ }else{
+   state.raceControlRaceId=Number(raceSelect.value)||null;
+ }
+
+ const race=selectedRace();
+ const canUse=Boolean(race&&state.drivers.length);
+ empty.classList.toggle('hidden',canUse);
+ actions.classList.toggle('hidden',!canUse);
+ list.innerHTML='';
+
+ if(!canUse){
+   $('#raceControlStatus').className='race-status empty';
+   $('#raceControlStatus').textContent='Nessun GP selezionato';
+   $('#rcDriversCount').textContent=state.drivers.length;
+   $('#rcFilledCount').textContent='0';
+   $('#rcPoleName').textContent='—';
+   $('#rcFastestName').textContent='—';
+   return;
+ }
+
+ const raceResults=state.results.filter(r=>r.race_id==race.id);
+ const isPublished=raceResults.some(r=>r.is_published===true)||race.results_status==='published';
+ $('#raceControlStatus').className='race-status '+(isPublished?'published':raceResults.length?'draft':'empty');
+ $('#raceControlStatus').textContent=isPublished?'Pubblicato':raceResults.length?'Bozza salvata':'Nuovo GP';
+ $('#raceControlNotes').value=race.result_notes||'';
+
+ const sortedDrivers=[...state.drivers].sort((a,b)=>{
+   const ar=raceResults.find(r=>r.driver_id==a.id);
+   const br=raceResults.find(r=>r.driver_id==b.id);
+   return Number(ar?.position||999)-Number(br?.position||999);
+ });
+
+ list.innerHTML=sortedDrivers.map((d,index)=>{
+   const rr=raceResults.find(r=>r.driver_id==d.id)||{};
+   return `<div class="race-row" data-driver-id="${d.id}">
+     <div class="race-position">${index+1}</div>
+     <div class="field wide-mobile">
+       <label>Pilota</label>
+       <div style="padding:10px;border:1px solid var(--line);border-radius:10px;background:#15151d">
+         <strong>${esc(driverName(d.id))}</strong><br><span class="muted">${esc(d.ea_id||'EA ID non inserito')} • ${esc(teamName(d.team_id))}</span>
+       </div>
+     </div>
+     <div class="field"><label>Pos.</label><input data-field="position" type="number" min="1" max="30" value="${rr.position||index+1}"></div>
+     <div class="field"><label>Pole</label><input data-field="pole" type="checkbox" ${rr.pole?'checked':''}></div>
+     <div class="field"><label>Giro V.</label><input data-field="fastest_lap" type="checkbox" ${rr.fastest_lap?'checked':''}></div>
+     <div class="field"><label>DNF</label><input data-field="dnf" type="checkbox" ${rr.dnf?'checked':''}></div>
+     <div class="field"><label>Pen. punti</label><input data-field="penalty_points" type="number" step="0.5" value="${Number(rr.penalty_points||0)}"></div>
+     <div class="field"><label>Pen. secondi</label><input data-field="penalty_seconds" type="number" step="0.5" value="${Number(rr.penalty_seconds||0)}"></div>
+     <div class="field wide-mobile"><label>Note pilota</label><input data-field="notes" value="${esc(rr.notes||'')}"></div>
+     <div class="field"><label>Punti</label><input data-field="points" type="number" readonly value="${Number(rr.points||0)}"></div>
+   </div>`;
+ }).join('');
+
+ list.querySelectorAll('.race-row').forEach(row=>{
+   const update=()=>row.querySelector('[data-field="points"]').value=calculateRaceControlPoints(row);
+   row.addEventListener('input',update);
+   row.addEventListener('change',(event)=>{
+     const field=event?.target?.dataset?.field;
+     if(field==='pole' && event.target.checked){
+       list.querySelectorAll('[data-field="pole"]').forEach(x=>{if(x!==event.target)x.checked=false});
+     }
+     if(field==='fastest_lap' && event.target.checked){
+       list.querySelectorAll('[data-field="fastest_lap"]').forEach(x=>{if(x!==event.target)x.checked=false});
+     }
+     update();
+     updateRaceControlSummary();
+   });
+   update();
+ });
+
+ $('#rcDriversCount').textContent=state.drivers.length;
+ updateRaceControlSummary();
+}
+
+function updateRaceControlSummary(){
+ const rows=[...document.querySelectorAll('#raceControlList .race-row')];
+ $('#rcFilledCount').textContent=rows.filter(r=>Number(r.querySelector('[data-field="position"]').value)>0).length;
+ const poleRow=rows.find(r=>r.querySelector('[data-field="pole"]').checked);
+ const fastRow=rows.find(r=>r.querySelector('[data-field="fastest_lap"]').checked);
+ $('#rcPoleName').textContent=poleRow?driverName(Number(poleRow.dataset.driverId)):'—';
+ $('#rcFastestName').textContent=fastRow?driverName(Number(fastRow.dataset.driverId)):'—';
+}
+
+function collectRaceControlResults(isPublished){
+ const race=selectedRace();
+ if(!race)throw new Error('Seleziona un Gran Premio.');
+ const rows=[...document.querySelectorAll('#raceControlList .race-row')];
+ const usedPositions=new Set();
+
+ return rows.map(row=>{
+   const position=Number(row.querySelector('[data-field="position"]').value||0);
+   if(position>0){
+     if(usedPositions.has(position))throw new Error(`La posizione ${position} è stata assegnata due volte.`);
+     usedPositions.add(position);
+   }
+   return {
+     race_id:race.id,
+     driver_id:Number(row.dataset.driverId),
+     position:position||null,
+     points:calculateRaceControlPoints(row),
+     pole:row.querySelector('[data-field="pole"]').checked,
+     fastest_lap:row.querySelector('[data-field="fastest_lap"]').checked,
+     dnf:row.querySelector('[data-field="dnf"]').checked,
+     penalty_points:Number(row.querySelector('[data-field="penalty_points"]').value||0),
+     penalty_seconds:Number(row.querySelector('[data-field="penalty_seconds"]').value||0),
+     notes:row.querySelector('[data-field="notes"]').value.trim()||null,
+     is_published:isPublished
+   };
+ });
+}
+
+async function saveRaceControl(isPublished){
+ try{
+   const race=selectedRace();
+   const payload=collectRaceControlResults(isPublished);
+   const {error}=await db.from('race_results').upsert(payload,{onConflict:'race_id,driver_id'});
+   if(error)throw error;
+
+   const raceUpdate={
+     results_status:isPublished?'published':'draft',
+     result_notes:$('#raceControlNotes').value.trim()||null,
+     published_at:isPublished?new Date().toISOString():null,
+     status:isPublished?'completed':race.status
+   };
+   const upd=await db.from('races').update(raceUpdate).eq('id',race.id);
+   if(upd.error)throw upd.error;
+
+   if(isPublished){
+     await loadAll();
+     const rebuilt=await rebuildStandingsHistory(false);
+     if(!rebuilt)throw new Error('Impossibile ricostruire il movimento classifica.');
+   }
+   msg($('#adminMsg'),isPublished?'GP pubblicato: classifiche e statistiche aggiornate.':'Bozza salvata correttamente.',true);
+   await loadAll();
+ }catch(e){msg($('#adminMsg'),e.message)}
+}
+
+async function cancelRaceControl(){
+ const race=selectedRace();
+ if(!race)return;
+ if(!confirm(`Annullare tutti i risultati di ${race.name}?`))return;
+ const del=await db.from('race_results').delete().eq('race_id',race.id);
+ if(del.error){msg($('#adminMsg'),del.error.message);return}
+ const upd=await db.from('races').update({results_status:'empty',result_notes:null,published_at:null,status:'upcoming'}).eq('id',race.id);
+ if(upd.error){msg($('#adminMsg'),upd.error.message);return}
+ await loadAll();
+ await rebuildStandingsHistory(false);
+ msg($('#adminMsg'),'GP annullato. Risultati eliminati e movimento classifica ricalcolato.',true);
+}
+
+
+$('#rebuildStandingsBtn').onclick=()=>rebuildStandingsHistory(true);
+
+$('#closeSeasonBtn').onclick=async()=>{
+ if(!confirm('Concludere la stagione e assegnare i titoli nella Hall of Fame?'))return;
+ try{
+  const ds=buildDriverStats(),ts=buildTeamStats(ds);
+  if(!ds.length||!ds[0].points)throw new Error('Non ci sono risultati sufficienti.');
+  const rows=[
+   {season_name:state.settings?.season_name||state.season?.name||'Season',title:'Campione Piloti',winner_name:driverName(ds[0].driver.id),details:ds[0].points+' punti'},
+   {season_name:state.settings?.season_name||state.season?.name||'Season',title:'Campione Costruttori',winner_name:ts[0]?.team.name||'—',details:(ts[0]?.points||0)+' punti'},
+   {season_name:state.settings?.season_name||state.season?.name||'Season',title:'Record Vittorie',winner_name:driverName([...ds].sort((a,b)=>b.wins-a.wins)[0].driver.id),details:Math.max(...ds.map(x=>x.wins))+' vittorie'}
+  ];
+  const q=await db.from('hall_of_fame').upsert(rows,{onConflict:'season_name,title'});if(q.error)throw q.error;
+  await db.from('championship_settings').update({status:'Conclusa',registration_open:false}).eq('id',state.settings.id);
+  msg($('#adminMsg'),'Stagione conclusa e Hall of Fame aggiornata.',true);await loadAll();
+ }catch(x){msg($('#adminMsg'),x.message)}
+};
+
+$('#profileDriverSelect').addEventListener('change',e=>renderProfile(Number(e.target.value)));
+
+$('#raceControlRace').addEventListener('change',e=>{
+ state.raceControlRaceId=Number(e.target.value)||null;
+
+ const ps=$('#profileDriverSelect');
+ if(ps){const cur=ps.value;ps.innerHTML='<option value="">Seleziona un pilota</option>'+state.drivers.map(d=>`<option value="${d.id}">${esc(driverName(d.id))} — ${esc(d.ea_id||'')}</option>`).join('');if(cur&&state.drivers.some(d=>d.id==cur))ps.value=cur;if(!ps.value&&state.drivers[0])ps.value=String(state.drivers[0].id);if(ps.value)renderProfile(Number(ps.value))}
+ $('#profilesEmpty').classList.toggle('hidden',state.drivers.length>0);
+ const prs=state.races.filter(r=>r.results_status==='published'||state.results.some(x=>x.race_id==r.id&&x.is_published===true)).sort((a,b)=>Number(b.round)-Number(a.round));
+ $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
+ $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
+      ${[2,1,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div class="podium-step ${p===1?'first':p===2?'second':'third'}"><div class="podium-medal">${p===1?'🥇':p===2?'🥈':'🥉'}</div><div class="podium-name">${x?esc(driverName(x.driver_id)):'—'}</div><div class="muted">${x?esc(teamName(state.drivers.find(d=>d.id==x.driver_id)?.team_id)):'—'}</div></div>`}).join('')}
+    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+
+
+ $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
+ $('#hallOfFameEmpty').classList.toggle('hidden',state.hallOfFame.length>0);
+ $('#hallOfFameGrid').innerHTML=state.hallOfFame.map(h=>`<article class="card hof-card"><div class="champion-crown">👑</div><div class="eyebrow">${esc(h.season_name)}</div><h3>${esc(h.title)}</h3><div class="record-name">${esc(h.winner_name)}</div><div class="muted">${esc(h.details||'')}</div></article>`).join('');
+
+ renderRaceControl();
+});
+$('#saveDraftBtn').onclick=()=>saveRaceControl(false);
+$('#publishRaceBtn').onclick=()=>{
+ if(confirm('Pubblicare definitivamente questo GP?'))saveRaceControl(true);
+};
+$('#cancelRaceBtn').onclick=cancelRaceControl;
+
+
+$('#warningForm').onsubmit=async e=>{
+ e.preventDefault();
+ try{
+  const o=Object.fromEntries(new FormData(e.target));
+  const payload={driver_id:Number(o.driver_id),race_id:o.race_id?Number(o.race_id):null,event_type:'warning',points_change:0,reason:o.reason};
+  const q=await db.from('discipline_events').insert(payload);if(q.error)throw q.error;
+  msg($('#adminMsg'),'Warning aggiunto.',true);e.target.reset();await loadAll();
+ }catch(x){msg($('#adminMsg'),x.message)}
+};
+
+$('#licenseForm').onsubmit=async e=>{
+ e.preventDefault();
+ try{
+  const o=Object.fromEntries(new FormData(e.target)),driver=state.drivers.find(d=>d.id==Number(o.driver_id));
+  if(!driver)throw new Error('Pilota non trovato.');
+  const amount=Number(o.points||0),change=o.operation==='subtract'?-amount:amount;
+  const newPoints=Math.min(30,Math.max(1,Number(driver.license_points??30)+change));
+  const upd=await db.from('drivers').update({license_points:newPoints}).eq('id',driver.id);if(upd.error)throw upd.error;
+  const q=await db.from('discipline_events').insert({driver_id:driver.id,race_id:o.race_id?Number(o.race_id):null,event_type:'license',points_change:newPoints-Number(driver.license_points??30),reason:o.reason});if(q.error)throw q.error;
+  msg($('#adminMsg'),'Patente aggiornata.',true);e.target.reset();await loadAll();
+ }catch(x){msg($('#adminMsg'),x.message)}
+};
+
+let signup=false;
+$('#authSwitch').onclick=()=>{signup=!signup;$('#authTitle').textContent=signup?'Crea account':'Accedi';$('#nameField').classList.toggle('hidden',!signup);$('#authSubmit').textContent=signup?'Registrati':'Accedi';$('#authSwitch').textContent=signup?'Ho già un account':'Crea account'};
+$('#authSubmit').onclick=async()=>{try{const email=$('#email').value.trim(),password=$('#password').value;const r=signup?await db.auth.signUp({email,password,options:{data:{display_name:$('#displayName').value.trim()||email.split('@')[0]}}}):await db.auth.signInWithPassword({email,password});if(r.error)throw r.error;msg($('#authMsg'),signup?'Registrazione completata.':'Accesso effettuato.',true);await refreshUser()}catch(e){msg($('#authMsg'),e.message)}};
+async function logoutUser(){await db.auth.signOut();await refreshUser();go('home')}
+$('#logoutBtn').onclick=logoutUser;
+$('#topLogoutBtn').onclick=logoutUser;
+async function refreshUser(){const{data:{user}}=await db.auth.getUser();state.user=user;state.profile=null;if(user){const{data}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();state.profile=data}const role=state.profile?.role;$('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':' • Pilota'):'Ospite';$('#adminNav').classList.toggle('hidden',role!=='admin');$('#logoutBtn').classList.toggle('hidden',!user);$('#topLogoutBtn').classList.toggle('hidden',!user);$('#authSubmit').classList.toggle('hidden',!!user);$('#authSwitch').classList.toggle('hidden',!!user);if(user)$('#authTitle').textContent='Account'}
+db.auth.onAuthStateChange(()=>refreshUser());
+(async()=>{await refreshUser();await loadAll();if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js')})();
+</script>
+</body>
+</html>
