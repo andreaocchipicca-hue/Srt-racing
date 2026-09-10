@@ -1,4 +1,4 @@
-const CACHE='srt-v5d9-wild-logos';
+const CACHE='srt-v5e1-sky-blue-theme';
 
 const CORE = [
   '/',
