@@ -1,4 +1,4 @@
-const CACHE='srt-v5e3-australia-calendar';
+const CACHE='srt-v5e5-driver-management';
 
 const CORE = [
   '/',

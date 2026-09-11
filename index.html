@@ -147,6 +147,13 @@
     .round-box{display:grid;place-items:center;width:48px;height:48px;border-radius:13px;background:#203b5c;border:1px solid #4f6d90;font-size:18px;font-weight:950}
     .calendar-card.next .round-box{background:linear-gradient(135deg,var(--red),var(--red2));border-color:transparent}
     .race-date{text-align:right;font-weight:850}.race-date small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+    .lineup-card{margin:0 0 16px}.lineup-summary{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}
+    .lineup-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .lineup-driver{display:flex;gap:9px;align-items:center;padding:10px;border-radius:12px;background:rgba(7,17,31,.45);border:1px solid var(--line)}
+    .lineup-driver strong{display:block}.lineup-driver .muted{font-size:12px}
+    .attendance-list{display:grid;gap:10px;margin-top:14px}
+    .attendance-row{display:grid;grid-template-columns:minmax(190px,1.4fr) minmax(145px,.8fr) minmax(160px,1fr);gap:10px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:14px;background:#102039}
+    .attendance-driver{padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:rgba(7,17,31,.48)}
     .hof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
     .hof-card{position:relative;overflow:hidden}
     .hof-card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(227,27,35,.17),rgba(244,196,48,.07) 48%,transparent);pointer-events:none}
@@ -159,6 +166,7 @@
       .podium-step.first,.podium-step.second,.podium-step.third{min-height:auto}
       .calendar-feature{grid-template-columns:1fr;padding:18px}.calendar-feature h3{font-size:23px}.countdown{grid-template-columns:repeat(4,1fr)}
       .calendar-grid{grid-template-columns:1fr}.calendar-card{grid-template-columns:48px 1fr auto;padding:13px}.race-date{font-size:13px}
+      .lineup-grid{grid-template-columns:1fr}.attendance-row{grid-template-columns:1fr}.attendance-row .field{width:100%}
     }
 
     .role-hidden{display:none !important}
@@ -241,6 +249,7 @@
 <section id="calendar" class="section">
   <div class="section-head"><div><h2>Calendario</h2><p>20 appuntamenti ufficiali della Stagione 2026-2027.</p></div></div>
   <div id="calendarFeature"></div>
+  <div id="nextRaceLineup" class="card lineup-card hidden"></div>
   <div id="calendarGrid" class="calendar-grid"></div>
   <div id="calendarEmpty" class="card empty hidden"><strong>Nessuna gara programmata</strong>Il calendario verrà pubblicato a breve.</div>
 </section>
@@ -348,6 +357,7 @@
     <button data-admin="newsPane">News</button><button data-admin="regulationsPane">Regolamento</button><button data-admin="disciplinePane">Disciplina</button>
     <button data-admin="driverPane">Piloti</button>
     <button data-admin="racePane">Gare</button>
+    <button data-admin="attendancePane">Convocati</button>
     <button data-admin="resultPane">Race Control</button>
   </div>
 
@@ -477,9 +487,11 @@
     <h3>Gestione pilota</h3>
     <form id="absenceForm" class="form-grid">
       <div class="field"><label>Pilota</label><select name="driver_id" class="driverSelect" required></select></div>
+      <div class="field"><label>Ruolo nel campionato</label><select name="driver_mode"><option value="official">Pilota ufficiale</option><option value="wild">Pilota Wild</option><option value="suspended">Sospeso</option></select></div>
+      <div class="field"><label>Scuderia ufficiale</label><select name="team_id" class="teamSelect"></select></div>
       <div class="field"><label>Assenze (massimo 3)</label><input name="absences" type="number" min="0" max="3" value="0" required></div>
-      <div class="field"><label><input name="is_wild" type="checkbox"> Abilita come Wild</label></div>
-      <button class="btn">Salva pilota</button>
+      <div class="notice"><strong id="driverModeTitle">Pilota ufficiale</strong><br><span id="driverModeHelp" class="muted">Occupa un posto nella scuderia selezionata.</span></div>
+      <button class="btn">Aggiorna pilota</button>
     </form>
     <div id="adminDrivers" class="admin-list"></div>
   </div>
@@ -496,6 +508,17 @@
       <div class="field"><label>Stato</label><select name="status"><option value="upcoming">In programma</option><option value="live">In corso</option><option value="completed">Conclusa</option></select></div>
       <button class="btn">Salva gara</button>
     </form><div id="adminRaces" class="admin-list"></div>
+  </div>
+
+  <div id="attendancePane" class="admin-pane card">
+    <div class="section-head"><div><h3>Convocati del GP</h3><p>Conferma presenti e assenti; assegna la scuderia ai piloti Wild.</p></div></div>
+    <div class="race-control-toolbar">
+      <div class="field"><label>Gran Premio</label><select id="attendanceRace"></select></div>
+      <div class="card"><div class="muted">Riepilogo</div><strong id="attendanceSummary">Seleziona un GP</strong></div>
+    </div>
+    <div id="attendanceEmpty" class="empty"><strong>Nessun GP selezionato</strong>Scegli la gara da preparare.</div>
+    <div id="attendanceList" class="attendance-list"></div>
+    <div id="attendanceActions" class="race-actions hidden"><button class="btn" id="saveAttendanceBtn">✓ Salva convocati</button><span class="muted">Le assenze totali dei piloti saranno aggiornate automaticamente.</span></div>
   </div>
 
   <div id="resultPane" class="admin-pane card">
@@ -548,7 +571,7 @@
 const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
 const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let state={teams:[],drivers:[],races:[],results:[],news:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null};
+let state={teams:[],drivers:[],races:[],results:[],entries:[],news:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null,attendanceRaceId:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -637,6 +660,49 @@ function renderCalendar(next){
  $('#calendarFeature').innerHTML=`<article class="card calendar-feature"><div><div class="calendar-flag">${countryFlag(next.country)}</div><div class="eyebrow">Prossimo appuntamento • Round ${esc(next.round)}</div><h3>${esc(next.name)}</h3><div class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} alle ${String(next.race_time||'22:30').slice(0,5)}</div></div><div class="countdown" aria-label="Conto alla rovescia">${countdownMarkup()}</div></article>`;
  startCountdown(next);
 }
+function raceEntry(raceId,driverId){return state.entries.find(x=>x.race_id==raceId&&x.driver_id==driverId)||null}
+function renderNextRaceLineup(next){
+ const box=$('#nextRaceLineup');if(!box)return;
+ const entries=next?state.entries.filter(x=>x.race_id==next.id):[];
+ if(!entries.length){box.classList.add('hidden');box.innerHTML='';return}
+ const availableEntries=entries.filter(e=>state.drivers.find(d=>d.id==e.driver_id)?.status!=='suspended');
+ const called=availableEntries.filter(x=>x.status==='present'||x.status==='wild');
+ const absent=availableEntries.filter(x=>x.status==='absent');
+ const wild=called.filter(x=>x.status==='wild');
+ box.classList.remove('hidden');
+ box.innerHTML=`<div class="section-head"><div><h3>Convocati ufficiali • ${esc(next.name)}</h3><p>Griglia comunicata dalla direzione gara.</p></div></div><div class="lineup-summary"><span class="chip">${called.length} convocati</span><span class="chip">${absent.length} assenti</span><span class="wild-badge">${wild.length} WILD</span></div><div class="lineup-grid">${called.map(e=>{const d=state.drivers.find(x=>x.id==e.driver_id);if(!d)return'';const tid=Number(e.team_id||d.team_id)||null;return `<div class="lineup-driver">${teamSymbol(tid)}<div><strong>${esc(driverName(d.id))} ${e.status==='wild'?'<span class="wild-badge">WILD</span>':''}</strong><div class="muted">${esc(teamName(tid))} • ${esc(d.ea_id||'')}</div></div></div>`}).join('')}</div>${absent.length?`<div class="muted" style="margin-top:12px"><strong>Assenti:</strong> ${absent.map(e=>esc(driverName(e.driver_id))).join(', ')}</div>`:''}`;
+}
+function syncAttendanceRows(){
+ const rows=$$('#attendanceList .attendance-row');
+ rows.forEach(row=>{const status=row.querySelector('[data-field="attendance_status"]'),team=row.querySelector('[data-field="attendance_team"]');team.disabled=status.value!=='wild'});
+ const values=rows.map(row=>row.querySelector('[data-field="attendance_status"]').value);
+ const present=values.filter(x=>x==='present').length,wild=values.filter(x=>x==='wild').length,absent=values.filter(x=>x==='absent').length;
+ $('#attendanceSummary').textContent=`${present+wild} convocati • ${absent} assenti • ${wild} Wild`;
+}
+function renderAttendance(){
+ const select=$('#attendanceRace'),list=$('#attendanceList'),empty=$('#attendanceEmpty'),actions=$('#attendanceActions');if(!select||!list)return;
+ const race=state.races.find(r=>r.id==state.attendanceRaceId);
+ const ready=Boolean(race&&state.drivers.length);
+ empty.classList.toggle('hidden',ready);actions.classList.toggle('hidden',!ready);list.innerHTML='';
+ if(!ready){$('#attendanceSummary').textContent='Seleziona un GP';return}
+ const drivers=state.drivers.filter(d=>d.active!==false&&d.status!=='suspended').sort((a,b)=>Number(a.is_wild)-Number(b.is_wild)||driverName(a.id).localeCompare(driverName(b.id),'it'));
+ list.innerHTML=drivers.map(d=>{const e=raceEntry(race.id,d.id),status=e?.status||(d.is_wild?'not_called':'present'),tid=Number(e?.team_id||d.team_id)||'';const options=d.is_wild?`<option value="not_called" ${status==='not_called'?'selected':''}>Non convocato</option><option value="wild" ${status==='wild'?'selected':''}>Wild convocato</option>`:`<option value="present" ${status==='present'?'selected':''}>Presente</option><option value="absent" ${status==='absent'?'selected':''}>Assente</option>`;const teams='<option value="">Seleziona scuderia</option>'+state.teams.map(t=>`<option value="${t.id}" ${t.id==tid?'selected':''}>${esc(t.name)}</option>`).join('');return `<div class="attendance-row" data-driver-id="${d.id}"><div class="attendance-driver"><strong>${esc(driverName(d.id))} ${d.is_wild?'<span class="wild-badge">WILD</span>':''}</strong><div class="muted">${esc(d.ea_id||'')} • ${esc(teamName(d.team_id))} • Assenze ${Number(d.absences||0)}/3</div></div><div class="field"><label>Convocazione</label><select data-field="attendance_status">${options}</select></div><div class="field"><label>Scuderia nel GP</label><select data-field="attendance_team">${teams}</select></div></div>`}).join('');
+ $$('#attendanceList [data-field="attendance_status"]').forEach(x=>x.addEventListener('change',syncAttendanceRows));syncAttendanceRows();
+}
+async function saveAttendance(){
+ try{
+  const race=state.races.find(r=>r.id==state.attendanceRaceId);if(!race)throw new Error('Seleziona un Gran Premio.');
+  const payload=$$('#attendanceList .attendance-row').map(row=>{const d=state.drivers.find(x=>x.id==row.dataset.driverId),status=row.querySelector('[data-field="attendance_status"]').value,selectedTeam=Number(row.querySelector('[data-field="attendance_team"]').value)||null;if(status==='wild'&&!d.is_wild)throw new Error(`${driverName(d.id)} non è abilitato come Wild.`);if(status==='wild'&&!selectedTeam)throw new Error(`Scegli una scuderia per ${driverName(d.id)}.`);return{race_id:race.id,driver_id:d.id,status,team_id:status==='wild'?selectedTeam:(status==='not_called'?null:(d.team_id||null)),updated_at:new Date().toISOString()}});
+  const called=payload.filter(x=>x.status==='present'||x.status==='wild');if(!called.length)throw new Error('Devi convocare almeno un pilota.');if(called.length>22)throw new Error('La griglia non può superare 22 piloti.');
+  const combined=[...state.entries.filter(x=>x.race_id!=race.id),...payload];
+  const overLimit=state.drivers.find(d=>!d.is_wild&&combined.filter(x=>x.driver_id==d.id&&x.status==='absent').length>3);
+  if(overLimit)throw new Error(`${driverName(overLimit.id)} supererebbe il limite massimo di 3 assenze.`);
+  const saved=await db.from('race_entries').upsert(payload,{onConflict:'race_id,driver_id'});if(saved.error)throw saved.error;
+  const updates=state.drivers.filter(d=>!d.is_wild).map(d=>db.from('drivers').update({absences:combined.filter(x=>x.driver_id==d.id&&x.status==='absent').length}).eq('id',d.id));
+  const results=await Promise.all(updates);const failed=results.find(x=>x.error);if(failed)throw failed.error;
+  msg($('#adminMsg'),`Convocati di ${race.name} salvati: ${called.length} piloti in griglia.`,true);await loadAll();
+ }catch(e){msg($('#adminMsg'),e.message)}
+}
 const HISTORIC_HALL_OF_FAME=[
  {season_name:'Stagione 2025-2026',title:'Campione Piloti',winner_name:'Angelo Esposito',details:'EA ID: YoUnG Ansheel',icon:'🏆'},
  {season_name:'Stagione 2025-2026',title:'Campione Costruttori',winner_name:'Ferrari',details:'Andrea Occhipicca • Salvatore Tebaldo',icon:'🏎️'},
@@ -654,12 +720,13 @@ function renderHallOfFame(){
 
 async function loadAll(){
  try{
-  const [se,te,dr,ra,re,ne,cs,rg,sc,di,hf,sh]=await Promise.all([
+  const [se,te,dr,ra,re,en,ne,cs,rg,sc,di,hf,sh]=await Promise.all([
    db.from('seasons').select('*').eq('is_active',true).limit(1).maybeSingle(),
    db.from('teams').select('*').order('name'),
    db.from('drivers').select('*').order('name'),
    db.from('races').select('*').order('round'),
    db.from('race_results').select('*'),
+   db.from('race_entries').select('*'),
    db.from('news').select('*').order('published_at',{ascending:false}),
    db.from('championship_settings').select('*').limit(1).maybeSingle(),
    db.from('regulations').select('*').limit(1).maybeSingle(),
@@ -669,7 +736,8 @@ async function loadAll(){
    db.from('standings_history').select('*').order('round')
   ]);
   for(const x of [se,te,dr,ra,re,ne,cs,rg,sc,di,hf,sh])if(x.error)throw x.error;
-  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.news=ne.data||[];state.settings=cs.data||null;state.regulations=rg.data||null;state.scoring=sc.data||null;state.discipline=di.data||[];state.hallOfFame=hf.data||[];state.standingsHistory=sh.data||[];
+  if(en.error)console.warn('Convocati non ancora attivati:',en.error.message);
+  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.entries=en.error?[]:(en.data||[]);state.news=ne.data||[];state.settings=cs.data||null;state.regulations=rg.data||null;state.scoring=sc.data||null;state.discipline=di.data||[];state.hallOfFame=hf.data||[];state.standingsHistory=sh.data||[];
   render();
  }catch(e){console.error(e);msg($('#adminMsg'),'Errore caricamento: '+e.message)}
 }
@@ -746,8 +814,9 @@ function render(){
  const next=state.races.filter(r=>r.status!=='completed'&&new Date(r.race_date+'T23:59:59')>=new Date()).sort((a,b)=>a.race_date.localeCompare(b.race_date))[0];
  if(next)$('#nextRace').innerHTML=`<strong>${countryFlag(next.country)} Round ${next.round} — ${esc(next.name)}</strong><br><span class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} alle ${String(next.race_time||'22:30').slice(0,5)}</span>`;
  renderCalendar(next);
+ renderNextRaceLineup(next);
 
- $('#teamsGrid').innerHTML=state.teams.map(t=>`<article class="card team-card" style="--team-color:${esc(t.color||'#e10600')}">${teamLargeLogo(t)}<h3>${esc(t.name)}</h3><div class="muted">${esc(t.country||'')}</div><div style="margin-top:12px"><span class="chip">${state.drivers.filter(d=>d.team_id==t.id).length} piloti ufficiali</span></div></article>`).join('');
+ $('#teamsGrid').innerHTML=state.teams.map(t=>`<article class="card team-card" style="--team-color:${esc(t.color||'#e10600')}">${teamLargeLogo(t)}<h3>${esc(t.name)}</h3><div class="muted">${esc(t.country||'')}</div><div style="margin-top:12px"><span class="chip">${state.drivers.filter(d=>d.team_id==t.id&&!d.is_wild&&d.status!=='suspended'&&d.status!=='reserve').length} piloti ufficiali</span></div></article>`).join('');
  $('#teamsEmpty').classList.toggle('hidden',state.teams.length>0);
 
  $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${esc(d.ea_id||'—')}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())} ${d.is_wild?'<span class="wild-badge">WILD</span>':''}</td><td>${teamSymbol(d.team_id)}${esc(teamName(d.team_id))}</td><td>${esc(d.level??100)}</td><td><span class="chip">${Number(d.absences||0)}/3</span></td><td>${esc(driverStatus(d.status))}</td><td>${esc(d.platform||'Crossplay')}</td></tr>`).join('');
@@ -790,10 +859,16 @@ function render(){
  const teamOpts='<option value="">Nessuna</option>'+state.teams.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');$$('.teamSelect').forEach(x=>x.innerHTML=teamOpts);
  $$('.driverSelect').forEach(x=>x.innerHTML=state.drivers.map(d=>`<option value="${d.id}">${esc(driverName(d.id))}</option>`).join(''));
  $$('.raceSelect').forEach(x=>x.innerHTML=state.races.map(r=>`<option value="${r.id}">R${r.round} - ${esc(r.name)}</option>`).join(''));
+ const attendanceSelect=$('#attendanceRace');if(attendanceSelect){const keep=state.attendanceRaceId;if(!keep&&next)state.attendanceRaceId=next.id;attendanceSelect.innerHTML='<option value="">Seleziona un GP</option>'+state.races.map(r=>`<option value="${r.id}">R${r.round} — ${esc(r.name)}</option>`).join('');if(state.attendanceRaceId)attendanceSelect.value=String(state.attendanceRaceId);renderAttendance()}
  $('#adminTeams').innerHTML=adminList(state.teams,'team');$('#adminDrivers').innerHTML=adminList(state.drivers,'driver');$('#adminRaces').innerHTML=adminList(state.races,'race');$('#adminNews').innerHTML=adminList(state.news,'news');
 
  const absenceForm=$('#absenceForm'),absenceDriver=absenceForm?.querySelector('[name="driver_id"]');
- if(absenceDriver){const syncDriverAdmin=()=>{const d=state.drivers.find(x=>x.id==absenceDriver.value);if(!d)return;absenceForm.querySelector('[name="absences"]').value=Number(d.absences||0);absenceForm.querySelector('[name="is_wild"]').checked=Boolean(d.is_wild)};absenceDriver.onchange=syncDriverAdmin;syncDriverAdmin()}
+ if(absenceDriver){
+  const mode=absenceForm.querySelector('[name="driver_mode"]'),team=absenceForm.querySelector('[name="team_id"]');
+  const syncDriverMode=()=>{const value=mode.value;team.disabled=value==='wild';$('#driverModeTitle').textContent=value==='wild'?'Pilota Wild':value==='suspended'?'Pilota sospeso':'Pilota ufficiale';$('#driverModeHelp').textContent=value==='wild'?'Non occupa un posto fisso: scegli la scuderia quando lo convochi per un GP.':value==='suspended'?'Non comparirà tra i convocabili, ma risultati e storico resteranno salvati.':'Occupa un posto nella scuderia selezionata.'};
+  const syncDriverAdmin=()=>{const d=state.drivers.find(x=>x.id==absenceDriver.value);if(!d)return;absenceForm.querySelector('[name="absences"]').value=Number(d.absences||0);mode.value=d.is_wild?'wild':d.status==='suspended'?'suspended':'official';team.value=d.team_id?String(d.team_id):'';syncDriverMode()};
+  absenceDriver.onchange=syncDriverAdmin;mode.onchange=syncDriverMode;syncDriverAdmin();
+ }
 
  const ps=$('#profileDriverSelect');
  if(ps){const cur=ps.value;ps.innerHTML='<option value="">Seleziona un pilota</option>'+state.drivers.map(d=>`<option value="${d.id}">${esc(driverName(d.id))} — ${esc(d.ea_id||'')}</option>`).join('');if(cur&&state.drivers.some(d=>d.id==cur))ps.value=cur;if(!ps.value&&state.drivers[0])ps.value=String(state.drivers[0].id);if(ps.value)renderProfile(Number(ps.value))}
@@ -811,7 +886,7 @@ function render(){
  applyAccessControl();
  renderRaceControl();
 }
-function adminList(items,type){return items.map(x=>`<div class="admin-item"><span class="grow">${type==='race'?`<strong>Round ${esc(x.round)} • ${esc(x.name)}</strong><br><span class="muted">${fmtDate(x.race_date)} • ${esc(x.circuit)}</span>`:esc(x.name||x.title||(x.round+' - '+x.circuit))}</span><button class="btn danger small" onclick="delItem('${type}',${x.id})">Elimina</button></div>`).join('')}
+function adminList(items,type){return items.map(x=>{let content;if(type==='race')content=`<strong>Round ${esc(x.round)} • ${esc(x.name)}</strong><br><span class="muted">${fmtDate(x.race_date)} • ${esc(x.circuit)}</span>`;else if(type==='driver'){const role=x.is_wild?'WILD':x.status==='suspended'?'SOSPESO':x.status==='reserve'?'RISERVA':'UFFICIALE';content=`<strong>${esc(driverName(x.id))}</strong> <span class="chip">${role}</span><br><span class="muted">EA ID: ${esc(x.ea_id||'—')} • ${esc(teamName(x.team_id))}</span>`}else content=esc(x.name||x.title||(x.round+' - '+x.circuit));return `<div class="admin-item"><span class="grow">${content}</span><button class="btn danger small" onclick="delItem('${type}',${x.id})">Elimina</button></div>`}).join('')}
 const tableMap={team:'teams',driver:'drivers',race:'races',news:'news'};
 async function delItem(type,id){if(!confirm('Eliminare definitivamente?'))return;const{error}=await db.from(tableMap[type]).delete().eq('id',id);if(error)alert(error.message);else loadAll()}window.delItem=delItem;
 async function insertForm(form,table,transform=x=>x){const o=Object.fromEntries(new FormData(form));const{error}=await db.from(table).insert(transform(o,form));if(error)throw error;form.reset();await loadAll()}
@@ -877,9 +952,11 @@ $('#teamForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Obje
 $('#newsForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f));o.image=await uploadImage($('#newsImageFile').files[0],'news');const{error}=await db.from('news').insert(o);if(error)throw error;f.reset();await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 
 $('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));let q=state.regulations?.id?await db.from('regulations').update({...o,updated_at:new Date().toISOString()}).eq('id',state.regulations.id):await db.from('regulations').insert(o);if(q.error)throw q.error;msg($('#adminMsg'),'Regolamento salvato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
-$('#driverForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'drivers',o=>({...o,level:Number(o.level||100),team_id:o.team_id?Number(o.team_id):null,is_wild:o.is_wild==='on'}))}catch(x){msg($('#adminMsg'),x.message)}};
-$('#absenceForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target)),absences=Number(o.absences);if(!Number.isInteger(absences)||absences<0||absences>3)throw new Error('Le assenze devono essere comprese tra 0 e 3.');const{error}=await db.from('drivers').update({absences,is_wild:o.is_wild==='on'}).eq('id',Number(o.driver_id));if(error)throw error;msg($('#adminMsg'),'Pilota aggiornato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#driverForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'drivers',o=>{const wild=o.is_wild==='on';return{...o,level:Number(o.level||100),team_id:wild?null:(o.team_id?Number(o.team_id):null),status:wild?'reserve':o.status,is_wild:wild}})}catch(x){msg($('#adminMsg'),x.message)}};
+$('#absenceForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target)),absences=Number(o.absences),mode=o.driver_mode,teamId=Number(o.team_id)||null;if(!Number.isInteger(absences)||absences<0||absences>3)throw new Error('Le assenze devono essere comprese tra 0 e 3.');if(mode==='official'&&!teamId)throw new Error('Scegli la scuderia del pilota ufficiale.');const changes={absences,is_wild:mode==='wild',status:mode==='wild'?'reserve':mode==='suspended'?'suspended':'active',team_id:mode==='wild'?null:teamId};const{error}=await db.from('drivers').update(changes).eq('id',Number(o.driver_id));if(error)throw error;msg($('#adminMsg'),mode==='wild'?'Pilota trasformato in Wild.':mode==='suspended'?'Pilota sospeso senza cancellare lo storico.':'Pilota ufficiale aggiornato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 $('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');const o=Object.fromEntries(new FormData(e.target)),round=Number(o.round);if(state.races.some(r=>Number(r.round)===round))throw new Error(`Il Round ${round} esiste già nel calendario.`);await insertForm(e.target,'races',x=>({...x,round,season_id:state.season.id,race_time:x.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
+$('#attendanceRace').addEventListener('change',e=>{state.attendanceRaceId=Number(e.target.value)||null;renderAttendance()});
+$('#saveAttendanceBtn').onclick=saveAttendance;
 
 
 
@@ -989,7 +1066,13 @@ function renderRaceControl(){
  }
 
  const race=selectedRace();
- const canUse=Boolean(race&&state.drivers.length);
+ const raceEntries=race?state.entries.filter(x=>x.race_id==race.id):[];
+ const raceResults=race?state.results.filter(r=>r.race_id==race.id):[];
+ const hasOfficialLineup=raceEntries.length>0;
+ const eligibleIds=new Set(raceEntries.filter(x=>x.status==='present'||x.status==='wild').map(x=>Number(x.driver_id)));
+ const resultIds=new Set(raceResults.map(x=>Number(x.driver_id)));
+ const availableDrivers=hasOfficialLineup?state.drivers.filter(d=>(d.status!=='suspended'&&eligibleIds.has(Number(d.id)))||resultIds.has(Number(d.id))):state.drivers.filter(d=>d.active!==false&&d.status!=='suspended'&&!d.is_wild);
+ const canUse=Boolean(race&&availableDrivers.length);
  empty.classList.toggle('hidden',canUse);
  actions.classList.toggle('hidden',!canUse);
  list.innerHTML='';
@@ -997,20 +1080,19 @@ function renderRaceControl(){
  if(!canUse){
    $('#raceControlStatus').className='race-status empty';
    $('#raceControlStatus').textContent='Nessun GP selezionato';
-   $('#rcDriversCount').textContent=state.drivers.length;
+   $('#rcDriversCount').textContent=availableDrivers.length;
    $('#rcFilledCount').textContent='0';
    $('#rcPoleName').textContent='—';
    $('#rcFastestName').textContent='—';
    return;
  }
 
- const raceResults=state.results.filter(r=>r.race_id==race.id);
  const isPublished=raceResults.some(r=>r.is_published===true)||race.results_status==='published';
  $('#raceControlStatus').className='race-status '+(isPublished?'published':raceResults.length?'draft':'empty');
  $('#raceControlStatus').textContent=isPublished?'Pubblicato':raceResults.length?'Bozza salvata':'Nuovo GP';
  $('#raceControlNotes').value=race.result_notes||'';
 
- const sortedDrivers=[...state.drivers].sort((a,b)=>{
+ const sortedDrivers=[...availableDrivers].sort((a,b)=>{
    const ar=raceResults.find(r=>r.driver_id==a.id);
    const br=raceResults.find(r=>r.driver_id==b.id);
    return Number(ar?.position||999)-Number(br?.position||999);
@@ -1018,7 +1100,8 @@ function renderRaceControl(){
 
  list.innerHTML=sortedDrivers.map((d,index)=>{
    const rr=raceResults.find(r=>r.driver_id==d.id)||{};
-   const raceTeamId=Number(rr.team_id||d.team_id)||null;
+   const attendance=raceEntry(race.id,d.id);
+   const raceTeamId=Number(rr.team_id||attendance?.team_id||d.team_id)||null;
    const teamOptions=state.teams.map(t=>`<option value="${t.id}" ${t.id==raceTeamId?'selected':''}>${esc(teamCode(t.id))} • ${esc(t.name)}</option>`).join('');
    return `<div class="race-row" data-driver-id="${d.id}">
      <div class="race-position">${index+1}</div>
@@ -1057,7 +1140,7 @@ function renderRaceControl(){
    update();
  });
 
- $('#rcDriversCount').textContent=state.drivers.length;
+ $('#rcDriversCount').textContent=availableDrivers.length;
  updateRaceControlSummary();
 }
 
