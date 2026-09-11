@@ -1,4 +1,4 @@
-const CACHE='srt-v5e5-driver-management';
+const CACHE='srt-v5e6-auth-role-fix';
 
 const CORE = [
   '/',
