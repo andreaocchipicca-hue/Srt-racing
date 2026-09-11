@@ -135,6 +135,18 @@
     .podium-step.first{min-height:190px;background:linear-gradient(180deg,rgba(231,196,91,.3),#172941)}
     .podium-step.second{min-height:155px}.podium-step.third{min-height:130px}
     .podium-medal{font-size:28px}.podium-name{font-size:18px;font-weight:950;margin-top:8px}
+    .calendar-feature{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;margin-bottom:16px;border-color:#e33a40;background:linear-gradient(120deg,#263d5d,#14243a 58%,rgba(227,27,35,.25))}
+    .calendar-feature:after{content:"01";position:absolute;right:22px;top:-28px;font-size:150px;font-weight:950;color:rgba(255,255,255,.035);pointer-events:none}
+    .calendar-flag{font-size:36px;margin-bottom:6px}.calendar-feature h3{font-size:28px;margin-bottom:6px}
+    .countdown{display:grid;grid-template-columns:repeat(4,66px);gap:7px;position:relative;z-index:1}
+    .countdown-box{padding:11px 5px;border-radius:12px;background:rgba(5,15,28,.68);border:1px solid #4a6687;text-align:center}
+    .countdown-box strong{display:block;font-size:22px}.countdown-box span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+    .calendar-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .calendar-card{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center;padding:15px}
+    .calendar-card.next{border-color:#e33a40;box-shadow:0 0 0 1px rgba(227,27,35,.22),0 12px 35px rgba(0,0,0,.2)}
+    .round-box{display:grid;place-items:center;width:48px;height:48px;border-radius:13px;background:#203b5c;border:1px solid #4f6d90;font-size:18px;font-weight:950}
+    .calendar-card.next .round-box{background:linear-gradient(135deg,var(--red),var(--red2));border-color:transparent}
+    .race-date{text-align:right;font-weight:850}.race-date small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
     .hof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
     .hof-card{position:relative;overflow:hidden}
     .hof-card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(227,27,35,.17),rgba(244,196,48,.07) 48%,transparent);pointer-events:none}
@@ -145,6 +157,8 @@
       .discipline-grid,.hof-grid{grid-template-columns:1fr}
       .podium-stage{grid-template-columns:1fr}
       .podium-step.first,.podium-step.second,.podium-step.third{min-height:auto}
+      .calendar-feature{grid-template-columns:1fr;padding:18px}.calendar-feature h3{font-size:23px}.countdown{grid-template-columns:repeat(4,1fr)}
+      .calendar-grid{grid-template-columns:1fr}.calendar-card{grid-template-columns:48px 1fr auto;padding:13px}.race-date{font-size:13px}
     }
 
     .role-hidden{display:none !important}
@@ -198,7 +212,7 @@
 
   <div class="grid two">
     <div class="card">
-      <div class="section-head"><div><h2>Prossima gara</h2><p>Il countdown verrà attivato quando sarà deciso il calendario.</p></div></div>
+      <div class="section-head"><div><h2>Prossima gara</h2><p>Data e orario ufficiali del prossimo appuntamento.</p></div></div>
       <div id="nextRace" class="empty"><strong>Calendario in preparazione</strong>Nessuna gara definitiva è stata inserita.</div>
     </div>
     <div class="card">
@@ -225,8 +239,10 @@
 </section>
 
 <section id="calendar" class="section">
-  <div class="section-head"><div><h2>Calendario</h2><p>Il calendario ufficiale verrà inserito per ultimo.</p></div></div>
-  <div class="card coming empty"><strong>Calendario Stagione 2026-2027 in preparazione</strong>Questa sezione è già pronta e si popolerà automaticamente quando inserirai le gare.</div>
+  <div class="section-head"><div><h2>Calendario</h2><p>20 appuntamenti ufficiali della Stagione 2026-2027.</p></div></div>
+  <div id="calendarFeature"></div>
+  <div id="calendarGrid" class="calendar-grid"></div>
+  <div id="calendarEmpty" class="card empty hidden"><strong>Nessuna gara programmata</strong>Il calendario verrà pubblicato a breve.</div>
 </section>
 
 <section id="standings" class="section">
@@ -598,6 +614,29 @@ function teamLargeLogo(t){const logo=teamLogoUrl(t);return logo?`<img class="tea
 function resultTeamId(result){return Number(result?.team_id||state.drivers.find(d=>d.id==result?.driver_id)?.team_id)||null}
 function fmtDate(v){return v?new Date(v+'T12:00:00').toLocaleDateString('it-IT'):''}
 function driverStatus(v){return({active:'Attivo',reserve:'Riserva',suspended:'Sospeso'})[v]||v||'—'}
+const COUNTRY_FLAGS={'Australia':'🇦🇺','Cina':'🇨🇳','Giappone':'🇯🇵','Bahrain':'🇧🇭','Arabia Saudita':'🇸🇦','Stati Uniti':'🇺🇸','Canada':'🇨🇦','Spagna':'🇪🇸','Austria':'🇦🇹','Regno Unito':'🇬🇧','Belgio':'🇧🇪','Ungheria':'🇭🇺','Paesi Bassi':'🇳🇱','Italia':'🇮🇹','Azerbaigian':'🇦🇿','Singapore':'🇸🇬','Messico':'🇲🇽','Brasile':'🇧🇷','Emirati Arabi':'🇦🇪'};
+function countryFlag(country){return COUNTRY_FLAGS[country]||'🏁'}
+function raceDateTime(r){return new Date(`${r.race_date}T${String(r.race_time||'22:30').slice(0,5)}:00`)}
+function raceStatusLabel(r){return r.status==='completed'?'Concluso':r.status==='live'?'In corso':'In programma'}
+let countdownTimer=null;
+function countdownMarkup(){return ['Giorni','Ore','Minuti','Secondi'].map((x,i)=>`<div class="countdown-box"><strong data-countdown="${i}">00</strong><span>${x}</span></div>`).join('')}
+function startCountdown(r){
+ if(countdownTimer)clearInterval(countdownTimer);
+ const update=()=>{
+  const distance=Math.max(0,raceDateTime(r)-new Date());
+  const values=[Math.floor(distance/86400000),Math.floor(distance/3600000)%24,Math.floor(distance/60000)%60,Math.floor(distance/1000)%60];
+  $$('[data-countdown]').forEach(x=>x.textContent=String(values[Number(x.dataset.countdown)]).padStart(2,'0'));
+ };
+ update();countdownTimer=setInterval(update,1000);
+}
+function renderCalendar(next){
+ const races=[...state.races].sort((a,b)=>Number(a.round)-Number(b.round));
+ $('#calendarEmpty').classList.toggle('hidden',races.length>0);
+ $('#calendarGrid').innerHTML=races.map(r=>`<article class="card calendar-card ${next&&r.id==next.id?'next':''}"><div class="round-box">${esc(r.round)}</div><div><strong>${countryFlag(r.country)} ${esc(r.name)}</strong><div class="muted">${esc(r.circuit)}</div><span class="chip" style="margin-top:7px">${esc(raceStatusLabel(r))}</span></div><div class="race-date">${fmtDate(r.race_date)}<small>${String(r.race_time||'22:30').slice(0,5)}</small></div></article>`).join('');
+ if(!next){if(countdownTimer)clearInterval(countdownTimer);$('#calendarFeature').innerHTML='';return}
+ $('#calendarFeature').innerHTML=`<article class="card calendar-feature"><div><div class="calendar-flag">${countryFlag(next.country)}</div><div class="eyebrow">Prossimo appuntamento • Round ${esc(next.round)}</div><h3>${esc(next.name)}</h3><div class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} alle ${String(next.race_time||'22:30').slice(0,5)}</div></div><div class="countdown" aria-label="Conto alla rovescia">${countdownMarkup()}</div></article>`;
+ startCountdown(next);
+}
 const HISTORIC_HALL_OF_FAME=[
  {season_name:'Stagione 2025-2026',title:'Campione Piloti',winner_name:'Angelo Esposito',details:'EA ID: YoUnG Ansheel',icon:'🏆'},
  {season_name:'Stagione 2025-2026',title:'Campione Costruttori',winner_name:'Ferrari',details:'Andrea Occhipicca • Salvatore Tebaldo',icon:'🏎️'},
@@ -705,7 +744,8 @@ function render(){
  }
 
  const next=state.races.filter(r=>r.status!=='completed'&&new Date(r.race_date+'T23:59:59')>=new Date()).sort((a,b)=>a.race_date.localeCompare(b.race_date))[0];
- if(next)$('#nextRace').innerHTML=`<strong>Round ${next.round} — ${esc(next.name)}</strong><br><span class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} ${esc(next.race_time||'')}</span>`;
+ if(next)$('#nextRace').innerHTML=`<strong>${countryFlag(next.country)} Round ${next.round} — ${esc(next.name)}</strong><br><span class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} alle ${String(next.race_time||'22:30').slice(0,5)}</span>`;
+ renderCalendar(next);
 
  $('#teamsGrid').innerHTML=state.teams.map(t=>`<article class="card team-card" style="--team-color:${esc(t.color||'#e10600')}">${teamLargeLogo(t)}<h3>${esc(t.name)}</h3><div class="muted">${esc(t.country||'')}</div><div style="margin-top:12px"><span class="chip">${state.drivers.filter(d=>d.team_id==t.id).length} piloti ufficiali</span></div></article>`).join('');
  $('#teamsEmpty').classList.toggle('hidden',state.teams.length>0);
@@ -771,7 +811,7 @@ function render(){
  applyAccessControl();
  renderRaceControl();
 }
-function adminList(items,type){return items.map(x=>`<div class="admin-item"><span class="grow">${esc(x.name||x.title||(x.round+' - '+x.circuit))}</span><button class="btn danger small" onclick="delItem('${type}',${x.id})">Elimina</button></div>`).join('')}
+function adminList(items,type){return items.map(x=>`<div class="admin-item"><span class="grow">${type==='race'?`<strong>Round ${esc(x.round)} • ${esc(x.name)}</strong><br><span class="muted">${fmtDate(x.race_date)} • ${esc(x.circuit)}</span>`:esc(x.name||x.title||(x.round+' - '+x.circuit))}</span><button class="btn danger small" onclick="delItem('${type}',${x.id})">Elimina</button></div>`).join('')}
 const tableMap={team:'teams',driver:'drivers',race:'races',news:'news'};
 async function delItem(type,id){if(!confirm('Eliminare definitivamente?'))return;const{error}=await db.from(tableMap[type]).delete().eq('id',id);if(error)alert(error.message);else loadAll()}window.delItem=delItem;
 async function insertForm(form,table,transform=x=>x){const o=Object.fromEntries(new FormData(form));const{error}=await db.from(table).insert(transform(o,form));if(error)throw error;form.reset();await loadAll()}
@@ -839,7 +879,7 @@ $('#newsForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Obje
 $('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));let q=state.regulations?.id?await db.from('regulations').update({...o,updated_at:new Date().toISOString()}).eq('id',state.regulations.id):await db.from('regulations').insert(o);if(q.error)throw q.error;msg($('#adminMsg'),'Regolamento salvato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 $('#driverForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'drivers',o=>({...o,level:Number(o.level||100),team_id:o.team_id?Number(o.team_id):null,is_wild:o.is_wild==='on'}))}catch(x){msg($('#adminMsg'),x.message)}};
 $('#absenceForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target)),absences=Number(o.absences);if(!Number.isInteger(absences)||absences<0||absences>3)throw new Error('Le assenze devono essere comprese tra 0 e 3.');const{error}=await db.from('drivers').update({absences,is_wild:o.is_wild==='on'}).eq('id',Number(o.driver_id));if(error)throw error;msg($('#adminMsg'),'Pilota aggiornato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
-$('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');await insertForm(e.target,'races',o=>({...o,round:Number(o.round),season_id:state.season.id,race_time:o.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
+$('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');const o=Object.fromEntries(new FormData(e.target)),round=Number(o.round);if(state.races.some(r=>Number(r.round)===round))throw new Error(`Il Round ${round} esiste già nel calendario.`);await insertForm(e.target,'races',x=>({...x,round,season_id:state.season.id,race_time:x.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
 
 
 

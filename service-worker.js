@@ -1,4 +1,4 @@
-const CACHE='srt-v5e2-hall-of-fame';
+const CACHE='srt-v5e3-australia-calendar';
 
 const CORE = [
   '/',
