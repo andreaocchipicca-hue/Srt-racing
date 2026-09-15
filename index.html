@@ -61,6 +61,10 @@
     label{font-size:13px;color:#c8d5e4;font-weight:750}input,select,textarea{width:100%;background:#0d1d31;color:white;border:1px solid var(--line);border-radius:10px;padding:11px;outline:none}
     input:focus,select:focus,textarea:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(225,6,0,.12)}textarea{min-height:100px;resize:vertical}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.auth{max-width:520px;margin:auto}
+    .auth-help{margin-top:12px;text-align:center}
+    .auth-link{border:0;background:none;color:#9fd0ff;padding:6px;font-weight:800;text-decoration:underline;box-shadow:none}
+    .recovery-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(3,9,18,.86);backdrop-filter:blur(10px)}
+    .recovery-overlay .auth{width:min(100%,520px)}
     .notice{padding:12px;border-radius:11px;background:#251317;border:1px solid #5c2429;color:#ffc4c7;margin:10px 0}.notice.success{background:#102619;border-color:#245d38;color:#baf3c8}
     .hidden{display:none!important}.admin-tabs{display:flex;gap:8px;overflow:auto;margin-bottom:12px}.admin-tabs button{white-space:nowrap;border:1px solid var(--line);background:var(--surface2);color:white;padding:9px 11px;border-radius:10px}.admin-tabs button.active{background:var(--red);border-color:var(--red)}
     .admin-pane{display:none}.admin-pane.active{display:block}.admin-list{margin-top:14px}.admin-item{display:flex;gap:9px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
@@ -345,8 +349,20 @@
     <div class="field"><label>Password</label><input id="password" type="password" minlength="6"></div><br>
     <div id="nameField" class="field hidden"><label>Nome visualizzato</label><input id="displayName"></div><br>
     <div class="row"><button class="btn" id="authSubmit">Accedi</button><button class="btn alt" id="authSwitch">Crea account</button><button class="btn danger hidden" id="logoutBtn">Esci</button></div>
+    <div class="auth-help"><button class="auth-link" id="forgotPasswordBtn" type="button">Password dimenticata?</button></div>
   </div>
 </section>
+
+<div id="passwordRecoveryModal" class="recovery-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="passwordRecoveryTitle">
+  <div class="card auth">
+    <h2 id="passwordRecoveryTitle">Imposta una nuova password</h2>
+    <p class="muted">Account: <strong id="recoveryEmail">—</strong></p>
+    <div id="passwordRecoveryMsg"></div>
+    <div class="field"><label>Nuova password</label><input id="newPassword" type="password" minlength="6" autocomplete="new-password"></div><br>
+    <div class="field"><label>Ripeti la nuova password</label><input id="confirmNewPassword" type="password" minlength="6" autocomplete="new-password"></div><br>
+    <div class="row"><button class="btn" id="saveNewPasswordBtn" type="button">Salva nuova password</button><button class="btn alt" id="cancelPasswordRecoveryBtn" type="button">Annulla</button></div>
+  </div>
+</div>
 
 <section id="admin" class="section">
   <div class="section-head"><div><h2>Pannello Admin</h2><p>Gestisci la Stagione 2026-2027 direttamente dal telefono.</p></div><div class="grow"></div><button class="btn alt small" onclick="loadAll()">Aggiorna dati</button></div>
@@ -570,6 +586,7 @@
 const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
 const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const recoveryUrlDetected=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery'||new URLSearchParams(location.search).get('type')==='recovery';
 let state={teams:[],drivers:[],races:[],results:[],entries:[],news:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null,attendanceRaceId:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1290,8 +1307,67 @@ $('#licenseForm').onsubmit=async e=>{
 };
 
 let signup=false;
-$('#authSwitch').onclick=()=>{signup=!signup;$('#authTitle').textContent=signup?'Crea account':'Accedi';$('#nameField').classList.toggle('hidden',!signup);$('#authSubmit').textContent=signup?'Registrati':'Accedi';$('#authSwitch').textContent=signup?'Ho già un account':'Crea account'};
+function syncAuthMode(){
+ $('#authTitle').textContent=signup?'Crea account':'Accedi';
+ $('#nameField').classList.toggle('hidden',!signup);
+ $('#authSubmit').textContent=signup?'Registrati':'Accedi';
+ $('#authSwitch').textContent=signup?'Ho già un account':'Crea account';
+ $('#forgotPasswordBtn').classList.toggle('hidden',signup||Boolean(state.user));
+}
+$('#authSwitch').onclick=()=>{signup=!signup;syncAuthMode()};
 $('#authSubmit').onclick=async()=>{try{const email=$('#email').value.trim(),password=$('#password').value;const r=signup?await db.auth.signUp({email,password,options:{data:{display_name:$('#displayName').value.trim()||email.split('@')[0]}}}):await db.auth.signInWithPassword({email,password});if(r.error)throw r.error;msg($('#authMsg'),signup?'Registrazione completata.':'Accesso effettuato.',true);await refreshUser();if(state.user)go('home')}catch(e){msg($('#authMsg'),e.message)}};
+
+$('#forgotPasswordBtn').onclick=async()=>{
+ const button=$('#forgotPasswordBtn');
+ try{
+  const email=$('#email').value.trim();
+  if(!email)throw new Error('Inserisci prima la tua email.');
+  if(!$('#email').checkValidity())throw new Error('Inserisci un indirizzo email valido.');
+  button.disabled=true;
+  const{error}=await db.auth.resetPasswordForEmail(email);
+  if(error)throw error;
+  msg($('#authMsg'),'Se questa email è registrata, riceverai un link per scegliere una nuova password.',true);
+ }catch(e){msg($('#authMsg'),e.message)}
+ finally{button.disabled=false}
+};
+
+function openPasswordRecovery(session){
+ $('#recoveryEmail').textContent=session?.user?.email||'account SRT';
+ $('#passwordRecoveryMsg').innerHTML='';
+ $('#newPassword').value='';
+ $('#confirmNewPassword').value='';
+ $('#passwordRecoveryModal').classList.remove('hidden');
+ setTimeout(()=>$('#newPassword').focus(),0);
+}
+
+$('#saveNewPasswordBtn').onclick=async()=>{
+ const button=$('#saveNewPasswordBtn');
+ try{
+  const password=$('#newPassword').value;
+  const confirmation=$('#confirmNewPassword').value;
+  if(password.length<6)throw new Error('La password deve contenere almeno 6 caratteri.');
+  if(password!==confirmation)throw new Error('Le due password non coincidono.');
+  button.disabled=true;
+  const{error}=await db.auth.updateUser({password});
+  if(error)throw error;
+  $('#passwordRecoveryModal').classList.add('hidden');
+  history.replaceState({},document.title,location.pathname);
+  msg($('#authMsg'),'Password aggiornata correttamente.',true);
+  await refreshUser();
+  if(state.user)go('home');
+ }catch(e){msg($('#passwordRecoveryMsg'),e.message)}
+ finally{button.disabled=false}
+};
+
+$('#cancelPasswordRecoveryBtn').onclick=async()=>{
+ const{error}=await db.auth.signOut();
+ if(error){msg($('#passwordRecoveryMsg'),error.message);return}
+ $('#passwordRecoveryModal').classList.add('hidden');
+ history.replaceState({},document.title,location.pathname);
+ await refreshUser();
+ go('standings');
+};
+
 async function logoutUser(){const{error}=await db.auth.signOut();if(error){msg($('#authMsg'),error.message);return}await refreshUser();go('standings')}
 $('#logoutBtn').onclick=logoutUser;
 $('#topLogoutBtn').onclick=logoutUser;
@@ -1301,10 +1377,22 @@ async function refreshUser(){
  const role=currentRole();
  $('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':' • Pilota'):'Ospite';
  $('#adminNav').classList.toggle('hidden',role!=='admin');$('#logoutBtn').classList.toggle('hidden',!user);$('#topLogoutBtn').classList.toggle('hidden',!user);$('#authSubmit').classList.toggle('hidden',!!user);$('#authSwitch').classList.toggle('hidden',!!user);
+ $('#forgotPasswordBtn').classList.toggle('hidden',!!user||signup);
  $('#authTitle').textContent=user?'Account':signup?'Crea account':'Accedi';applyAccessControl();
 }
-db.auth.onAuthStateChange(()=>{setTimeout(()=>refreshUser(),0)});
-(async()=>{await refreshUser();await loadAll();if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js')})();
+db.auth.onAuthStateChange((event,session)=>{
+ if(event==='PASSWORD_RECOVERY')openPasswordRecovery(session);
+ setTimeout(()=>refreshUser(),0);
+});
+(async()=>{
+ await refreshUser();
+ if(recoveryUrlDetected){
+  const{data:{session}}=await db.auth.getSession();
+  if(session&&$('#passwordRecoveryModal').classList.contains('hidden'))openPasswordRecovery(session);
+ }
+ await loadAll();
+ if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js');
+})();
 </script>
 </body>
 </html>

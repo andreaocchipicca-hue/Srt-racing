@@ -1,4 +1,4 @@
-const CACHE='srt-v5e6-auth-role-fix';
+const CACHE='srt-v5e7-password-recovery';
 
 const CORE = [
   '/',
