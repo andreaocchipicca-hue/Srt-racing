@@ -173,6 +173,15 @@
       .lineup-grid{grid-template-columns:1fr}.attendance-row{grid-template-columns:1fr}.attendance-row .field{width:100%}
     }
 
+    .social-studio{display:grid;grid-template-columns:minmax(250px,340px) minmax(0,1fr);gap:16px;align-items:start}
+    .social-controls{display:grid;gap:13px}
+    .social-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .social-actions .primary{grid-column:1/-1}
+    .social-preview{display:grid;place-items:center;min-height:420px;padding:14px;border:1px solid var(--line);border-radius:16px;background:repeating-conic-gradient(#0a121e 0 25%,#0d1827 0 50%) 50%/22px 22px;overflow:hidden}
+    #socialCanvas{display:block;width:min(100%,520px);height:auto;aspect-ratio:4/5;background:#090a0c;border-radius:8px;box-shadow:0 18px 48px rgba(0,0,0,.48)}
+    .social-note{padding:12px;border-left:4px solid var(--red);border-radius:8px;background:rgba(225,6,0,.08);color:var(--muted);font-size:13px;line-height:1.55}
+    @media(max-width:800px){.social-studio{grid-template-columns:1fr}.social-preview{min-height:300px;padding:8px}.social-actions{grid-template-columns:1fr}}
+
     .role-hidden{display:none !important}
     body.locked main > section:not(#login){display:none !important}
     body.locked nav{display:none !important}
@@ -375,6 +384,7 @@
     <button data-admin="racePane">Gare</button>
     <button data-admin="attendancePane">Convocati</button>
     <button data-admin="resultPane">Race Control</button>
+    <button data-admin="socialPane">Grafiche Social</button>
   </div>
 
 
@@ -575,6 +585,31 @@
       <button class="btn alt" id="saveDraftBtn">💾 Salva bozza</button>
       <button class="btn" id="publishRaceBtn">🚀 Pubblica GP</button>
       <button class="btn danger" id="cancelRaceBtn">↩ Annulla GP</button>
+    </div>
+  </div>
+
+  <div id="socialPane" class="admin-pane card">
+    <div class="section-head">
+      <div>
+        <h3>Studio Grafiche Social</h3>
+        <p>Crea immagini ufficiali usando automaticamente i dati pubblicati del campionato.</p>
+      </div>
+      <div class="grow"></div>
+      <span class="chip">1080 × 1350</span>
+    </div>
+    <div id="socialGeneratorMsg"></div>
+    <div class="social-studio">
+      <div class="social-controls">
+        <div class="field"><label>Gran Premio di riferimento</label><select id="socialRaceSelect"><option value="">Caricamento…</option></select></div>
+        <div class="field"><label>Grafica</label><select id="socialGraphicType"><option value="drivers">Classifica Piloti</option><option value="constructors">Classifica Costruttori</option></select></div>
+        <div class="social-actions">
+          <button type="button" class="btn primary" id="socialGenerateBtn">Crea anteprima</button>
+          <button type="button" class="btn alt" id="socialDownloadBtn" disabled>Scarica PNG</button>
+          <button type="button" class="btn alt" id="socialShareBtn" disabled>Condividi</button>
+        </div>
+        <div class="social-note"><strong>Prima versione</strong><br>Le due classifiche riprendono lo stile rosso e nero delle immagini del GP d’Australia. Griglia, podio e Corriere di SRT verranno aggiunti nei prossimi passaggi perché richiedono anche fotografie e contenuti editoriali.</div>
+      </div>
+      <div class="social-preview"><canvas id="socialCanvas" width="1080" height="1350" aria-label="Anteprima grafica social SRT"></canvas></div>
     </div>
   </div>
 </section>
@@ -899,6 +934,7 @@ function render(){
 
  applyAccessControl();
  renderRaceControl();
+ window.dispatchEvent(new CustomEvent('srt:data-ready'));
 }
 function adminList(items,type){return items.map(x=>{let content;if(type==='race')content=`<strong>Round ${esc(x.round)} • ${esc(x.name)}</strong><br><span class="muted">${fmtDate(x.race_date)} • ${esc(x.circuit)}</span>`;else if(type==='driver'){const role=x.is_wild?'WILD':x.status==='suspended'?'SOSPESO':x.status==='reserve'?'RISERVA':'UFFICIALE';content=`<strong>${esc(driverName(x.id))}</strong> <span class="chip">${role}</span><br><span class="muted">EA ID: ${esc(x.ea_id||'—')} • ${esc(teamName(x.team_id))}</span>`}else content=esc(x.name||x.title||(x.round+' - '+x.circuit));return `<div class="admin-item"><span class="grow">${content}</span><button class="btn danger small" onclick="delItem('${type}',${x.id})">Elimina</button></div>`}).join('')}
 const tableMap={team:'teams',driver:'drivers',race:'races',news:'news'};
@@ -1393,6 +1429,534 @@ db.auth.onAuthStateChange((event,session)=>{
  await loadAll();
  if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js');
 })();
+</script>
+<script>
+(() => {
+  'use strict';
+
+  const WIDTH = 1080;
+  const HEIGHT = 1350;
+  const imageCache = new Map();
+  let currentFilename = '';
+  let refreshToken = 0;
+
+  const $social = selector => document.querySelector(selector);
+
+  function publishedRaces() {
+    return [...state.races]
+      .filter(race => race.results_status === 'published' || state.results.some(result => result.race_id == race.id && result.is_published === true))
+      .sort((a, b) => Number(a.round) - Number(b.round));
+  }
+
+  function selectedRace() {
+    const id = Number($social('#socialRaceSelect')?.value || 0);
+    return state.races.find(race => race.id == id) || null;
+  }
+
+  function resultsThroughRace(race) {
+    if (!race) return [];
+    const allowedRaceIds = new Set(
+      state.races
+        .filter(item => Number(item.round) <= Number(race.round))
+        .map(item => Number(item.id))
+    );
+    return state.results.filter(result => result.is_published !== false && allowedRaceIds.has(Number(result.race_id)));
+  }
+
+  function officialDrivers() {
+    const regular = state.drivers.filter(driver => !driver.is_wild && driver.status !== 'reserve');
+    return regular.length >= 20 ? regular : state.drivers.filter(driver => !driver.is_wild);
+  }
+
+  function driverStandings(race) {
+    const results = resultsThroughRace(race);
+    return officialDrivers().map(driver => {
+      const rows = results.filter(result => result.driver_id == driver.id);
+      return {
+        driver,
+        points: rows.reduce((sum, result) => sum + Number(result.points || 0), 0),
+        wins: rows.filter(result => Number(result.position) === 1).length,
+        podiums: rows.filter(result => Number(result.position) > 0 && Number(result.position) <= 3).length
+      };
+    }).sort((a, b) => b.points - a.points || b.wins - a.wins || b.podiums - a.podiums || driverName(a.driver.id).localeCompare(driverName(b.driver.id), 'it'));
+  }
+
+  function constructorStandings(race) {
+    const results = resultsThroughRace(race);
+    return state.teams.map(team => {
+      const rows = results.filter(result => resultTeamId(result) == team.id);
+      return {
+        team,
+        points: rows.reduce((sum, result) => sum + Number(result.points || 0), 0),
+        wins: rows.filter(result => Number(result.position) === 1).length,
+        podiums: rows.filter(result => Number(result.position) > 0 && Number(result.position) <= 3).length
+      };
+    }).sort((a, b) => b.points - a.points || b.wins - a.wins || b.podiums - a.podiums || a.team.name.localeCompare(b.team.name, 'it'));
+  }
+
+  function roundedPath(ctx, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + width, y, x + width, y + height, r);
+    ctx.arcTo(x + width, y + height, x, y + height, r);
+    ctx.arcTo(x, y + height, x, y, r);
+    ctx.arcTo(x, y, x + width, y, r);
+    ctx.closePath();
+  }
+
+  function fillRounded(ctx, x, y, width, height, radius, fill) {
+    roundedPath(ctx, x, y, width, height, radius);
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+
+  function drawFittedText(ctx, text, x, y, maxWidth, startSize, family = 'Arial Black, Arial, sans-serif', align = 'left') {
+    let size = startSize;
+    ctx.textAlign = align;
+    ctx.textBaseline = 'middle';
+    do {
+      ctx.font = `900 italic ${size}px ${family}`;
+      if (ctx.measureText(text).width <= maxWidth) break;
+      size -= 1;
+    } while (size > 16);
+    ctx.fillText(text, x, y);
+  }
+
+  function rgbaFromHex(hex, alpha = 1) {
+    const clean = String(hex || '#e10600').replace('#', '');
+    const value = clean.length === 3 ? clean.split('').map(char => char + char).join('') : clean.padEnd(6, '0').slice(0, 6);
+    const number = Number.parseInt(value, 16);
+    if (!Number.isFinite(number)) return `rgba(225,6,0,${alpha})`;
+    return `rgba(${number >> 16},${(number >> 8) & 255},${number & 255},${alpha})`;
+  }
+
+  function drawBackground(ctx) {
+    const base = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+    base.addColorStop(0, '#060708');
+    base.addColorStop(0.55, '#121419');
+    base.addColorStop(1, '#050506');
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+    const tile = 22;
+    for (let y = 0; y < HEIGHT; y += tile) {
+      for (let x = 0; x < WIDTH; x += tile) {
+        ctx.fillStyle = ((x / tile + y / tile) % 2 === 0) ? 'rgba(255,255,255,.018)' : 'rgba(255,255,255,.035)';
+        ctx.fillRect(x, y, tile - 2, tile - 2);
+      }
+    }
+
+    const glow = ctx.createRadialGradient(960, 160, 10, 960, 160, 560);
+    glow.addColorStop(0, 'rgba(235,0,18,.33)');
+    glow.addColorStop(1, 'rgba(235,0,18,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    [[-80, 185, 1170, 72, 8], [-120, 1310, 1180, 1160, 7], [590, 42, 1140, 20, 5], [-40, 102, 390, 78, 4]].forEach(([x1, y1, x2, y2, lineWidth]) => {
+      ctx.strokeStyle = 'rgba(255,12,28,.9)';
+      ctx.shadowColor = '#e10600';
+      ctx.shadowBlur = 16;
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    const road = ctx.createLinearGradient(0, 1160, 0, HEIGHT);
+    road.addColorStop(0, 'rgba(12,13,15,0)');
+    road.addColorStop(1, 'rgba(68,70,73,.82)');
+    ctx.fillStyle = road;
+    ctx.fillRect(0, 1120, WIDTH, 230);
+  }
+
+  function raceCaption(race) {
+    return `DOPO IL ${String(race?.name || 'GRAN PREMIO').toUpperCase()}  •  ROUND ${race?.round || '—'}`;
+  }
+
+  function footerCaption(race, itemCount, itemLabel) {
+    const year = race?.race_date ? new Date(`${race.race_date}T12:00:00`).getFullYear() : new Date().getFullYear();
+    return [`PUNTI DOPO IL GRAN PREMIO ${String(race?.country || race?.name || '').toUpperCase()} ${year}`, `${itemCount} ${itemLabel}  •  SANTENA RACING TEAM`];
+  }
+
+  async function loadImage(source) {
+    if (!source) return null;
+    if (imageCache.has(source)) return imageCache.get(source);
+    const promise = new Promise(resolve => {
+      const image = new Image();
+      if (!source.startsWith('data:')) image.crossOrigin = 'anonymous';
+      image.onload = () => resolve(image);
+      image.onerror = () => resolve(null);
+      image.src = source;
+    });
+    imageCache.set(source, promise);
+    return promise;
+  }
+
+  function logoSource(team) {
+    try {
+      return typeof teamLogoUrl === 'function' ? teamLogoUrl(team) : (team.logo || '');
+    } catch (_) {
+      return team.logo || '';
+    }
+  }
+
+  async function prepareLogos(teams) {
+    const pairs = await Promise.all(teams.map(async team => [team.id, await loadImage(logoSource(team))]));
+    return new Map(pairs);
+  }
+
+  function drawContainedImage(ctx, image, x, y, width, height) {
+    if (!image) return false;
+    const ratio = Math.min(width / image.naturalWidth, height / image.naturalHeight);
+    const drawWidth = image.naturalWidth * ratio;
+    const drawHeight = image.naturalHeight * ratio;
+    ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+    return true;
+  }
+
+  function drawTeamBadge(ctx, team, image, x, y, width, height) {
+    fillRounded(ctx, x, y, width, height, 8, 'rgba(4,8,13,.78)');
+    ctx.save();
+    roundedPath(ctx, x, y, width, height, 8);
+    ctx.clip();
+    const badge = ctx.createLinearGradient(x, y, x + width, y + height);
+    badge.addColorStop(0, rgbaFromHex(team.color, .78));
+    badge.addColorStop(1, 'rgba(0,0,0,.2)');
+    ctx.fillStyle = badge;
+    ctx.fillRect(x, y, width, height);
+    if (!drawContainedImage(ctx, image, x + 7, y + 5, width - 14, height - 10)) {
+      ctx.fillStyle = '#fff';
+      ctx.font = '900 17px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const label = (typeof teamCode === 'function' ? teamCode(team.id) : team.name.slice(0, 3)).toUpperCase();
+      ctx.fillText(label, x + width / 2, y + height / 2);
+    }
+    ctx.restore();
+  }
+
+  async function drawHeader(ctx, title, race) {
+    const logo = await loadImage('icon-192.png');
+    ctx.save();
+    ctx.fillStyle = '#e10613';
+    ctx.fillRect(0, 37, 390, 6);
+    ctx.fillRect(690, 37, 390, 6);
+    ctx.strokeStyle = 'rgba(225,6,19,.8)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(390, 37);
+    ctx.lineTo(418, 62);
+    ctx.lineTo(662, 62);
+    ctx.lineTo(690, 37);
+    ctx.stroke();
+    if (logo) {
+      ctx.beginPath();
+      ctx.arc(540, 43, 34, 0, Math.PI * 2);
+      ctx.fillStyle = '#090b0e';
+      ctx.fill();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(540, 43, 30, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(logo, 510, 13, 60, 60);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#fff';
+      ctx.font = '900 italic 25px Arial Black, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('SRT', 540, 43);
+    }
+
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,.7)';
+    ctx.shadowBlur = 10;
+    drawFittedText(ctx, title, WIDTH / 2, 100, 930, 58, 'Arial Black, Arial, sans-serif', 'center');
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#d9dce2';
+    ctx.font = '800 17px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(raceCaption(race), WIDTH / 2, 148);
+    ctx.restore();
+  }
+
+  function surnameLabels(standings) {
+    const values = standings.map(item => String(item.driver.surname || item.driver.name || '').trim());
+    const counts = values.reduce((map, value) => map.set(value.toLowerCase(), (map.get(value.toLowerCase()) || 0) + 1), new Map());
+    return standings.map(item => {
+      const surname = String(item.driver.surname || item.driver.name || 'Pilota').trim();
+      return counts.get(surname.toLowerCase()) > 1 ? `${String(item.driver.name || '').charAt(0)}. ${surname}` : surname;
+    });
+  }
+
+  function drawTableHeader(ctx, y, middleLabel) {
+    fillRounded(ctx, 45, y, 990, 48, 13, '#d70b16');
+    ctx.fillStyle = '#fff';
+    ctx.font = '900 15px Arial, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillText('POS.', 60, y + 25);
+    ctx.fillText(middleLabel, 122, y + 25);
+    ctx.textAlign = 'center';
+    ctx.fillText('PUNTI', 955, y + 25);
+  }
+
+  function drawFooter(ctx, race, itemCount, itemLabel) {
+    const [first, second] = footerCaption(race, itemCount, itemLabel);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#e3e4e7';
+    ctx.font = '800 13px Arial, sans-serif';
+    ctx.fillText(first, WIDTH / 2, 1287);
+    ctx.font = '800 14px Arial, sans-serif';
+    ctx.fillText(second, WIDTH / 2, 1316);
+  }
+
+  async function drawDriverStandings(ctx, race) {
+    drawBackground(ctx);
+    await drawHeader(ctx, 'CLASSIFICA PILOTI', race);
+    const standings = driverStandings(race).slice(0, 22);
+    const labels = surnameLabels(standings);
+    const logos = await prepareLogos(standings.map(item => state.teams.find(team => team.id == item.driver.team_id)).filter(Boolean));
+    const tableY = 176;
+    const headerHeight = 48;
+    const rowHeight = 46;
+    drawTableHeader(ctx, tableY, 'PILOTA');
+
+    standings.forEach((item, index) => {
+      const y = tableY + headerHeight + index * rowHeight;
+      const team = state.teams.find(row => row.id == item.driver.team_id) || {id: null, name: 'Senza scuderia', color: '#555b66'};
+      ctx.fillStyle = index % 2 ? '#131820' : '#171c24';
+      ctx.fillRect(45, y, 62, rowHeight - 1);
+      const row = ctx.createLinearGradient(107, y, 868, y);
+      row.addColorStop(0, rgbaFromHex(team.color, .95));
+      row.addColorStop(.55, rgbaFromHex(team.color, .58));
+      row.addColorStop(1, '#171b22');
+      ctx.fillStyle = row;
+      ctx.fillRect(107, y, 761, rowHeight - 1);
+      ctx.fillStyle = index % 2 ? '#ed0b17' : '#d80a15';
+      ctx.fillRect(868, y, 167, rowHeight - 1);
+      ctx.strokeStyle = 'rgba(255,255,255,.19)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(45, y + rowHeight - 1);
+      ctx.lineTo(1035, y + rowHeight - 1);
+      ctx.stroke();
+
+      ctx.fillStyle = index === 0 ? '#ffd541' : index === 2 ? '#d99a62' : '#fff';
+      ctx.font = '900 italic 27px Arial Black, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(index + 1), 77, y + rowHeight / 2);
+      drawTeamBadge(ctx, team, logos.get(team.id), 120, y + 5, 64, rowHeight - 11);
+
+      ctx.fillStyle = '#fff';
+      drawFittedText(ctx, labels[index].toUpperCase(), 203, y + 17, 570, 21);
+      ctx.fillStyle = 'rgba(255,255,255,.78)';
+      ctx.font = '800 10px Arial, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(team.name.toUpperCase(), 204, y + 35);
+      ctx.fillStyle = '#fff';
+      ctx.font = '900 italic 27px Arial Black, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(item.points), 952, y + rowHeight / 2);
+    });
+
+    drawFooter(ctx, race, standings.length, 'PILOTI');
+  }
+
+  function teamDriverLine(team) {
+    const drivers = officialDrivers().filter(driver => driver.team_id == team.id);
+    const surnames = drivers.slice(0, 2).map(driver => String(driver.surname || driver.name || '').toUpperCase());
+    return surnames.join('  •  ') || 'PILOTI SRT';
+  }
+
+  async function drawConstructorStandings(ctx, race) {
+    drawBackground(ctx);
+    await drawHeader(ctx, 'CLASSIFICA COSTRUTTORI', race);
+    const standings = constructorStandings(race).slice(0, 11);
+    const logos = await prepareLogos(standings.map(item => item.team));
+    const tableY = 196;
+    const headerHeight = 54;
+    const rowHeight = 80;
+    drawTableHeader(ctx, tableY, 'SCUDERIA');
+
+    standings.forEach((item, index) => {
+      const y = tableY + headerHeight + index * rowHeight;
+      const team = item.team;
+      ctx.fillStyle = index % 2 ? '#12171e' : '#171c24';
+      ctx.fillRect(45, y, 62, rowHeight - 1);
+      const row = ctx.createLinearGradient(107, y, 868, y);
+      row.addColorStop(0, rgbaFromHex(team.color, .95));
+      row.addColorStop(.58, rgbaFromHex(team.color, .55));
+      row.addColorStop(1, '#171b22');
+      ctx.fillStyle = row;
+      ctx.fillRect(107, y, 761, rowHeight - 1);
+      ctx.fillStyle = index % 2 ? '#ed0b17' : '#d80a15';
+      ctx.fillRect(868, y, 167, rowHeight - 1);
+      ctx.strokeStyle = 'rgba(255,255,255,.2)';
+      ctx.beginPath();
+      ctx.moveTo(45, y + rowHeight - 1);
+      ctx.lineTo(1035, y + rowHeight - 1);
+      ctx.stroke();
+
+      ctx.fillStyle = index === 0 ? '#ffd541' : index === 2 ? '#d99a62' : '#fff';
+      ctx.font = '900 italic 30px Arial Black, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(index + 1), 77, y + rowHeight / 2);
+      drawTeamBadge(ctx, team, logos.get(team.id), 126, y + 10, 112, rowHeight - 20);
+      ctx.fillStyle = '#fff';
+      drawFittedText(ctx, team.name.toUpperCase(), 270, y + 29, 540, 29);
+      ctx.fillStyle = 'rgba(255,255,255,.78)';
+      ctx.font = '800 12px Arial, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(teamDriverLine(team), 270, y + 57);
+      ctx.fillStyle = '#fff';
+      ctx.font = '900 italic 39px Arial Black, Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(item.points), 952, y + rowHeight / 2);
+    });
+
+    drawFooter(ctx, race, standings.length, 'SCUDERIE');
+  }
+
+  function setMessage(text, ok = false) {
+    const box = $social('#socialGeneratorMsg');
+    if (!box) return;
+    box.innerHTML = text ? `<div class="notice ${ok ? 'success' : ''}">${esc(text)}</div>` : '';
+  }
+
+  function setBusy(busy) {
+    const button = $social('#socialGenerateBtn');
+    if (button) {
+      button.disabled = busy;
+      button.textContent = busy ? 'Creazione in corso…' : 'Crea anteprima';
+    }
+    [$social('#socialDownloadBtn'), $social('#socialShareBtn')].forEach(item => {
+      if (item) item.disabled = busy || !currentFilename;
+    });
+  }
+
+  async function generate() {
+    const canvas = $social('#socialCanvas');
+    const race = selectedRace();
+    if (!canvas || !race) {
+      currentFilename = '';
+      setMessage('Pubblica almeno un GP prima di creare le grafiche social.');
+      setBusy(false);
+      return;
+    }
+
+    setBusy(true);
+    setMessage('');
+    const token = ++refreshToken;
+    try {
+      await document.fonts?.ready;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+      const type = $social('#socialGraphicType').value;
+      if (type === 'constructors') await drawConstructorStandings(ctx, race);
+      else await drawDriverStandings(ctx, race);
+      if (token !== refreshToken) return;
+      const slug = String(race.name || 'gp').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
+      currentFilename = type === 'constructors' ? `SRT-Classifica-Costruttori-${slug}.png` : `SRT-Classifica-Piloti-${slug}.png`;
+      setMessage('Grafica pronta in formato social 1080 × 1350.', true);
+    } catch (error) {
+      console.error(error);
+      currentFilename = '';
+      setMessage(`Impossibile creare la grafica: ${error.message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function canvasBlob() {
+    return new Promise((resolve, reject) => {
+      const canvas = $social('#socialCanvas');
+      if (!canvas) return reject(new Error('Anteprima non disponibile.'));
+      try {
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Immagine non disponibile.')), 'image/png', 1);
+      } catch (_) {
+        reject(new Error('Un logo esterno impedisce il salvataggio. Riprova: verrà usata la sigla della scuderia.'));
+      }
+    });
+  }
+
+  async function download() {
+    try {
+      const blob = await canvasBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = currentFilename || 'SRT-grafica-social.png';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      setMessage('Immagine scaricata sul dispositivo.', true);
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function share() {
+    try {
+      const blob = await canvasBlob();
+      const file = new File([blob], currentFilename || 'SRT-grafica-social.png', {type: 'image/png'});
+      if (!navigator.share || !navigator.canShare?.({files: [file]})) throw new Error('La condivisione diretta non è disponibile su questo dispositivo. Usa “Scarica PNG”.');
+      await navigator.share({title: 'SRT Racing', text: 'Grafica ufficiale SRT', files: [file]});
+    } catch (error) {
+      if (error.name !== 'AbortError') setMessage(error.message);
+    }
+  }
+
+  function refresh() {
+    const select = $social('#socialRaceSelect');
+    if (!select) return;
+    const races = publishedRaces();
+    const previous = select.value;
+    select.innerHTML = races.length
+      ? races.map(race => `<option value="${race.id}">Round ${race.round} — ${esc(race.name)}</option>`).join('')
+      : '<option value="">Nessun GP pubblicato</option>';
+    if (previous && races.some(race => race.id == previous)) select.value = previous;
+    else if (races.length) select.value = String(races[races.length - 1].id);
+    const enabled = races.length > 0;
+    [$social('#socialRaceSelect'), $social('#socialGraphicType'), $social('#socialGenerateBtn')].forEach(item => {if (item) item.disabled = !enabled;});
+    if (!enabled) {
+      currentFilename = '';
+      setMessage('Pubblica almeno un GP prima di creare le grafiche social.');
+      setBusy(false);
+    }
+  }
+
+  function init() {
+    if (!$social('#socialCanvas')) return;
+    $social('#socialGenerateBtn').addEventListener('click', generate);
+    $social('#socialDownloadBtn').addEventListener('click', download);
+    $social('#socialShareBtn').addEventListener('click', share);
+    $social('#socialRaceSelect').addEventListener('change', generate);
+    $social('#socialGraphicType').addEventListener('change', generate);
+    document.querySelector('[data-admin="socialPane"]')?.addEventListener('click', () => {
+      refresh();
+      if (publishedRaces().length) generate();
+    });
+    refresh();
+  }
+
+  window.SRTSocial = {refresh, generate};
+  window.addEventListener('srt:data-ready', refresh);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+
 </script>
 </body>
 </html>
