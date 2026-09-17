@@ -114,11 +114,21 @@
     .podium{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
     .podium>div{padding:10px;border-radius:12px;background:#1b304b;border:1px solid var(--line)}
     .podium strong{display:block;margin-top:4px}
-    .gp-details{display:none;margin-top:12px}.gp-details.active{display:block}
+    .archive-session-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+    .archive-session-actions .btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px}
+    .session-page-head{align-items:center}
+    .session-page-head .row{justify-content:flex-end}
+    .session-banner{position:relative;overflow:hidden;margin-bottom:14px;border-left:5px solid var(--red);background:linear-gradient(120deg,#213a5a,#14243a 62%,rgba(227,27,35,.24))}
+    .session-banner:after{content:attr(data-session);position:absolute;right:18px;top:-18px;font-size:82px;font-weight:950;color:rgba(255,255,255,.035);pointer-events:none}
+    .session-banner h3{font-size:28px;margin:3px 0 5px}.session-banner p{margin:0;color:var(--muted)}
+    .session-table .leader-row td:first-child{color:var(--gold);font-weight:950}
     @media(max-width:800px){
       .profile-grid{grid-template-columns:1fr}
       .profile-avatar{width:120px;height:120px}
       .profile-stats,.record-grid,.podium{grid-template-columns:1fr 1fr}
+      .archive-session-actions{grid-template-columns:1fr}
+      .session-page-head{align-items:flex-start;flex-direction:column}.session-page-head .row{justify-content:flex-start}
+      .session-banner h3{font-size:23px}
     }
 
     .license-wrap{margin-top:12px}
@@ -342,6 +352,30 @@
   <div class="section-head"><div><h2>Archivio Gran Premi</h2><p>Podio, pole, giro veloce e risultati completi.</p></div></div>
   <div id="gpArchive" class="gp-archive"></div>
   <div id="archiveEmpty" class="card empty"><strong>Nessun GP pubblicato</strong></div>
+</section>
+
+<section id="gpQualifying" class="section">
+  <div class="section-head session-page-head">
+    <div><div class="eyebrow">Archivio GP</div><h2 id="qualifyingPageTitle">Risultati qualifiche</h2><p>Ordine di partenza e tempi ufficiali.</p></div>
+    <div class="grow"></div>
+    <div class="row"><button class="btn alt" type="button" onclick="returnToGpArchive()">← Archivio GP</button><button class="btn" type="button" onclick="switchGpSession('race')">Vai alla gara</button></div>
+  </div>
+  <div id="qualifyingPageBanner" class="card session-banner" data-session="Q"></div>
+  <div class="card table-wrap session-table">
+    <table><thead><tr><th>Pos.</th><th>Pilota</th><th>Scuderia</th><th>Tempo / distacco</th><th>Pole</th></tr></thead><tbody id="qualifyingPageBody"></tbody></table>
+  </div>
+</section>
+
+<section id="gpRace" class="section">
+  <div class="section-head session-page-head">
+    <div><div class="eyebrow">Archivio GP</div><h2 id="racePageTitle">Risultati gara</h2><p>Ordine d’arrivo, distacchi e punti ufficiali.</p></div>
+    <div class="grow"></div>
+    <div class="row"><button class="btn alt" type="button" onclick="returnToGpArchive()">← Archivio GP</button><button class="btn" type="button" onclick="switchGpSession('qualifying')">Vai alle qualifiche</button></div>
+  </div>
+  <div id="racePageBanner" class="card session-banner" data-session="RACE"></div>
+  <div class="card table-wrap session-table">
+    <table><thead><tr><th>Pos.</th><th>Pilota</th><th>Scuderia</th><th>Tempo / distacco</th><th>Punti</th><th>Giro V.</th><th>Ritiro</th><th>Penalità</th><th>Note</th></tr></thead><tbody id="racePageBody"></tbody></table>
+  </div>
 </section>
 
 
@@ -634,14 +668,14 @@ const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
 const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const recoveryUrlDetected=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery'||new URLSearchParams(location.search).get('type')==='recovery';
-let state={teams:[],drivers:[],races:[],results:[],entries:[],news:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null,attendanceRaceId:null};
+let state={teams:[],drivers:[],races:[],results:[],entries:[],news:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null,attendanceRaceId:null,archiveRaceId:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 const ROLE_ACCESS={
   guest:['login'],
-  driver:['home','teams','drivers','standings','calendar','statistics','profiles','archive','news','regulations','halloffame'],
-  admin:['home','teams','drivers','standings','calendar','statistics','profiles','archive','news','regulations','halloffame','admin']
+  driver:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame'],
+  admin:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame','admin']
 };
 function currentRole(){return state.user?(state.profile?.role==='admin'?'admin':'driver'):'guest'}
 function allowedPages(){return ROLE_ACCESS[currentRole()]||ROLE_ACCESS.guest}
@@ -857,13 +891,46 @@ function renderProfile(id){
  $('#profileResultsBody').innerHTML=(s?.results||[]).sort((a,b)=>Number(state.races.find(r=>r.id==a.race_id)?.round||0)-Number(state.races.find(r=>r.id==b.race_id)?.round||0)).map(r=>{const gp=state.races.find(x=>x.id==r.race_id);return `<tr><td>${esc(gp?.name||'GP')}</td><td>${r.grid_position??'—'}</td><td>${esc(r.qualifying_time||'—')}</td><td>${r.position??'—'}</td><td>${esc(r.race_time_gap||'—')}</td><td><strong>${Number(r.points||0)}</strong></td><td>${r.pole?'Sì':'—'}</td><td>${r.fastest_lap?'Sì':'—'}</td><td>${r.dnf?'Sì':'—'}</td><td>${Number(r.penalty_points||0)} pt / ${Number(r.penalty_seconds||0)} s</td></tr>`}).join('')||'<tr><td colspan="10">Nessun risultato.</td></tr>'
 }
 window.renderProfile=renderProfile;
-function toggleGpDetails(id){document.getElementById('gp-details-'+id)?.classList.toggle('active')}
-window.toggleGpDetails=toggleGpDetails;
+function gpSessionResults(id){return publishedResults().filter(x=>x.race_id==id)}
+function renderGpSession(id,type){
+ const race=state.races.find(r=>r.id==id);
+ if(!race||!raceHasArchive(race)){go('archive');return false}
+ const results=gpSessionResults(id);
+ const isQualifying=type==='qualifying';
+ const ordered=[...results].sort((a,b)=>isQualifying
+   ?Number(a.grid_position||999)-Number(b.grid_position||999)
+   :Number(a.position||999)-Number(b.position||999));
+ const subtitle=`${race.circuit} • ${fmtDate(race.race_date)}`;
+ if(isQualifying){
+   $('#qualifyingPageTitle').textContent='Qualifiche • '+race.name;
+   $('#qualifyingPageBanner').innerHTML=`<div class="eyebrow">Round ${race.round} • Qualifiche</div><h3>${esc(race.name)}</h3><p>${esc(subtitle)}</p>`;
+   $('#qualifyingPageBody').innerHTML=ordered.map(x=>`<tr class="${x.pole?'leader-row':''}"><td><span class="rank-badge ${x.pole?'first':''}">${x.grid_position??'—'}</span></td><td><strong>${esc(driverName(x.driver_id))}</strong></td><td>${teamSymbol(resultTeamId(x))}${esc(teamName(resultTeamId(x)))}</td><td><strong>${esc(x.qualifying_time||'—')}</strong></td><td>${x.pole?'Sì':'—'}</td></tr>`).join('')||'<tr><td colspan="5">Nessun dato disponibile.</td></tr>';
+ }else{
+   $('#racePageTitle').textContent='Gara • '+race.name;
+   $('#racePageBanner').innerHTML=`<div class="eyebrow">Round ${race.round} • Gara</div><h3>${esc(race.name)}</h3><p>${esc(subtitle)}</p>`;
+   $('#racePageBody').innerHTML=ordered.map(x=>`<tr class="${Number(x.position)===1?'leader-row':''}"><td><span class="rank-badge ${Number(x.position)===1?'first':''}">${x.position??'—'}</span></td><td><strong>${esc(driverName(x.driver_id))}</strong></td><td>${teamSymbol(resultTeamId(x))}${esc(teamName(resultTeamId(x)))}</td><td><strong>${esc(x.race_time_gap||'—')}</strong></td><td><strong>${Number(x.points||0)}</strong></td><td>${x.fastest_lap?'Sì':'—'}</td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')||'<tr><td colspan="9">Nessun dato disponibile.</td></tr>';
+ }
+ return true;
+}
+function openGpSession(id,type){
+ if(!state.user){go('login');return}
+ state.archiveRaceId=Number(id);
+ if(renderGpSession(state.archiveRaceId,type))go(type==='qualifying'?'gpQualifying':'gpRace');
+}
+function switchGpSession(type){if(state.archiveRaceId)openGpSession(state.archiveRaceId,type)}
+function returnToGpArchive(){
+ const id=state.archiveRaceId;
+ go('archive');
+ if(id)setTimeout(()=>document.getElementById('gp-card-'+id)?.scrollIntoView({behavior:'smooth',block:'start'}),0);
+}
+window.openGpSession=openGpSession;
+window.switchGpSession=switchGpSession;
+window.returnToGpArchive=returnToGpArchive;
 function openRaceArchive(id){
  if(!state.user){go('login');return}
+ state.archiveRaceId=Number(id);
  go('archive');
  setTimeout(()=>{
-   document.getElementById('gp-details-'+id)?.classList.add('active');
    document.getElementById('gp-card-'+id)?.scrollIntoView({behavior:'smooth',block:'start'});
  },0);
 }
@@ -953,7 +1020,7 @@ function render(){
  $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
  $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article id="gp-card-${r.id}" class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
       ${[2,1,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div class="podium-step ${p===1?'first':p===2?'second':'third'}"><div class="podium-medal">${p===1?'🥇':p===2?'🥈':'🥉'}</div><div class="podium-name">${x?esc(driverName(x.driver_id)):'—'}</div><div class="muted">${x?teamSymbol(resultTeamId(x))+esc(teamName(resultTeamId(x))):'—'}</div></div>`}).join('')}
-    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id))+(pole.qualifying_time?' • '+esc(pole.qualifying_time):''):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra risultati e tempi</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Griglia</th><th>Pilota</th><th>Tempo / distacco qualifica</th><th>Tempo / distacco gara</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${x.grid_position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td>${esc(x.qualifying_time||'—')}</td><td>${esc(x.race_time_gap||'—')}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id))+(pole.qualifying_time?' • '+esc(pole.qualifying_time):''):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><div class="archive-session-actions"><button class="btn alt" type="button" onclick="openGpSession(${r.id},'qualifying')">🏁 Qualifiche</button><button class="btn" type="button" onclick="openGpSession(${r.id},'race')">🏆 Gara</button></div></article>`}).join('');
 
 
  $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
@@ -1356,7 +1423,7 @@ $('#raceControlRace').addEventListener('change',e=>{
  $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
  $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article id="gp-card-${r.id}" class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
       ${[2,1,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div class="podium-step ${p===1?'first':p===2?'second':'third'}"><div class="podium-medal">${p===1?'🥇':p===2?'🥈':'🥉'}</div><div class="podium-name">${x?esc(driverName(x.driver_id)):'—'}</div><div class="muted">${x?teamSymbol(resultTeamId(x))+esc(teamName(resultTeamId(x))):'—'}</div></div>`}).join('')}
-    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id))+(pole.qualifying_time?' • '+esc(pole.qualifying_time):''):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra risultati e tempi</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Griglia</th><th>Pilota</th><th>Tempo / distacco qualifica</th><th>Tempo / distacco gara</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${x.grid_position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td>${esc(x.qualifying_time||'—')}</td><td>${esc(x.race_time_gap||'—')}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id))+(pole.qualifying_time?' • '+esc(pole.qualifying_time):''):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><div class="archive-session-actions"><button class="btn alt" type="button" onclick="openGpSession(${r.id},'qualifying')">🏁 Qualifiche</button><button class="btn" type="button" onclick="openGpSession(${r.id},'race')">🏆 Gara</button></div></article>`}).join('');
 
 
  $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
