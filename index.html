@@ -186,9 +186,19 @@
     .role-hidden{display:none !important}
     body.locked main > section:not(#login){display:none !important}
     body.locked nav{display:none !important}
+    body.guest-mode header,body.guest-mode footer{display:none !important}
+    body.guest-mode main{min-height:100vh;display:grid;place-items:center;padding:20px}
+    body.guest-mode #login{width:min(100%,560px)}
+    .auth-brand{display:grid;justify-items:center;gap:8px;margin-bottom:20px;text-align:center}
+    .auth-brand img{width:92px;height:92px;object-fit:contain;filter:drop-shadow(0 10px 20px rgba(0,0,0,.45))}
+    .auth-brand strong{font-size:18px;letter-spacing:.5px}.auth-brand span{color:var(--muted);font-size:13px}
+    .calendar-card.archive-link{cursor:pointer;scroll-margin-top:100px;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+    .calendar-card.archive-link:hover,.calendar-card.archive-link:focus-visible{transform:translateY(-2px);border-color:#e33a40;box-shadow:0 12px 28px rgba(0,0,0,.24);outline:none}
+    .calendar-card .archive-hint{display:block;color:#ff8e94;margin-top:5px;font-size:10px;text-transform:uppercase;letter-spacing:.45px}
+    .gp-card{scroll-margin-top:100px}
   </style>
 </head>
-<body>
+<body class="guest-mode">
 <div class="app">
 <header>
   <div class="topbar">
@@ -323,7 +333,7 @@
       <div class="license-wrap"><div class="license-bar"><div id="profileLicenseFill" class="license-fill license-green" style="width:100%"></div></div></div>
       <div id="profileDisciplineHistory" class="admin-list"></div>
     </div>
-    <div style="margin-top:16px"><h3>Storico risultati</h3><div class="table-wrap"><table><thead><tr><th>GP</th><th>Griglia</th><th>Qualifica</th><th>Pos.</th><th>Tempo / distacco</th><th>Punti</th><th>Pole</th><th>GV</th><th>DNF</th><th>Penalità</th></tr></thead><tbody id="profileResultsBody"></tbody></table></div></div>
+    <div style="margin-top:16px"><h3>Storico risultati</h3><div class="table-wrap"><table><thead><tr><th>GP</th><th>Griglia</th><th>Tempo / distacco qualifica</th><th>Pos.</th><th>Tempo / distacco gara</th><th>Punti</th><th>Pole</th><th>GV</th><th>DNF</th><th>Penalità</th></tr></thead><tbody id="profileResultsBody"></tbody></table></div></div>
   </div>
   <div id="profilesEmpty" class="card empty"><strong>Nessun pilota disponibile</strong></div>
 </section>
@@ -354,6 +364,7 @@
 
 <section id="login" class="section">
   <div class="card auth">
+    <div class="auth-brand"><img src="icon-192.png" alt="SRT Santena Racing Team"><strong>SRT SANTENA RACING TEAM</strong><span>Accedi o registrati per seguire il campionato</span></div>
     <h2 id="authTitle">Accedi</h2><div id="authMsg"></div>
     <div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><br>
     <div class="field"><label>Password</label><input id="password" type="password" minlength="6"></div><br>
@@ -551,7 +562,7 @@
     <div class="section-head">
       <div>
         <h3>Race Control</h3>
-        <p>Inserisci ordine di partenza, tempo di qualifica e tempo o distacco finale di ogni pilota.</p>
+        <p>Inserisci ordine di partenza, tempo di qualifica e tempo o distacco finale di ogni pilota. Per ritiri o squalifiche puoi scrivere RIT, DNS o DSQ.</p>
       </div>
       <div class="grow"></div>
       <span id="raceControlStatus" class="race-status empty">Nessun GP selezionato</span>
@@ -628,7 +639,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 const ROLE_ACCESS={
-  guest:['standings','calendar','halloffame'],
+  guest:['login'],
   driver:['home','teams','drivers','standings','calendar','statistics','profiles','archive','news','regulations','halloffame'],
   admin:['home','teams','drivers','standings','calendar','statistics','profiles','archive','news','regulations','halloffame','admin']
 };
@@ -638,6 +649,7 @@ function applyAccessControl(){
   const role=currentRole();
   const authenticated=Boolean(state.user);
   document.body.classList.remove('locked');
+  document.body.classList.toggle('guest-mode',!authenticated);
   $$('#nav button[data-page]').forEach(btn=>{
     const page=btn.dataset.page;
     const visible=page==='login'?!authenticated:allowedPages().includes(page);
@@ -646,7 +658,7 @@ function applyAccessControl(){
   const active=$('.section.active');
   const canStay=active&&(active.id==='login'?!authenticated:allowedPages().includes(active.id));
   if(!canStay){
-    const fallback=authenticated?'home':'standings';
+    const fallback=authenticated?'home':'login';
     $$('.section').forEach(x=>x.classList.toggle('active',x.id===fallback));
     $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===fallback));
   }
@@ -654,7 +666,7 @@ function applyAccessControl(){
 function go(id){
   const authenticated=Boolean(state.user);
   if(id==='login')id=authenticated?'home':'login';
-  else if(!allowedPages().includes(id))id=authenticated?'home':'standings';
+  else if(!allowedPages().includes(id))id=authenticated?'home':'login';
   $$('.section').forEach(x=>x.classList.toggle('active',x.id===id));
   $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
   scrollTo({top:0,behavior:'smooth'});
@@ -702,10 +714,15 @@ function startCountdown(r){
  };
  update();countdownTimer=setInterval(update,1000);
 }
+function raceHasArchive(r){return r?.results_status==='published'||state.results.some(x=>x.race_id==r?.id&&x.is_published===true)}
 function renderCalendar(next){
  const races=[...state.races].sort((a,b)=>Number(a.round)-Number(b.round));
  $('#calendarEmpty').classList.toggle('hidden',races.length>0);
- $('#calendarGrid').innerHTML=races.map(r=>`<article class="card calendar-card ${next&&r.id==next.id?'next':''}"><div class="round-box">${esc(r.round)}</div><div><strong>${countryFlag(r.country)} ${esc(r.name)}</strong><div class="muted">${esc(r.circuit)}</div><span class="chip" style="margin-top:7px">${esc(raceStatusLabel(r))}</span></div><div class="race-date">${fmtDate(r.race_date)}<small>${String(r.race_time||'22:30').slice(0,5)}</small></div></article>`).join('');
+ $('#calendarGrid').innerHTML=races.map(r=>{
+   const archived=raceHasArchive(r);
+   const attrs=archived?`role="button" tabindex="0" aria-label="Apri ${esc(r.name)} nell'Archivio GP" onclick="openRaceArchive(${r.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRaceArchive(${r.id})}"`:'';
+   return `<article class="card calendar-card ${next&&r.id==next.id?'next':''} ${archived?'archive-link':''}" ${attrs}><div class="round-box">${esc(r.round)}</div><div><strong>${countryFlag(r.country)} ${esc(r.name)}</strong><div class="muted">${esc(r.circuit)}</div><span class="chip" style="margin-top:7px">${esc(raceStatusLabel(r))}</span>${archived?'<span class="archive-hint">Apri Archivio GP</span>':''}</div><div class="race-date">${fmtDate(r.race_date)}<small>${String(r.race_time||'22:30').slice(0,5)}</small></div></article>`;
+ }).join('');
  if(!next){if(countdownTimer)clearInterval(countdownTimer);$('#calendarFeature').innerHTML='';return}
  $('#calendarFeature').innerHTML=`<article class="card calendar-feature"><div><div class="calendar-flag">${countryFlag(next.country)}</div><div class="eyebrow">Prossimo appuntamento • Round ${esc(next.round)}</div><h3>${esc(next.name)}</h3><div class="muted">${esc(next.circuit)} • ${fmtDate(next.race_date)} alle ${String(next.race_time||'22:30').slice(0,5)}</div></div><div class="countdown" aria-label="Conto alla rovescia">${countdownMarkup()}</div></article>`;
  startCountdown(next);
@@ -842,6 +859,15 @@ function renderProfile(id){
 window.renderProfile=renderProfile;
 function toggleGpDetails(id){document.getElementById('gp-details-'+id)?.classList.toggle('active')}
 window.toggleGpDetails=toggleGpDetails;
+function openRaceArchive(id){
+ if(!state.user){go('login');return}
+ go('archive');
+ setTimeout(()=>{
+   document.getElementById('gp-details-'+id)?.classList.add('active');
+   document.getElementById('gp-card-'+id)?.scrollIntoView({behavior:'smooth',block:'start'});
+ },0);
+}
+window.openRaceArchive=openRaceArchive;
 
 function render(){
  const s=state.settings||{};
@@ -925,9 +951,9 @@ function render(){
  $('#profilesEmpty').classList.toggle('hidden',state.drivers.length>0);
  const prs=state.races.filter(r=>r.results_status==='published'||state.results.some(x=>x.race_id==r.id&&x.is_published===true)).sort((a,b)=>Number(b.round)-Number(a.round));
  $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
- $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
+ $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article id="gp-card-${r.id}" class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
       ${[2,1,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div class="podium-step ${p===1?'first':p===2?'second':'third'}"><div class="podium-medal">${p===1?'🥇':p===2?'🥈':'🥉'}</div><div class="podium-name">${x?esc(driverName(x.driver_id)):'—'}</div><div class="muted">${x?teamSymbol(resultTeamId(x))+esc(teamName(resultTeamId(x))):'—'}</div></div>`}).join('')}
-    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Griglia</th><th>Pilota</th><th>Qualifica</th><th>Tempo / distacco</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${x.grid_position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td>${esc(x.qualifying_time||'—')}</td><td>${esc(x.race_time_gap||'—')}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id))+(pole.qualifying_time?' • '+esc(pole.qualifying_time):''):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra risultati e tempi</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Griglia</th><th>Pilota</th><th>Tempo / distacco qualifica</th><th>Tempo / distacco gara</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${x.grid_position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td>${esc(x.qualifying_time||'—')}</td><td>${esc(x.race_time_gap||'—')}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
 
 
  $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
@@ -1217,6 +1243,17 @@ function collectRaceControlResults(isPublished){
  const usedGridPositions=new Set();
  const filledGridPositions=rows.filter(row=>Number(row.querySelector('[data-field="grid_position"]').value||0)>0).length;
  if(filledGridPositions>0&&filledGridPositions!==rows.length)throw new Error('Completa la posizione di griglia per tutti i piloti oppure lasciale tutte vuote.');
+ if(isPublished&&filledGridPositions!==rows.length)throw new Error('Per pubblicare il GP devi inserire la posizione di griglia di tutti i piloti.');
+ if(isPublished){
+   const missingQualifying=rows.filter(row=>!row.querySelector('[data-field="qualifying_time"]').value.trim());
+   const missingRaceTime=rows.filter(row=>!row.querySelector('[data-field="race_time_gap"]').value.trim());
+   if(missingQualifying.length||missingRaceTime.length){
+     const parts=[];
+     if(missingQualifying.length)parts.push(`${missingQualifying.length} tempi/distacchi di qualifica`);
+     if(missingRaceTime.length)parts.push(`${missingRaceTime.length} tempi/distacchi di gara`);
+     throw new Error(`Per pubblicare il GP completa ${parts.join(' e ')}. Per ritiri o squalifiche scrivi RIT, DNS o DSQ.`);
+   }
+ }
 
  return rows.map(row=>{
    const position=Number(row.querySelector('[data-field="position"]').value||0);
@@ -1317,9 +1354,9 @@ $('#raceControlRace').addEventListener('change',e=>{
  $('#profilesEmpty').classList.toggle('hidden',state.drivers.length>0);
  const prs=state.races.filter(r=>r.results_status==='published'||state.results.some(x=>x.race_id==r.id&&x.is_published===true)).sort((a,b)=>Number(b.round)-Number(a.round));
  $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
- $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
+ $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article id="gp-card-${r.id}" class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
       ${[2,1,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div class="podium-step ${p===1?'first':p===2?'second':'third'}"><div class="podium-medal">${p===1?'🥇':p===2?'🥈':'🥉'}</div><div class="podium-name">${x?esc(driverName(x.driver_id)):'—'}</div><div class="muted">${x?teamSymbol(resultTeamId(x))+esc(teamName(resultTeamId(x))):'—'}</div></div>`}).join('')}
-    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Griglia</th><th>Pilota</th><th>Qualifica</th><th>Tempo / distacco</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${x.grid_position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td>${esc(x.qualifying_time||'—')}</td><td>${esc(x.race_time_gap||'—')}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id))+(pole.qualifying_time?' • '+esc(pole.qualifying_time):''):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra risultati e tempi</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Griglia</th><th>Pilota</th><th>Tempo / distacco qualifica</th><th>Tempo / distacco gara</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${x.grid_position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td>${esc(x.qualifying_time||'—')}</td><td>${esc(x.race_time_gap||'—')}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
 
 
  $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
@@ -1366,7 +1403,7 @@ function syncAuthMode(){
  $('#forgotPasswordBtn').classList.toggle('hidden',signup||Boolean(state.user));
 }
 $('#authSwitch').onclick=()=>{signup=!signup;syncAuthMode()};
-$('#authSubmit').onclick=async()=>{try{const email=$('#email').value.trim(),password=$('#password').value;const r=signup?await db.auth.signUp({email,password,options:{data:{display_name:$('#displayName').value.trim()||email.split('@')[0]}}}):await db.auth.signInWithPassword({email,password});if(r.error)throw r.error;msg($('#authMsg'),signup?'Registrazione completata.':'Accesso effettuato.',true);await refreshUser();if(state.user)go('home')}catch(e){msg($('#authMsg'),e.message)}};
+$('#authSubmit').onclick=async()=>{try{const email=$('#email').value.trim(),password=$('#password').value;const r=signup?await db.auth.signUp({email,password,options:{data:{display_name:$('#displayName').value.trim()||email.split('@')[0]}}}):await db.auth.signInWithPassword({email,password});if(r.error)throw r.error;msg($('#authMsg'),signup?'Registrazione completata.':'Accesso effettuato.',true);await refreshUser();if(state.user){await loadAll();go('home')}}catch(e){msg($('#authMsg'),e.message)}};
 
 $('#forgotPasswordBtn').onclick=async()=>{
  const button=$('#forgotPasswordBtn');
@@ -1416,10 +1453,10 @@ $('#cancelPasswordRecoveryBtn').onclick=async()=>{
  $('#passwordRecoveryModal').classList.add('hidden');
  history.replaceState({},document.title,location.pathname);
  await refreshUser();
- go('standings');
+ go('login');
 };
 
-async function logoutUser(){const{error}=await db.auth.signOut();if(error){msg($('#authMsg'),error.message);return}await refreshUser();go('standings')}
+async function logoutUser(){const{error}=await db.auth.signOut();if(error){msg($('#authMsg'),error.message);return}await refreshUser();go('login')}
 $('#logoutBtn').onclick=logoutUser;
 $('#topLogoutBtn').onclick=logoutUser;
 async function refreshUser(){
@@ -1441,7 +1478,7 @@ db.auth.onAuthStateChange((event,session)=>{
   const{data:{session}}=await db.auth.getSession();
   if(session&&$('#passwordRecoveryModal').classList.contains('hidden'))openPasswordRecovery(session);
  }
- await loadAll();
+ if(state.user)await loadAll();
  if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js');
 })();
 </script>
