@@ -75,7 +75,7 @@
 
     .race-control-toolbar{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
     .race-control-list{display:grid;gap:10px;margin-top:14px}
-    .race-row{display:grid;grid-template-columns:58px minmax(140px,1.4fr) 92px 92px 92px 105px 105px;gap:8px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:14px;background:#102039}
+    .race-row{display:grid;grid-template-columns:58px minmax(170px,1.45fr) minmax(170px,1.2fr) 80px 116px 80px 135px;gap:8px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:14px;background:#102039}
     .race-position{font-size:24px;font-weight:950;text-align:center;padding-bottom:8px}
     .race-actions{display:flex;gap:10px;flex-wrap:wrap;position:sticky;bottom:10px;background:rgba(11,27,47,.96);backdrop-filter:blur(12px);padding:12px;border:1px solid var(--line);border-radius:15px;margin-top:14px;z-index:10}
     .race-status{padding:8px 11px;border-radius:999px;font-size:12px;font-weight:850;border:1px solid var(--line)}
@@ -88,6 +88,7 @@
       .race-control-toolbar{grid-template-columns:1fr}
       .race-row{grid-template-columns:48px 1fr 78px;align-items:end}
       .race-row .wide-mobile{grid-column:2/4}
+      .race-row .timing-field{grid-column:2/4}
       .race-summary{grid-template-columns:1fr 1fr}
     }
 
@@ -180,8 +181,6 @@
     .social-preview{display:grid;place-items:center;min-height:420px;padding:14px;border:1px solid var(--line);border-radius:16px;background:repeating-conic-gradient(#0a121e 0 25%,#0d1827 0 50%) 50%/22px 22px;overflow:hidden}
     #socialCanvas{display:block;width:min(100%,520px);height:auto;aspect-ratio:4/5;background:#090a0c;border-radius:8px;box-shadow:0 18px 48px rgba(0,0,0,.48)}
     .social-note{padding:12px;border-left:4px solid var(--red);border-radius:8px;background:rgba(225,6,0,.08);color:var(--muted);font-size:13px;line-height:1.55}
-    .social-extra{display:grid;gap:11px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(4,11,20,.36)}
-    .social-extra small{color:var(--muted);line-height:1.4}.social-extra textarea{min-height:92px;resize:vertical}
     @media(max-width:800px){.social-studio{grid-template-columns:1fr}.social-preview{min-height:300px;padding:8px}.social-actions{grid-template-columns:1fr}}
 
     .role-hidden{display:none !important}
@@ -324,7 +323,7 @@
       <div class="license-wrap"><div class="license-bar"><div id="profileLicenseFill" class="license-fill license-green" style="width:100%"></div></div></div>
       <div id="profileDisciplineHistory" class="admin-list"></div>
     </div>
-    <div style="margin-top:16px"><h3>Storico risultati</h3><div class="table-wrap"><table><thead><tr><th>GP</th><th>Pos.</th><th>Punti</th><th>Pole</th><th>GV</th><th>DNF</th><th>Penalità</th></tr></thead><tbody id="profileResultsBody"></tbody></table></div></div>
+    <div style="margin-top:16px"><h3>Storico risultati</h3><div class="table-wrap"><table><thead><tr><th>GP</th><th>Griglia</th><th>Qualifica</th><th>Pos.</th><th>Tempo / distacco</th><th>Punti</th><th>Pole</th><th>GV</th><th>DNF</th><th>Penalità</th></tr></thead><tbody id="profileResultsBody"></tbody></table></div></div>
   </div>
   <div id="profilesEmpty" class="card empty"><strong>Nessun pilota disponibile</strong></div>
 </section>
@@ -552,7 +551,7 @@
     <div class="section-head">
       <div>
         <h3>Race Control</h3>
-        <p>Inserisci tutti i risultati, salva una bozza e pubblica il GP solo dopo il controllo.</p>
+        <p>Inserisci ordine di partenza, tempo di qualifica e tempo o distacco finale di ogni pilota.</p>
       </div>
       <div class="grow"></div>
       <span id="raceControlStatus" class="race-status empty">Nessun GP selezionato</span>
@@ -603,22 +602,13 @@
     <div class="social-studio">
       <div class="social-controls">
         <div class="field"><label>Gran Premio di riferimento</label><select id="socialRaceSelect"><option value="">Caricamento…</option></select></div>
-        <div class="field"><label>Grafica</label><select id="socialGraphicType"><option value="drivers">Classifica Piloti</option><option value="constructors">Classifica Costruttori</option><option value="grid">Griglia di partenza</option><option value="podium">Podio ufficiale</option><option value="newspaper">Il Corriere di SRT</option></select></div>
-        <div id="socialPhotoControls" class="social-extra hidden">
-          <div class="field"><label>Foto principale (opzionale)</label><input id="socialPhotoInput" type="file" accept="image/*"></div>
-          <small>Per Podio e Corriere puoi scegliere una foto preparata in precedenza. Senza foto verrà creata automaticamente una composizione SRT.</small>
-        </div>
-        <div id="socialEditorialControls" class="social-extra hidden">
-          <div class="field"><label>Titolo principale</label><input id="socialHeadline" maxlength="72"></div>
-          <div class="field"><label>Testo articolo</label><textarea id="socialArticle" maxlength="520"></textarea></div>
-          <div class="field"><label>Driver of the Day</label><select id="socialRotd"><option value="">Seleziona pilota</option></select></div>
-        </div>
+        <div class="field"><label>Grafica</label><select id="socialGraphicType"><option value="drivers">Classifica Piloti</option><option value="constructors">Classifica Costruttori</option><option value="grid">Griglia di partenza</option></select></div>
         <div class="social-actions">
           <button type="button" class="btn primary" id="socialGenerateBtn">Crea anteprima</button>
           <button type="button" class="btn alt" id="socialDownloadBtn" disabled>Scarica PNG</button>
           <button type="button" class="btn alt" id="socialShareBtn" disabled>Condividi</button>
         </div>
-        <div class="social-note"><strong>Pacchetto completo</strong><br>Classifiche, griglia, podio e Corriere usano i dati del GP selezionato. La griglia prende i piloti dai Convocati ufficiali; le fotografie restano facoltative.</div>
+        <div class="social-note"><strong>Grafiche automatiche</strong><br>Le classifiche usano i risultati pubblicati. La griglia prende i piloti dai Convocati e mostra ordine di partenza, stemma della scuderia e tempo di qualifica salvati nel Race Control.</div>
       </div>
       <div class="social-preview"><canvas id="socialCanvas" width="1080" height="1350" aria-label="Anteprima grafica social SRT"></canvas></div>
     </div>
@@ -847,7 +837,7 @@ function renderProfile(id){
  $('#profileLicenseText').textContent=disc.points+'/30 punti';
  const fill=$('#profileLicenseFill');fill.style.width=(disc.points/30*100)+'%';fill.className='license-fill '+licenseColor(disc.points);
  $('#profileDisciplineHistory').innerHTML=disc.events.map(ev=>`<div class="admin-item"><span class="grow"><strong>${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti tolti':'Punti restituiti'}</strong><br><span class="muted">${esc(ev.reason)}${ev.race_id?' • '+esc(state.races.find(r=>r.id==ev.race_id)?.name||'GP'):''}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
- $('#profileResultsBody').innerHTML=(s?.results||[]).sort((a,b)=>Number(state.races.find(r=>r.id==a.race_id)?.round||0)-Number(state.races.find(r=>r.id==b.race_id)?.round||0)).map(r=>{const gp=state.races.find(x=>x.id==r.race_id);return `<tr><td>${esc(gp?.name||'GP')}</td><td>${r.position??'—'}</td><td><strong>${Number(r.points||0)}</strong></td><td>${r.pole?'Sì':'—'}</td><td>${r.fastest_lap?'Sì':'—'}</td><td>${r.dnf?'Sì':'—'}</td><td>${Number(r.penalty_points||0)} pt / ${Number(r.penalty_seconds||0)} s</td></tr>`}).join('')||'<tr><td colspan="7">Nessun risultato.</td></tr>'
+ $('#profileResultsBody').innerHTML=(s?.results||[]).sort((a,b)=>Number(state.races.find(r=>r.id==a.race_id)?.round||0)-Number(state.races.find(r=>r.id==b.race_id)?.round||0)).map(r=>{const gp=state.races.find(x=>x.id==r.race_id);return `<tr><td>${esc(gp?.name||'GP')}</td><td>${r.grid_position??'—'}</td><td>${esc(r.qualifying_time||'—')}</td><td>${r.position??'—'}</td><td>${esc(r.race_time_gap||'—')}</td><td><strong>${Number(r.points||0)}</strong></td><td>${r.pole?'Sì':'—'}</td><td>${r.fastest_lap?'Sì':'—'}</td><td>${r.dnf?'Sì':'—'}</td><td>${Number(r.penalty_points||0)} pt / ${Number(r.penalty_seconds||0)} s</td></tr>`}).join('')||'<tr><td colspan="10">Nessun risultato.</td></tr>'
 }
 window.renderProfile=renderProfile;
 function toggleGpDetails(id){document.getElementById('gp-details-'+id)?.classList.toggle('active')}
@@ -937,7 +927,7 @@ function render(){
  $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
  $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
       ${[2,1,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div class="podium-step ${p===1?'first':p===2?'second':'third'}"><div class="podium-medal">${p===1?'🥇':p===2?'🥈':'🥉'}</div><div class="podium-name">${x?esc(driverName(x.driver_id)):'—'}</div><div class="muted">${x?teamSymbol(resultTeamId(x))+esc(teamName(resultTeamId(x))):'—'}</div></div>`}).join('')}
-    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Griglia</th><th>Pilota</th><th>Qualifica</th><th>Tempo / distacco</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${x.grid_position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td>${esc(x.qualifying_time||'—')}</td><td>${esc(x.race_time_gap||'—')}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
 
 
  $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
@@ -1176,7 +1166,9 @@ function renderRaceControl(){
      </div>
      <div class="field wide-mobile"><label>Scuderia per questo GP</label>${d.is_wild?`<select data-field="team_id">${teamOptions}</select>`:`<div style="padding:8px">${teamSymbol(raceTeamId)}${esc(teamName(raceTeamId))}</div><input data-field="team_id" type="hidden" value="${raceTeamId||''}">`}</div>
      <div class="field"><label>Griglia</label><input data-field="grid_position" type="number" min="1" max="30" value="${rr.grid_position||''}" placeholder="—"></div>
+     <div class="field timing-field"><label>Tempo / distacco qualifica</label><input data-field="qualifying_time" type="text" maxlength="24" value="${esc(rr.qualifying_time||'')}" placeholder="1:17.858 oppure +0.320"></div>
      <div class="field"><label>Pos.</label><input data-field="position" type="number" min="1" max="30" value="${rr.position||index+1}"></div>
+     <div class="field timing-field"><label>Tempo / distacco gara</label><input data-field="race_time_gap" type="text" maxlength="24" value="${esc(rr.race_time_gap||'')}" placeholder="47:19.315 oppure +0.658"></div>
      <div class="field"><label>Pole</label><input data-field="pole" type="checkbox" ${rr.pole?'checked':''}></div>
      <div class="field"><label>Giro V.</label><input data-field="fastest_lap" type="checkbox" ${rr.fastest_lap?'checked':''}></div>
      <div class="field"><label>DNF</label><input data-field="dnf" type="checkbox" ${rr.dnf?'checked':''}></div>
@@ -1243,6 +1235,8 @@ function collectRaceControlResults(isPublished){
      team_id:Number(row.querySelector('[data-field="team_id"]').value)||null,
      position:position||null,
      grid_position:gridPosition||null,
+     qualifying_time:row.querySelector('[data-field="qualifying_time"]').value.trim()||null,
+     race_time_gap:row.querySelector('[data-field="race_time_gap"]').value.trim()||null,
      points:calculateRaceControlPoints(row),
      pole:row.querySelector('[data-field="pole"]').checked,
      fastest_lap:row.querySelector('[data-field="fastest_lap"]').checked,
@@ -1325,7 +1319,7 @@ $('#raceControlRace').addEventListener('change',e=>{
  $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
  $('#gpArchive').innerHTML=prs.map(r=>{const rr=publishedResults().filter(x=>x.race_id==r.id).sort((a,b)=>Number(a.position||999)-Number(b.position||999)),pole=rr.find(x=>x.pole),fast=rr.find(x=>x.fastest_lap);return `<article class="card gp-card"><div class="gp-top"><div><div class="eyebrow">Round ${r.round}</div><h3>${esc(r.name)}</h3><div class="muted">${esc(r.circuit)} • ${fmtDate(r.race_date)}</div></div><span class="chip gp-status">Pubblicato</span></div><div class="podium-stage">
       ${[2,1,3].map(p=>{const x=rr.find(y=>y.position===p);return `<div class="podium-step ${p===1?'first':p===2?'second':'third'}"><div class="podium-medal">${p===1?'🥇':p===2?'🥈':'🥉'}</div><div class="podium-name">${x?esc(driverName(x.driver_id)):'—'}</div><div class="muted">${x?teamSymbol(resultTeamId(x))+esc(teamName(resultTeamId(x))):'—'}</div></div>`}).join('')}
-    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
+    </div><div class="row" style="margin-top:12px"><span class="chip">Pole: ${pole?esc(driverName(pole.driver_id)):'—'}</span><span class="chip">Giro veloce: ${fast?esc(driverName(fast.driver_id)):'—'}</span></div><button class="btn alt small" style="margin-top:12px" onclick="toggleGpDetails(${r.id})">Mostra classifica completa</button><div id="gp-details-${r.id}" class="gp-details"><div class="table-wrap"><table><thead><tr><th>Pos.</th><th>Griglia</th><th>Pilota</th><th>Qualifica</th><th>Tempo / distacco</th><th>Punti</th><th>DNF</th><th>Penalità</th><th>Note</th></tr></thead><tbody>${rr.map(x=>`<tr><td>${x.position??'—'}</td><td>${x.grid_position??'—'}</td><td>${esc(driverName(x.driver_id))}</td><td>${esc(x.qualifying_time||'—')}</td><td>${esc(x.race_time_gap||'—')}</td><td><strong>${Number(x.points||0)}</strong></td><td>${x.dnf?'Sì':'—'}</td><td>${Number(x.penalty_points||0)} pt / ${Number(x.penalty_seconds||0)} s</td><td>${esc(x.notes||'')}</td></tr>`).join('')}</tbody></table></div>${r.result_notes?`<div class="notice" style="margin-top:10px">${esc(r.result_notes)}</div>`:''}</div></article>`}).join('');
 
 
  $('#disciplineAdminList').innerHTML=state.discipline.slice(0,25).map(ev=>`<div class="admin-item"><span class="grow"><strong>${esc(driverName(ev.driver_id))}</strong><br><span class="muted">${ev.event_type==='warning'?'Warning':ev.points_change<0?'Punti patente tolti':'Punti patente restituiti'} • ${esc(ev.reason)}</span></span><span class="chip">${ev.points_change?((ev.points_change>0?'+':'')+ev.points_change+' pt'):'⚠'}</span></div>`).join('')||'<div class="muted">Nessun evento disciplinare.</div>';
@@ -1475,8 +1469,6 @@ db.auth.onAuthStateChange((event,session)=>{
   const imageCache = new Map();
   let currentFilename = '';
   let refreshToken = 0;
-  let uploadedPhoto = null;
-  let editorialRaceId = null;
 
   const $social = selector => document.querySelector(selector);
 
@@ -1942,6 +1934,12 @@ db.auth.onAuthStateChange((event,session)=>{
   }
 
   const AUSTRALIA_2026_GRID = [50, 32, 39, 33, 37, 28, 51, 25, 26, 43, 34, 31, 45, 35, 46, 27, 42, 38, 49, 44, 30];
+  const AUSTRALIA_2026_QUALIFYING = {
+    50: '1:17.858', 32: '+0.320', 39: '+0.444', 33: '+0.764', 37: '+0.825',
+    28: '+1.153', 51: '+1.282', 25: '+1.484', 26: '+1.513', 43: '+1.530',
+    34: '+1.610', 31: '+1.628', 45: '+1.941', 35: '+1.942', 46: '+2.198',
+    27: '+2.458', 42: '+3.722', 38: '+3.826', 49: '+6.327', 44: 'DSQ', 30: 'DSQ'
+  };
 
   function startingGridEntries(race) {
     const raceResults = state.results.filter(result => result.race_id == race.id);
@@ -1962,7 +1960,7 @@ db.auth.onAuthStateChange((event,session)=>{
       if (lineup.every(item => item.driver && item.gridPosition > 0)) {
         return lineup.sort((a, b) => a.gridPosition - b.gridPosition);
       }
-      return [];
+      if (!isHistoricAustraliaRace(race)) return [];
     }
 
     // Il GP d'Australia fu pubblicato prima dell'introduzione dei Convocati.
@@ -1975,7 +1973,7 @@ db.auth.onAuthStateChange((event,session)=>{
       const driver = state.drivers.find(item => Number(item.id) === driverId);
       if (!driver || !result) return null;
       return {
-        result,
+        result: {...result, qualifying_time: result.qualifying_time || AUSTRALIA_2026_QUALIFYING[driverId]},
         driver,
         teamId: Number(result.team_id || resultTeamId(result)) || driverTeamAtRace(driver, race, [result]),
         gridPosition: index + 1
@@ -2040,11 +2038,20 @@ db.auth.onAuthStateChange((event,session)=>{
       drawTeamBadge(ctx, team, logos.get(team.id), x + 74, y + 9, 86, 58);
       ctx.fillStyle = '#fff';
       drawFittedText(ctx, labels[index].toUpperCase(), x + 176, y + 29, 270, 24);
+      const qualifyingTime = String(item.result?.qualifying_time || '').trim();
       ctx.fillStyle = 'rgba(255,255,255,.78)';
       ctx.font = '800 11px Arial, sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(team.name.toUpperCase(), x + 177, y + 55);
+      ctx.fillText(team.name.toUpperCase(), x + 177, y + 55, qualifyingTime ? 175 : 285);
+
+      if (qualifyingTime) {
+        const disqualified = qualifyingTime.toUpperCase() === 'DSQ';
+        ctx.fillStyle = disqualified ? '#ff2636' : position === 1 ? '#ffd541' : '#fff';
+        ctx.font = '900 12px Arial, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(disqualified ? 'DSQ' : `Q ${qualifyingTime}`, x + cardWidth - 14, y + 55, 118);
+      }
 
       if (position === 1) {
         ctx.fillStyle = '#ffd541';
@@ -2065,387 +2072,6 @@ db.auth.onAuthStateChange((event,session)=>{
     ctx.fillText(`${entries.length} PILOTI  •  SANTENA RACING TEAM`, WIDTH / 2, 1316);
   }
 
-  function publishedRaceResultsFor(race) {
-    const calledIds = new Set(calledRaceEntries(race).map(entry => Number(entry.driver_id)));
-    return state.results
-      .filter(result => result.race_id == race.id && result.is_published !== false && (!calledIds.size || calledIds.has(Number(result.driver_id))))
-      .sort((a, b) => Number(a.position || 999) - Number(b.position || 999));
-  }
-
-  function raceResultCards(race) {
-    return publishedRaceResultsFor(race).map(result => {
-      const driver = state.drivers.find(item => item.id == result.driver_id);
-      return {
-        result,
-        driver,
-        teamId: Number(result.team_id || driver?.team_id) || null
-      };
-    }).filter(item => item.driver);
-  }
-
-  function driverShortName(driver) {
-    return String(driver?.surname || driver?.name || 'Pilota').toUpperCase();
-  }
-
-  function drawImageCover(ctx, image, x, y, width, height) {
-    if (!image) return false;
-    const sourceWidth = Number(image.naturalWidth || image.width || 0);
-    const sourceHeight = Number(image.naturalHeight || image.height || 0);
-    if (!sourceWidth || !sourceHeight) return false;
-    const ratio = Math.max(width / sourceWidth, height / sourceHeight);
-    const drawWidth = sourceWidth * ratio;
-    const drawHeight = sourceHeight * ratio;
-    ctx.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
-    return true;
-  }
-
-  function canvasTextLines(ctx, text, maxWidth) {
-    const paragraphs = String(text || '').split(/\n+/);
-    const lines = [];
-    paragraphs.forEach((paragraph, paragraphIndex) => {
-      const words = paragraph.trim().split(/\s+/).filter(Boolean);
-      let line = '';
-      words.forEach(word => {
-        const test = line ? `${line} ${word}` : word;
-        if (line && ctx.measureText(test).width > maxWidth) {
-          lines.push(line);
-          line = word;
-        } else line = test;
-      });
-      if (line) lines.push(line);
-      if (paragraphIndex < paragraphs.length - 1) lines.push('');
-    });
-    return lines;
-  }
-
-  function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 99) {
-    const allLines = canvasTextLines(ctx, text, maxWidth);
-    const lines = allLines.slice(0, maxLines);
-    if (allLines.length > maxLines && lines.length) {
-      let last = lines[lines.length - 1];
-      while (last && ctx.measureText(`${last}…`).width > maxWidth) last = last.slice(0, -1);
-      lines[lines.length - 1] = `${last}…`;
-    }
-    lines.forEach((line, index) => ctx.fillText(line, x, y + index * lineHeight));
-    return y + lines.length * lineHeight;
-  }
-
-  function drawPodiumBlock(ctx, item, logo, place, x, y, width, height) {
-    const team = state.teams.find(entry => entry.id == item.teamId) || {id: null, name: 'Senza scuderia', color: '#555b66'};
-    const metal = place === 1 ? '#e9bd29' : place === 2 ? '#c7ccd2' : '#b87333';
-    const panel = ctx.createLinearGradient(x, y, x, y + height);
-    panel.addColorStop(0, rgbaFromHex(team.color, .96));
-    panel.addColorStop(.47, rgbaFromHex(team.color, .64));
-    panel.addColorStop(1, '#11151b');
-    fillRounded(ctx, x, y, width, height, 18, panel);
-    roundedPath(ctx, x, y, width, height, 18);
-    ctx.strokeStyle = metal;
-    ctx.lineWidth = 4;
-    ctx.stroke();
-
-    ctx.fillStyle = metal;
-    ctx.font = `900 italic ${place === 1 ? 74 : 61}px Arial Black, Arial, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(place), x + width / 2, y + 54);
-    drawTeamBadge(ctx, team, logo, x + width / 2 - 60, y + 92, 120, 66);
-    ctx.fillStyle = '#fff';
-    drawFittedText(ctx, driverShortName(item.driver), x + width / 2, y + height - 66, width - 28, place === 1 ? 31 : 27, 'Arial Black, Arial, sans-serif', 'center');
-    ctx.fillStyle = 'rgba(255,255,255,.8)';
-    ctx.font = '800 12px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(team.name.toUpperCase(), x + width / 2, y + height - 30);
-  }
-
-  async function drawPodium(ctx, race) {
-    drawBackground(ctx);
-    await drawHeader(ctx, 'PODIO UFFICIALE', race);
-    const podium = raceResultCards(race).filter(item => Number(item.result.position) >= 1 && Number(item.result.position) <= 3);
-    if (podium.length < 3) throw new Error('Per creare il podio servono i primi tre risultati pubblicati.');
-    const byPlace = place => podium.find(item => Number(item.result.position) === place);
-    const teams = podium.map(item => state.teams.find(team => team.id == item.teamId)).filter(Boolean);
-    const logos = await prepareLogos(teams);
-
-    ctx.save();
-    roundedPath(ctx, 45, 182, 990, 600, 22);
-    ctx.clip();
-    if (!drawImageCover(ctx, uploadedPhoto, 45, 182, 990, 600)) {
-      const scene = ctx.createLinearGradient(45, 182, 1035, 782);
-      scene.addColorStop(0, '#071523');
-      scene.addColorStop(.5, '#17354a');
-      scene.addColorStop(1, '#581018');
-      ctx.fillStyle = scene;
-      ctx.fillRect(45, 182, 990, 600);
-      ctx.fillStyle = 'rgba(255,255,255,.055)';
-      for (let x = 50; x < 1060; x += 46) ctx.fillRect(x, 182, 2, 600);
-      ctx.fillStyle = 'rgba(255,255,255,.88)';
-      ctx.textAlign = 'center';
-      ctx.font = '900 italic 86px Arial Black, Arial, sans-serif';
-      ctx.fillText(String(race.circuit || race.country || 'SRT').toUpperCase(), WIDTH / 2, 450);
-      ctx.font = '900 24px Arial, sans-serif';
-      ctx.fillText('SANTENA RACING TEAM • PODIO DEL GRAN PREMIO', WIDTH / 2, 505);
-      ctx.strokeStyle = 'rgba(255,255,255,.24)';
-      ctx.lineWidth = 3;
-      for (let i = -200; i < 1100; i += 56) {
-        ctx.beginPath();ctx.moveTo(i, 205);ctx.lineTo(i + 260, 760);ctx.stroke();
-      }
-    }
-    const shade = ctx.createLinearGradient(0, 182, 0, 782);
-    shade.addColorStop(0, 'rgba(0,0,0,.08)');
-    shade.addColorStop(.64, 'rgba(0,0,0,.2)');
-    shade.addColorStop(1, 'rgba(0,0,0,.9)');
-    ctx.fillStyle = shade;
-    ctx.fillRect(45, 182, 990, 600);
-    ctx.restore();
-
-    ctx.save();
-    ctx.translate(540, 707);
-    ctx.rotate(Math.PI / 4);
-    ctx.fillStyle = '#f2c12d';
-    ctx.shadowColor = '#ffd85b';
-    ctx.shadowBlur = 22;
-    fillRounded(ctx, -34, -34, 68, 68, 10, '#f2c12d');
-    ctx.restore();
-    ctx.fillStyle = '#111';
-    ctx.font = '900 italic 17px Arial Black, Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('SRT', 540, 713);
-
-    drawPodiumBlock(ctx, byPlace(2), logos.get(byPlace(2).teamId), 2, 52, 850, 306, 285);
-    drawPodiumBlock(ctx, byPlace(1), logos.get(byPlace(1).teamId), 1, 387, 790, 306, 345);
-    drawPodiumBlock(ctx, byPlace(3), logos.get(byPlace(3).teamId), 3, 722, 885, 306, 250);
-    drawFooter(ctx, race, 3, 'PILOTI SUL PODIO');
-  }
-
-  function defaultEditorial(race) {
-    const results = raceResultCards(race);
-    const winner = results.find(item => Number(item.result.position) === 1);
-    const second = results.find(item => Number(item.result.position) === 2);
-    if (isHistoricAustraliaRace(race)) {
-      return {
-        headline: 'CHE SFORTUNA PER SPINA',
-        article: 'Una ripartenza concitata nel finale cambia il volto del GP d’Australia. Spina vede sfumare la vittoria dopo la penalità, mentre Esposito completa una grande rimonta e sale sul gradino più alto. Emozioni, pioggia e colpi di scena aprono la nuova stagione SRT.',
-        rotdId: state.drivers.find(driver => String(driver.surname || '').toLowerCase() === 'lancia')?.id || second?.driver?.id || winner?.driver?.id || ''
-      };
-    }
-    return {
-      headline: winner ? `${driverShortName(winner.driver)} VINCE IL ${String(race.name || 'GP').toUpperCase()}` : `TUTTE LE EMOZIONI DEL ${String(race.name || 'GP').toUpperCase()}`,
-      article: winner ? `${driverName(winner.driver.id)} conquista la vittoria al termine di una gara ricca di duelli e colpi di scena. Tutti i risultati, le classifiche aggiornate e le notizie del campionato sono disponibili su srtracing.it.` : 'Risultati, classifiche aggiornate e tutte le notizie del campionato SRT sono disponibili su srtracing.it.',
-      rotdId: results.find(item => item.result.fastest_lap)?.driver?.id || winner?.driver?.id || ''
-    };
-  }
-
-  function editorialDrivers(race) {
-    const called = calledRaceEntries(race);
-    const ids = called.length ? called.map(entry => Number(entry.driver_id)) : raceResultCards(race).map(item => Number(item.driver.id));
-    return ids.map(id => state.drivers.find(driver => Number(driver.id) === id)).filter(Boolean);
-  }
-
-  function prepareEditorialControls(race, force = false) {
-    const select = $social('#socialRotd');
-    if (!race || !select) return;
-    const changedRace = editorialRaceId !== Number(race.id);
-    const previous = select.value;
-    const drivers = editorialDrivers(race);
-    select.innerHTML = '<option value="">Seleziona pilota</option>' + drivers.map(driver => `<option value="${driver.id}">${esc(driverName(driver.id))}</option>`).join('');
-    if (!changedRace && previous && drivers.some(driver => String(driver.id) === String(previous))) select.value = previous;
-    if (changedRace || force) {
-      const defaults = defaultEditorial(race);
-      $social('#socialHeadline').value = defaults.headline;
-      $social('#socialArticle').value = defaults.article;
-      select.value = String(defaults.rotdId || '');
-      editorialRaceId = Number(race.id);
-    }
-  }
-
-  function drawNewsMiniRow(ctx, position, label, team, logo, x, y, width) {
-    ctx.fillStyle = position === 1 ? '#b50912' : '#22262a';
-    fillRounded(ctx, x, y, width, 56, 8, ctx.fillStyle);
-    ctx.fillStyle = '#fff';
-    ctx.font = '900 italic 21px Arial Black, Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(position), x + 23, y + 29);
-    drawTeamBadge(ctx, team, logo, x + 48, y + 7, 62, 42);
-    ctx.fillStyle = '#fff';
-    drawFittedText(ctx, label, x + 122, y + 29, width - 135, 18);
-  }
-
-  async function drawNewspaper(ctx, race) {
-    const results = raceResultCards(race);
-    const podium = results.filter(item => Number(item.result.position) >= 1 && Number(item.result.position) <= 3);
-    if (podium.length < 3) throw new Error('Per creare il Corriere servono i risultati pubblicati del GP.');
-    const winner = podium.find(item => Number(item.result.position) === 1);
-    const headline = String($social('#socialHeadline')?.value || defaultEditorial(race).headline).trim().toUpperCase();
-    const article = String($social('#socialArticle')?.value || defaultEditorial(race).article).trim();
-    const rotdId = Number($social('#socialRotd')?.value || defaultEditorial(race).rotdId || 0);
-    const rotdDriver = state.drivers.find(driver => driver.id == rotdId);
-    const rotdResult = results.find(item => item.driver.id == rotdId);
-    const rotdTeamId = rotdResult?.teamId || driverTeamAtRace(rotdDriver || {}, race, rotdResult ? [rotdResult.result] : []);
-    const rotdTeam = state.teams.find(team => team.id == rotdTeamId) || {id: null, name: 'SRT', color: '#376b3e'};
-    const driverTop = driverStandings(race).slice(0, 3);
-    const constructorTop = constructorStandings(race).slice(0, 3);
-    const allTeams = [
-      ...podium.map(item => state.teams.find(team => team.id == item.teamId)),
-      ...driverTop.map(item => state.teams.find(team => team.id == item.teamId)),
-      ...constructorTop.map(item => item.team), rotdTeam
-    ].filter(Boolean);
-    const logos = await prepareLogos(allTeams);
-    const srtLogo = await loadImage('icon-192.png');
-
-    ctx.fillStyle = '#eee8d8';
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    for (let y = 0; y < HEIGHT; y += 18) {
-      ctx.fillStyle = y % 36 ? 'rgba(50,38,24,.018)' : 'rgba(50,38,24,.032)';
-      ctx.fillRect(0, y, WIDTH, 1);
-    }
-    ctx.fillStyle = '#151515';
-    ctx.fillRect(0, 0, WIDTH, 18);
-    ctx.fillStyle = '#b50912';
-    ctx.fillRect(0, 18, WIDTH, 8);
-
-    if (srtLogo) drawContainedImage(ctx, srtLogo, 46, 38, 105, 105);
-    ctx.fillStyle = '#171717';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    let mastheadSize = 62;
-    do {
-      ctx.font = `900 ${mastheadSize}px Georgia, serif`;
-      if (ctx.measureText('IL CORRIERE').width <= 610) break;
-      mastheadSize -= 2;
-    } while (mastheadSize > 42);
-    ctx.fillText('IL CORRIERE', 490, 72);
-    ctx.fillStyle = '#b50912';
-    ctx.font = '900 23px Arial Black, Arial, sans-serif';
-    ctx.fillText('D I   S R T', 490, 122);
-
-    fillRounded(ctx, 820, 39, 210, 98, 10, '#174e2e');
-    ctx.fillStyle = '#8ef08e';
-    ctx.textAlign = 'center';
-    ctx.font = '900 17px Arial Black, Arial, sans-serif';
-    ctx.fillText('ESPORTS TRAINING', 925, 72);
-    ctx.fillStyle = '#fff';
-    ctx.font = '800 12px Arial, sans-serif';
-    ctx.fillText('SIMRACING CENTER', 925, 101);
-
-    ctx.fillStyle = '#171717';
-    ctx.fillRect(45, 154, 990, 3);
-    ctx.font = '800 13px Arial, sans-serif';
-    ctx.textAlign = 'left';
-    const editionDate = new Date().toLocaleDateString('it-IT', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'}).toUpperCase();
-    ctx.fillText(editionDate, 48, 178);
-    ctx.fillStyle = '#b50912';
-    ctx.textAlign = 'center';
-    ctx.font = '900 13px Arial Black, Arial, sans-serif';
-    ctx.fillText(`EDIZIONE SPECIALE • ${String(race.name || '').toUpperCase()}`, WIDTH / 2, 178);
-    ctx.fillStyle = '#171717';
-    ctx.textAlign = 'right';
-    ctx.fillText(`ROUND ${race.round || '—'}`, 1032, 178);
-
-    ctx.fillStyle = '#b50912';
-    ctx.textAlign = 'left';
-    ctx.font = '900 15px Arial Black, Arial, sans-serif';
-    ctx.fillRect(45, 197, 7, 25);
-    ctx.fillText('IL CASO DEL GRAN PREMIO', 65, 210);
-
-    let headlineSize = 58;
-    let headlineLines = [];
-    do {
-      ctx.font = `900 ${headlineSize}px Arial Black, Arial, sans-serif`;
-      headlineLines = canvasTextLines(ctx, headline, 990);
-      if (headlineLines.length <= 2) break;
-      headlineSize -= 2;
-    } while (headlineSize > 34);
-    ctx.fillStyle = '#161616';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    headlineLines.slice(0, 2).forEach((line, index) => ctx.fillText(line, 45, 230 + index * (headlineSize + 5)));
-    const contentTop = 230 + Math.min(2, headlineLines.length) * (headlineSize + 5) + 18;
-
-    ctx.save();
-    roundedPath(ctx, 45, contentTop, 650, 400, 12);
-    ctx.clip();
-    if (!drawImageCover(ctx, uploadedPhoto, 45, contentTop, 650, 400)) {
-      const winnerTeam = state.teams.find(team => team.id == winner.teamId) || {id: null, name: 'SRT', color: '#b50912'};
-      const hero = ctx.createLinearGradient(45, contentTop, 695, contentTop + 400);
-      hero.addColorStop(0, rgbaFromHex(winnerTeam.color, .98));
-      hero.addColorStop(1, '#080b0f');
-      ctx.fillStyle = hero;
-      ctx.fillRect(45, contentTop, 650, 400);
-      drawTeamBadge(ctx, winnerTeam, logos.get(winnerTeam.id), 82, contentTop + 52, 160, 100);
-      ctx.fillStyle = '#fff';
-      ctx.font = '900 italic 62px Arial Black, Arial, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(driverShortName(winner.driver), 82, contentTop + 230);
-      ctx.font = '900 24px Arial, sans-serif';
-      ctx.fillText('VITTORIA AL GRAN PREMIO', 84, contentTop + 285);
-    }
-    const heroShade = ctx.createLinearGradient(0, contentTop, 0, contentTop + 400);
-    heroShade.addColorStop(.5, 'rgba(0,0,0,0)');
-    heroShade.addColorStop(1, 'rgba(0,0,0,.78)');
-    ctx.fillStyle = heroShade;
-    ctx.fillRect(45, contentTop, 650, 400);
-    ctx.restore();
-    ctx.fillStyle = '#fff';
-    ctx.font = '900 18px Arial, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillText(`${driverName(winner.driver.id)} trionfa al ${race.name}`, 66, contentTop + 374);
-
-    ctx.fillStyle = '#171717';
-    ctx.font = '900 23px Arial Black, Arial, sans-serif';
-    ctx.fillText('PODIO UFFICIALE', 730, contentTop + 22);
-    podium.forEach((item, index) => {
-      const team = state.teams.find(entry => entry.id == item.teamId) || {id: null, name: 'SRT', color: '#555b66'};
-      drawNewsMiniRow(ctx, Number(item.result.position), driverShortName(item.driver), team, logos.get(team.id), 730, contentTop + 42 + index * 64, 305);
-    });
-
-    const rotdY = contentTop + 246;
-    fillRounded(ctx, 730, rotdY, 305, 154, 12, '#174e2e');
-    ctx.fillStyle = '#8ef08e';
-    ctx.font = '900 15px Arial Black, Arial, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('DRIVER OF THE DAY', 748, rotdY + 28);
-    drawTeamBadge(ctx, rotdTeam, logos.get(rotdTeam.id), 748, rotdY + 49, 82, 58);
-    ctx.fillStyle = '#fff';
-    drawFittedText(ctx, rotdDriver ? driverShortName(rotdDriver) : 'DA ASSEGNARE', 845, rotdY + 78, 172, 22);
-    ctx.fillStyle = 'rgba(255,255,255,.78)';
-    ctx.font = '800 11px Arial, sans-serif';
-    ctx.fillText(rotdTeam.name.toUpperCase(), 846, rotdY + 107);
-
-    const lowerTop = contentTop + 424;
-    ctx.fillStyle = '#171717';
-    ctx.font = '900 25px Arial Black, Arial, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('IL RACCONTO DELLA GARA', 45, lowerTop + 22);
-    ctx.fillRect(45, lowerTop + 38, 650, 3);
-    ctx.font = '18px Georgia, serif';
-    ctx.textBaseline = 'top';
-    drawWrappedText(ctx, article, 45, lowerTop + 58, 650, 27, 11);
-    ctx.font = '900 15px Arial, sans-serif';
-    ctx.fillStyle = '#b50912';
-    ctx.fillText('RISULTATI COMPLETI E CLASSIFICHE SU SRTRACING.IT', 45, lowerTop + 378);
-
-    ctx.fillStyle = '#171717';
-    ctx.font = '900 20px Arial Black, Arial, sans-serif';
-    ctx.fillText('CLASSIFICA PILOTI', 730, lowerTop + 18);
-    driverTop.forEach((item, index) => {
-      const team = state.teams.find(entry => entry.id == item.teamId) || {id: null, name: 'SRT', color: '#555b66'};
-      drawNewsMiniRow(ctx, index + 1, driverShortName(item.driver), team, logos.get(team.id), 730, lowerTop + 36 + index * 60, 305);
-    });
-    ctx.font = '900 20px Arial Black, Arial, sans-serif';
-    ctx.fillStyle = '#171717';
-    ctx.fillText('COSTRUTTORI', 730, lowerTop + 244);
-    constructorTop.forEach((item, index) => drawNewsMiniRow(ctx, index + 1, item.team.name.toUpperCase(), item.team, logos.get(item.team.id), 730, lowerTop + 262 + index * 60, 305));
-
-    ctx.fillStyle = '#171717';
-    ctx.fillRect(45, 1310, 990, 3);
-    ctx.font = '800 13px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('© SRT SANTENA RACING TEAM • STAGIONE 2026–2027 • CROSSPLAY', WIDTH / 2, 1330);
-  }
-
   function setMessage(text, ok = false) {
     const box = $social('#socialGeneratorMsg');
     if (!box) return;
@@ -2461,52 +2087,6 @@ db.auth.onAuthStateChange((event,session)=>{
     [$social('#socialDownloadBtn'), $social('#socialShareBtn')].forEach(item => {
       if (item) item.disabled = busy || !currentFilename;
     });
-  }
-
-  function updateExtraControls() {
-    const type = $social('#socialGraphicType')?.value || 'drivers';
-    $social('#socialPhotoControls')?.classList.toggle('hidden', !['podium', 'newspaper'].includes(type));
-    $social('#socialEditorialControls')?.classList.toggle('hidden', type !== 'newspaper');
-    if (type === 'newspaper') prepareEditorialControls(selectedRace());
-  }
-
-  async function handlePhoto(event) {
-    const input = event?.target;
-    const file = input?.files?.[0];
-    if (!file) {
-      uploadedPhoto = null;
-      setMessage('Foto rimossa: verrà usata la composizione automatica SRT.', true);
-      if (selectedRace() && ['podium', 'newspaper'].includes($social('#socialGraphicType')?.value)) generate();
-      return;
-    }
-    if (!String(file.type || '').startsWith('image/')) {
-      input.value = '';
-      uploadedPhoto = null;
-      setMessage('Seleziona un file immagine valido.');
-      return;
-    }
-    if (file.size > 15 * 1024 * 1024) {
-      input.value = '';
-      uploadedPhoto = null;
-      setMessage('La foto supera 15 MB. Scegli una versione più leggera.');
-      return;
-    }
-    try {
-      const dataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(new Error('Non riesco a leggere questa foto.'));
-        reader.readAsDataURL(file);
-      });
-      const image = await loadImage(dataUrl);
-      if (!image) throw new Error('Formato foto non supportato dal browser.');
-      uploadedPhoto = image;
-      setMessage('Foto caricata. L’anteprima è stata aggiornata.', true);
-      if (selectedRace()) generate();
-    } catch (error) {
-      uploadedPhoto = null;
-      setMessage(error.message || 'Non riesco a caricare questa foto.');
-    }
   }
 
   async function generate() {
@@ -2531,11 +2111,6 @@ db.auth.onAuthStateChange((event,session)=>{
       ctx.clearRect(0, 0, WIDTH, HEIGHT);
       if (type === 'constructors') await drawConstructorStandings(ctx, race);
       else if (type === 'grid') await drawStartingGrid(ctx, race);
-      else if (type === 'podium') await drawPodium(ctx, race);
-      else if (type === 'newspaper') {
-        prepareEditorialControls(race);
-        await drawNewspaper(ctx, race);
-      }
       else await drawDriverStandings(ctx, race);
       if (token !== refreshToken) return;
       const slug = String(race.name || 'gp').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -2543,10 +2118,6 @@ db.auth.onAuthStateChange((event,session)=>{
         ? `SRT-Classifica-Costruttori-${slug}.png`
         : type === 'grid'
           ? `SRT-Griglia-di-Partenza-${slug}.png`
-          : type === 'podium'
-            ? `SRT-Podio-${slug}.png`
-            : type === 'newspaper'
-              ? `Il-Corriere-di-SRT-${slug}.png`
           : `SRT-Classifica-Piloti-${slug}.png`;
       setMessage('Grafica pronta in formato social 1080 × 1350.', true);
     } catch (error) {
@@ -2612,8 +2183,6 @@ db.auth.onAuthStateChange((event,session)=>{
     const enabled = races.length > 0;
     [$social('#socialRaceSelect'), $social('#socialGenerateBtn')].forEach(item => {if (item) item.disabled = !enabled;});
     if ($social('#socialGraphicType')) $social('#socialGraphicType').disabled = false;
-    updateExtraControls();
-    if (type === 'newspaper' && enabled) prepareEditorialControls(selectedRace());
     if (!enabled) {
       currentFilename = '';
       setMessage(type === 'grid'
@@ -2628,11 +2197,7 @@ db.auth.onAuthStateChange((event,session)=>{
     $social('#socialGenerateBtn').addEventListener('click', generate);
     $social('#socialDownloadBtn').addEventListener('click', download);
     $social('#socialShareBtn').addEventListener('click', share);
-    $social('#socialPhotoInput').addEventListener('change', handlePhoto);
-    $social('#socialRaceSelect').addEventListener('change', () => {
-      if ($social('#socialGraphicType')?.value === 'newspaper') prepareEditorialControls(selectedRace());
-      generate();
-    });
+    $social('#socialRaceSelect').addEventListener('change', generate);
     $social('#socialGraphicType').addEventListener('change', () => {
       refresh();
       if (selectedRace()) generate();
