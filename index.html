@@ -63,6 +63,18 @@
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.auth{max-width:520px;margin:auto}
     .auth-help{margin-top:12px;text-align:center}
     .auth-link{border:0;background:none;color:#9fd0ff;padding:6px;font-weight:800;text-decoration:underline;box-shadow:none}
+    .account-status-card{padding:14px;border-radius:13px;border:1px solid var(--line);background:rgba(7,17,31,.48);line-height:1.55}
+    .account-status-card.pending{border-color:#806724;background:#2b2410;color:#ffe9a6}
+    .account-status-card.blocked{border-color:#733038;background:#2b1519;color:#ffc4c7}
+    .account-status-card.approved{border-color:#286440;background:#102619;color:#baf3c8}
+    .account-status-pill{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.55px;border:1px solid var(--line)}
+    .account-status-pill.pending{background:#2b2410;color:#ffe59a;border-color:#806724}
+    .account-status-pill.approved{background:#102619;color:#baf3c8;border-color:#286440}
+    .account-status-pill.blocked{background:#35171c;color:#ffc4c7;border-color:#733038}
+    .user-access-list{display:grid;gap:10px;margin-top:14px}
+    .user-access-row{display:flex;gap:12px;align-items:center;padding:13px;border:1px solid var(--line);border-radius:14px;background:#102039}
+    .user-access-row .user-copy{min-width:0;flex:1}.user-access-row .user-copy strong,.user-access-row .user-copy span{display:block;overflow-wrap:anywhere}
+    .user-access-row .user-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .recovery-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(3,9,18,.86);backdrop-filter:blur(10px)}
     .recovery-overlay .auth{width:min(100%,520px)}
     .notice{padding:12px;border-radius:11px;background:#251317;border:1px solid #5c2429;color:#ffc4c7;margin:10px 0}.notice.success{background:#102619;border-color:#245d38;color:#baf3c8}
@@ -72,6 +84,7 @@
     .coming{border:1px dashed #4a4a59;background:rgba(255,255,255,.02)}
     footer{text-align:center;color:#91a6bd;padding:28px 12px 36px;font-size:12px}
     @media(max-width:800px){.hero{grid-template-columns:105px 1fr;min-height:auto;padding:18px;gap:16px}.hero h1{font-size:36px;letter-spacing:-1px}.hero p{font-size:14px}.grid,.grid.two,.stats-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}main{padding:12px}.topbar{padding:10px 12px}.brand-logo{width:45px;height:45px}}
+    @media(max-width:620px){.user-access-row{align-items:flex-start;flex-direction:column}.user-access-row .user-actions{width:100%;justify-content:flex-start}.user-access-row .user-actions .btn{flex:1}}
 
     .race-control-toolbar{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
     .race-control-list{display:grid;gap:10px;margin-top:14px}
@@ -400,10 +413,10 @@
   <div class="card auth">
     <div class="auth-brand"><img src="icon-192.png" alt="SRT Santena Racing Team"><strong>SRT SANTENA RACING TEAM</strong><span>Accedi o registrati per seguire il campionato</span></div>
     <h2 id="authTitle">Accedi</h2><div id="authMsg"></div>
-    <div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><br>
+    <div id="authFields"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><br>
     <div class="field"><label>Password</label><input id="password" type="password" minlength="6"></div><br>
-    <div id="nameField" class="field hidden"><label>Nome visualizzato</label><input id="displayName"></div><br>
-    <div class="row"><button class="btn" id="authSubmit">Accedi</button><button class="btn alt" id="authSwitch">Crea account</button><button class="btn danger hidden" id="logoutBtn">Esci</button></div>
+    <div id="nameField" class="field hidden"><label>Nome visualizzato</label><input id="displayName"></div><br></div>
+    <div class="row"><button class="btn" id="authSubmit">Accedi</button><button class="btn alt" id="authSwitch">Crea account</button><button class="btn alt hidden" id="refreshAccountBtn" type="button">Controlla approvazione</button><button class="btn danger hidden" id="logoutBtn">Esci</button></div>
     <div class="auth-help"><button class="auth-link" id="forgotPasswordBtn" type="button">Password dimenticata?</button></div>
   </div>
 </section>
@@ -423,7 +436,7 @@
   <div class="section-head"><div><h2>Pannello Admin</h2><p>Gestisci la Stagione 2026-2027 direttamente dal telefono.</p></div><div class="grow"></div><button class="btn alt small" onclick="loadAll()">Aggiorna dati</button></div>
   <div id="adminMsg"></div>
   <div class="admin-tabs">
-    <button data-admin="dashboardPane" class="active">Dashboard</button><button data-admin="settingsPane">Impostazioni</button><button data-admin="scoringPane">Punteggi</button>
+    <button data-admin="dashboardPane" class="active">Dashboard</button><button data-admin="usersPane">Utenti <span id="pendingAccountsTabCount" class="account-status-pill pending hidden">0</span></button><button data-admin="settingsPane">Impostazioni</button><button data-admin="scoringPane">Punteggi</button>
     <button data-admin="teamPane">Scuderie</button>
     <button data-admin="newsPane">News</button><button data-admin="regulationsPane">Regolamento</button><button data-admin="disciplinePane">Disciplina</button>
     <button data-admin="driverPane">Piloti</button>
@@ -450,6 +463,18 @@
       <div class="card"><h3>Stato campionato</h3><div id="adminSeasonState" class="muted">Caricamento...</div></div>
       <div class="card"><h3>Ultima attività</h3><div id="adminLastActivity" class="muted">Nessuna attività registrata.</div></div>
     </div>
+  </div>
+
+  <div id="usersPane" class="admin-pane card">
+    <div class="section-head"><div><h3>Gestione accessi</h3><p>Approva o blocca gli account registrati al sito.</p></div><div class="grow"></div><button class="btn alt small" type="button" onclick="loadAll()">Aggiorna</button></div>
+    <div class="stats-grid">
+      <div class="card stat-card"><div class="big" id="adminPendingAccounts">0</div><div class="caption">In attesa</div></div>
+      <div class="card stat-card"><div class="big" id="adminApprovedAccounts">0</div><div class="caption">Approvati</div></div>
+      <div class="card stat-card"><div class="big" id="adminBlockedAccounts">0</div><div class="caption">Bloccati</div></div>
+      <div class="card stat-card"><div class="big" id="adminTotalAccounts">0</div><div class="caption">Totali</div></div>
+    </div>
+    <div class="notice" style="margin-top:14px">I nuovi iscritti non possono vedere il sito finché non premi <strong>Approva</strong>. Il tuo account Admin non può essere bloccato da questa schermata.</div>
+    <div id="adminUsersList" class="user-access-list"></div>
   </div>
 
   <div id="settingsPane" class="admin-pane card">
@@ -668,39 +693,45 @@ const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
 const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const recoveryUrlDetected=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery'||new URLSearchParams(location.search).get('type')==='recovery';
-let state={teams:[],drivers:[],races:[],results:[],entries:[],news:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null,attendanceRaceId:null,archiveRaceId:null};
+let state={teams:[],drivers:[],races:[],results:[],entries:[],news:[],profiles:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null,attendanceRaceId:null,archiveRaceId:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 const ROLE_ACCESS={
   guest:['login'],
+  pending:['login'],
   driver:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame'],
   admin:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame','admin']
 };
-function currentRole(){return state.user?(state.profile?.role==='admin'?'admin':'driver'):'guest'}
+function profileStatus(profile=state.profile){
+ if(!profile)return'pending';
+ return Object.prototype.hasOwnProperty.call(profile,'account_status')?(profile.account_status||'pending'):'approved';
+}
+function hasSiteAccess(){return Boolean(state.user)&&profileStatus()==='approved'}
+function currentRole(){return !state.user?'guest':!hasSiteAccess()?'pending':state.profile?.role==='admin'?'admin':'driver'}
 function allowedPages(){return ROLE_ACCESS[currentRole()]||ROLE_ACCESS.guest}
 function applyAccessControl(){
   const role=currentRole();
-  const authenticated=Boolean(state.user);
+  const approved=hasSiteAccess();
   document.body.classList.remove('locked');
-  document.body.classList.toggle('guest-mode',!authenticated);
+  document.body.classList.toggle('guest-mode',!approved);
   $$('#nav button[data-page]').forEach(btn=>{
     const page=btn.dataset.page;
-    const visible=page==='login'?!authenticated:allowedPages().includes(page);
+    const visible=page==='login'?!approved:allowedPages().includes(page);
     btn.classList.toggle('role-hidden',!visible);
   });
   const active=$('.section.active');
-  const canStay=active&&(active.id==='login'?!authenticated:allowedPages().includes(active.id));
+  const canStay=active&&allowedPages().includes(active.id);
   if(!canStay){
-    const fallback=authenticated?'home':'login';
+    const fallback=approved?'home':'login';
     $$('.section').forEach(x=>x.classList.toggle('active',x.id===fallback));
     $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===fallback));
   }
 }
 function go(id){
-  const authenticated=Boolean(state.user);
-  if(id==='login')id=authenticated?'home':'login';
-  else if(!allowedPages().includes(id))id=authenticated?'home':'login';
+  const approved=hasSiteAccess();
+  if(id==='login')id=approved?'home':'login';
+  else if(!allowedPages().includes(id))id=approved?'home':'login';
   $$('.section').forEach(x=>x.classList.toggle('active',x.id===id));
   $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
   scrollTo({top:0,behavior:'smooth'});
@@ -819,9 +850,50 @@ function renderHallOfFame(){
  $('#hallOfFameGrid').innerHTML=rows.map(h=>`<article class="card hof-card"><div class="champion-crown">${h.icon||'👑'}</div><div class="eyebrow">${esc(h.season_name)}</div><h3>${esc(h.title)}</h3><div class="record-name">${esc(h.winner_name)}</div><div class="muted">${esc(h.details||'')}</div></article>`).join('');
 }
 
+function accountStatusLabel(status){return status==='approved'?'Approvato':status==='blocked'?'Bloccato':'In attesa'}
+function renderAdminUsers(){
+ const users=[...state.profiles].sort((a,b)=>{
+   const priority={pending:0,blocked:1,approved:2};
+   return (priority[profileStatus(a)]??3)-(priority[profileStatus(b)]??3)||String(a.display_name||'').localeCompare(String(b.display_name||''),'it');
+ });
+ const pending=users.filter(p=>profileStatus(p)==='pending').length;
+ const approved=users.filter(p=>profileStatus(p)==='approved').length;
+ const blocked=users.filter(p=>profileStatus(p)==='blocked').length;
+ $('#adminPendingAccounts').textContent=pending;
+ $('#adminApprovedAccounts').textContent=approved;
+ $('#adminBlockedAccounts').textContent=blocked;
+ $('#adminTotalAccounts').textContent=users.length;
+ $('#pendingAccountsTabCount').textContent=pending;
+ $('#pendingAccountsTabCount').classList.toggle('hidden',pending===0);
+ $('#adminUsersList').innerHTML=users.map(profile=>{
+   const status=profileStatus(profile),self=profile.id===state.user?.id,isAdmin=profile.role==='admin';
+   const created=profile.created_at?new Date(profile.created_at).toLocaleDateString('it-IT'):'—';
+   let actions='';
+   if(self||isAdmin)actions='<span class="chip">Account Admin protetto</span>';
+   else if(status==='pending')actions=`<button class="btn small" type="button" onclick="setAccountStatus('${profile.id}','approved')">Approva</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca</button>`;
+   else if(status==='approved')actions=`<button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca accesso</button>`;
+   else actions=`<button class="btn small" type="button" onclick="setAccountStatus('${profile.id}','approved')">Riattiva</button>`;
+   return `<div class="user-access-row"><span class="account-status-pill ${status}">${accountStatusLabel(status)}</span><div class="user-copy"><strong>${esc(profile.display_name||'Utente')}</strong><span class="muted">${esc(profile.email||'Email non disponibile')} • ${isAdmin?'Admin':'Utente'} • Iscritto il ${created}</span></div><div class="user-actions">${actions}</div></div>`;
+ }).join('')||'<div class="empty"><strong>Nessun account</strong>Gli utenti registrati compariranno qui.</div>';
+}
+
+async function setAccountStatus(id,status){
+ if(currentRole()!=='admin'||!['approved','blocked'].includes(status))return;
+ const profile=state.profiles.find(p=>p.id===id);
+ if(!profile||profile.id===state.user?.id||profile.role==='admin')return;
+ const action=status==='approved'?'approvare':'bloccare';
+ if(!confirm(`Vuoi ${action} l’account di ${profile.display_name||profile.email||'questo utente'}?`))return;
+ const{error}=await db.from('profiles').update({account_status:status}).eq('id',id);
+ if(error){msg($('#adminMsg'),'Errore account: '+error.message);return}
+ msg($('#adminMsg'),status==='approved'?'Account approvato. Ora l’utente può entrare nel sito.':'Account bloccato.',true);
+ await loadAll();
+}
+window.setAccountStatus=setAccountStatus;
+
 async function loadAll(){
  try{
-  const [se,te,dr,ra,re,en,ne,cs,rg,sc,di,hf,sh]=await Promise.all([
+  const profilesRequest=currentRole()==='admin'?db.from('profiles').select('*').order('created_at',{ascending:false}):Promise.resolve({data:[],error:null});
+  const [se,te,dr,ra,re,en,ne,cs,rg,sc,di,hf,sh,pr]=await Promise.all([
    db.from('seasons').select('*').eq('is_active',true).limit(1).maybeSingle(),
    db.from('teams').select('*').order('name'),
    db.from('drivers').select('*').order('name'),
@@ -834,11 +906,12 @@ async function loadAll(){
    db.from('scoring_settings').select('*').limit(1).maybeSingle(),
    db.from('discipline_events').select('*').order('created_at',{ascending:false}),
    db.from('hall_of_fame').select('*').order('season_name',{ascending:false}),
-   db.from('standings_history').select('*').order('round')
+   db.from('standings_history').select('*').order('round'),
+   profilesRequest
   ]);
-  for(const x of [se,te,dr,ra,re,ne,cs,rg,sc,di,hf,sh])if(x.error)throw x.error;
+  for(const x of [se,te,dr,ra,re,ne,cs,rg,sc,di,hf,sh,pr])if(x.error)throw x.error;
   if(en.error)console.warn('Convocati non ancora attivati:',en.error.message);
-  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.entries=en.error?[]:(en.data||[]);state.news=ne.data||[];state.settings=cs.data||null;state.regulations=rg.data||null;state.scoring=sc.data||null;state.discipline=di.data||[];state.hallOfFame=hf.data||[];state.standingsHistory=sh.data||[];
+  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.entries=en.error?[]:(en.data||[]);state.news=ne.data||[];state.profiles=pr.data||[];state.settings=cs.data||null;state.regulations=rg.data||null;state.scoring=sc.data||null;state.discipline=di.data||[];state.hallOfFame=hf.data||[];state.standingsHistory=sh.data||[];
   render();
  }catch(e){console.error(e);msg($('#adminMsg'),'Errore caricamento: '+e.message)}
 }
@@ -913,7 +986,7 @@ function renderGpSession(id,type){
  return true;
 }
 function openGpSession(id,type){
- if(!state.user){go('login');return}
+ if(!hasSiteAccess()){go('login');return}
  state.archiveRaceId=Number(id);
  if(renderGpSession(state.archiveRaceId,type))go(type==='qualifying'?'gpQualifying':'gpRace');
 }
@@ -927,7 +1000,7 @@ window.openGpSession=openGpSession;
 window.switchGpSession=switchGpSession;
 window.returnToGpArchive=returnToGpArchive;
 function openRaceArchive(id){
- if(!state.user){go('login');return}
+ if(!hasSiteAccess()){go('login');return}
  state.archiveRaceId=Number(id);
  go('archive');
  setTimeout(()=>{
@@ -947,6 +1020,7 @@ function render(){
  $('#adminCountTeams').textContent=state.teams.length;
  $('#adminCountRaces').textContent=state.races.length;
  $('#adminCountNews').textContent=state.news.length;
+ if(currentRole()==='admin')renderAdminUsers();
  $('#adminSeasonState').innerHTML=`<strong>${esc(s.season_name||'Stagione 2026-2027')}</strong><br>${esc(s.status||'Preparazione')} • ${s.registration_open===false?'Iscrizioni chiuse':'Iscrizioni aperte'}`;
  $('#adminLastActivity').textContent=state.news[0]?`Ultima news: ${state.news[0].title}`:'Nessuna attività registrata.';
  if(state.regulations){
@@ -968,7 +1042,7 @@ function render(){
 
  const driverStats=buildDriverStats(),teamStats=buildTeamStats(),published=publishedResults();
  const leader=driverStats[0]?.points||0,teamLeader=teamStats[0]?.points||0;
- $('#standingsBody').innerHTML=driverStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${teamSymbol(x.driver.team_id)}<button class="driver-link" onclick="if(currentRole()!=='guest'){go('profiles');document.querySelector('#profileDriverSelect').value='${x.driver.id}';renderProfile(${x.driver.id})}">${esc(driverName(x.driver.id))}</button><div class="gap-leader">${esc(x.driver.ea_id||'')} • <span class="${movementForDriver(x.driver.id).cls}">${movementForDriver(x.driver.id).text}</span></div></td><td>${esc(teamName(x.driver.team_id))}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(leader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
+ $('#standingsBody').innerHTML=driverStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${teamSymbol(x.driver.team_id)}<button class="driver-link" onclick="if(hasSiteAccess()){go('profiles');document.querySelector('#profileDriverSelect').value='${x.driver.id}';renderProfile(${x.driver.id})}">${esc(driverName(x.driver.id))}</button><div class="gap-leader">${esc(x.driver.ea_id||'')} • <span class="${movementForDriver(x.driver.id).cls}">${movementForDriver(x.driver.id).text}</span></div></td><td>${esc(teamName(x.driver.team_id))}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(leader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
  $('#standingsEmpty').classList.toggle('hidden',published.length>0);
  $('#constructorsBody').innerHTML=teamStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${teamSymbol(x.team.id)}${esc(x.team.name)}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(teamLeader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
  $('#constructorsEmpty').classList.toggle('hidden',published.length>0);
@@ -1470,7 +1544,12 @@ function syncAuthMode(){
  $('#forgotPasswordBtn').classList.toggle('hidden',signup||Boolean(state.user));
 }
 $('#authSwitch').onclick=()=>{signup=!signup;syncAuthMode()};
-$('#authSubmit').onclick=async()=>{try{const email=$('#email').value.trim(),password=$('#password').value;const r=signup?await db.auth.signUp({email,password,options:{data:{display_name:$('#displayName').value.trim()||email.split('@')[0]}}}):await db.auth.signInWithPassword({email,password});if(r.error)throw r.error;msg($('#authMsg'),signup?'Registrazione completata.':'Accesso effettuato.',true);await refreshUser();if(state.user){await loadAll();go('home')}}catch(e){msg($('#authMsg'),e.message)}};
+$('#authSubmit').onclick=async()=>{try{const email=$('#email').value.trim(),password=$('#password').value;const creating=signup;const r=creating?await db.auth.signUp({email,password,options:{data:{display_name:$('#displayName').value.trim()||email.split('@')[0]}}}):await db.auth.signInWithPassword({email,password});if(r.error)throw r.error;msg($('#authMsg'),creating?'Registrazione inviata. Dopo l’eventuale conferma email, attendi l’approvazione dell’Admin.':'Accesso effettuato.',true);await refreshUser();if(hasSiteAccess()){await loadAll();go('home')}else go('login')}catch(e){msg($('#authMsg'),e.message)}};
+
+$('#refreshAccountBtn').onclick=async()=>{
+ await refreshUser();
+ if(hasSiteAccess()){await loadAll();go('home')}
+};
 
 $('#forgotPasswordBtn').onclick=async()=>{
  const button=$('#forgotPasswordBtn');
@@ -1528,12 +1607,21 @@ $('#logoutBtn').onclick=logoutUser;
 $('#topLogoutBtn').onclick=logoutUser;
 async function refreshUser(){
  const{data:{user}}=await db.auth.getUser();state.user=user;state.profile=null;
- if(user){const{data}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();state.profile=data||{id:user.id,display_name:user.user_metadata?.display_name||user.email?.split('@')[0]||'Pilota',role:'driver',driver_id:null}}
+ if(user){const{data,error}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();if(error)console.error('Profilo:',error);state.profile=data||{id:user.id,email:user.email,display_name:user.user_metadata?.display_name||user.email?.split('@')[0]||'Pilota',role:'driver',driver_id:null,account_status:'pending'}}
  const role=currentRole();
- $('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':' • Pilota'):'Ospite';
+ const status=profileStatus(),approved=hasSiteAccess();
+ $('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':approved?' • Pilota':status==='blocked'?' • Bloccato':' • In attesa'):'Ospite';
  $('#adminNav').classList.toggle('hidden',role!=='admin');$('#logoutBtn').classList.toggle('hidden',!user);$('#topLogoutBtn').classList.toggle('hidden',!user);$('#authSubmit').classList.toggle('hidden',!!user);$('#authSwitch').classList.toggle('hidden',!!user);
+ $('#authFields').classList.toggle('hidden',!!user);
+ $('#refreshAccountBtn').classList.toggle('hidden',!user||approved||status==='blocked');
  $('#forgotPasswordBtn').classList.toggle('hidden',!!user||signup);
- $('#authTitle').textContent=user?'Account':signup?'Crea account':'Accedi';applyAccessControl();
+ $('#authTitle').textContent=!user?(signup?'Crea account':'Accedi'):approved?'Account approvato':status==='blocked'?'Account bloccato':'Account in attesa';
+ if(user&&!approved){
+   $('#authMsg').innerHTML=status==='blocked'
+     ?'<div class="account-status-card blocked"><strong>Accesso bloccato</strong><br>Questo account non può entrare nel sito. Contatta l’Admin SRT.</div>'
+     :'<div class="account-status-card pending"><strong>Registrazione ricevuta</strong><br>L’Admin deve approvare il tuo account. Dopo l’approvazione premi “Controlla approvazione”.</div>';
+ }else if($('#authMsg .account-status-card'))$('#authMsg').innerHTML='';
+ applyAccessControl();
 }
 db.auth.onAuthStateChange((event,session)=>{
  if(event==='PASSWORD_RECOVERY')openPasswordRecovery(session);
@@ -1545,7 +1633,7 @@ db.auth.onAuthStateChange((event,session)=>{
   const{data:{session}}=await db.auth.getSession();
   if(session&&$('#passwordRecoveryModal').classList.contains('hidden'))openPasswordRecovery(session);
  }
- if(state.user)await loadAll();
+ if(hasSiteAccess())await loadAll();
  if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js');
 })();
 </script>
