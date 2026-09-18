@@ -9,6 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon-192.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <style>
     :root{
       --bg:#07111f;--surface:#14243a;--surface2:#1c304b;--line:#3a526f;
@@ -75,6 +76,17 @@
     .user-access-row{display:flex;gap:12px;align-items:center;padding:13px;border:1px solid var(--line);border-radius:14px;background:#102039}
     .user-access-row .user-copy{min-width:0;flex:1}.user-access-row .user-copy strong,.user-access-row .user-copy span{display:block;overflow-wrap:anywhere}
     .user-access-row .user-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .user-access-row{display:grid;grid-template-columns:auto minmax(180px,1fr) minmax(230px,1.15fr) auto}
+    .user-profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}
+    .user-profile-fields .field.driver-link-field{grid-column:1/-1}
+    .user-profile-fields input,.user-profile-fields select{padding:8px;font-size:12px}
+    .push-modal{position:fixed;inset:0;z-index:110;display:grid;place-items:center;padding:18px;background:rgba(3,9,18,.86);backdrop-filter:blur(10px)}
+    .push-card{width:min(100%,520px);text-align:center;border-color:#6f2630;background:linear-gradient(155deg,#263149,#131f33)}
+    .push-icon{width:76px;height:76px;display:grid;place-items:center;margin:0 auto 14px;border-radius:22px;background:linear-gradient(135deg,var(--red),var(--red2));font-size:36px;box-shadow:0 16px 35px rgba(225,6,0,.32)}
+    .push-benefits{display:grid;gap:8px;margin:16px 0;text-align:left}.push-benefits span{padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(7,17,31,.42)}
+    .push-settings{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;margin-bottom:14px;border-left:5px solid var(--red)}
+    .push-status{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:850}.push-status:before{content:"";width:9px;height:9px;border-radius:50%;background:#8797aa}.push-status.on:before{background:var(--green);box-shadow:0 0 12px rgba(39,211,125,.65)}.push-status.off:before{background:#ffb147}.push-status.blocked:before{background:var(--red)}
+    .notification-log{display:grid;gap:8px;margin-top:14px}.notification-log .admin-item{background:#102039;border:1px solid var(--line);border-radius:12px;padding:12px}
     .backup-toolbar{display:grid;grid-template-columns:minmax(210px,1fr) auto;gap:12px;align-items:end;margin:14px 0}
     .backup-toolbar .row{justify-content:flex-end}
     .backup-list{display:grid;gap:10px;margin-top:14px}
@@ -92,7 +104,7 @@
     .coming{border:1px dashed #4a4a59;background:rgba(255,255,255,.02)}
     footer{text-align:center;color:#91a6bd;padding:28px 12px 36px;font-size:12px}
     @media(max-width:800px){.hero{grid-template-columns:105px 1fr;min-height:auto;padding:18px;gap:16px}.hero h1{font-size:36px;letter-spacing:-1px}.hero p{font-size:14px}.grid,.grid.two,.stats-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}main{padding:12px}.topbar{padding:10px 12px}.brand-logo{width:45px;height:45px}}
-    @media(max-width:620px){.user-access-row{align-items:flex-start;flex-direction:column}.user-access-row .user-actions{width:100%;justify-content:flex-start}.user-access-row .user-actions .btn{flex:1}.backup-toolbar{grid-template-columns:1fr}.backup-toolbar .row{justify-content:flex-start}.backup-toolbar .row .btn{flex:1 1 140px}.backup-row{grid-template-columns:1fr}.backup-actions{justify-content:flex-start}.backup-actions .btn{flex:1}}
+    @media(max-width:760px){.user-access-row{grid-template-columns:1fr;align-items:flex-start}.user-access-row .user-actions{width:100%;justify-content:flex-start}.user-access-row .user-actions .btn{flex:1}.user-profile-fields{width:100%}.push-settings{grid-template-columns:1fr}.push-settings .btn{width:100%}.backup-toolbar{grid-template-columns:1fr}.backup-toolbar .row{justify-content:flex-start}.backup-toolbar .row .btn{flex:1 1 140px}.backup-row{grid-template-columns:1fr}.backup-actions{justify-content:flex-start}.backup-actions .btn{flex:1}}
 
     .race-control-toolbar{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
     .race-control-list{display:grid;gap:10px;margin-top:14px}
@@ -343,6 +355,10 @@
 
 <section id="profiles" class="section">
   <div class="section-head"><div><h2>Profili piloti</h2><p>Statistiche e storico personale.</p></div></div>
+  <div id="pushSettingsCard" class="card push-settings">
+    <div><h3>Notifiche sul telefono</h3><div id="pushStatus" class="push-status">Controllo in corso…</div><p id="pushStatusHelp" class="muted" style="margin:6px 0 0">Risultati, calendario e comunicazioni SRT.</p></div>
+    <button id="togglePushBtn" class="btn alt" type="button">Gestisci notifiche</button>
+  </div>
   <div class="card"><div class="field"><label>Seleziona pilota</label><select id="profileDriverSelect"></select></div></div>
   <div id="profileCard" class="profile-card card" style="margin-top:14px">
     <div class="profile-grid">
@@ -423,7 +439,7 @@
     <h2 id="authTitle">Accedi</h2><div id="authMsg"></div>
     <div id="authFields"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><br>
     <div class="field"><label>Password</label><input id="password" type="password" minlength="6"></div><br>
-    <div id="nameField" class="field hidden"><label>Nome visualizzato</label><input id="displayName"></div><br></div>
+    <div id="nameField" class="form-grid hidden"><div class="field"><label>Nome</label><input id="firstName" autocomplete="given-name"></div><div class="field"><label>Cognome</label><input id="lastName" autocomplete="family-name"></div></div><br></div>
     <div class="row"><button class="btn" id="authSubmit">Accedi</button><button class="btn alt" id="authSwitch">Crea account</button><button class="btn alt hidden" id="refreshAccountBtn" type="button">Controlla approvazione</button><button class="btn danger hidden" id="logoutBtn">Esci</button></div>
     <div class="auth-help"><button class="auth-link" id="forgotPasswordBtn" type="button">Password dimenticata?</button></div>
   </div>
@@ -440,11 +456,22 @@
   </div>
 </div>
 
+<div id="pushPromptModal" class="push-modal hidden" role="dialog" aria-modal="true" aria-labelledby="pushPromptTitle">
+  <div class="card push-card">
+    <div class="push-icon">🔔</div>
+    <h2 id="pushPromptTitle">Attiva le notifiche SRT</h2>
+    <p class="muted">Ricevi sul telefono gli aggiornamenti importanti del campionato. Sono già comprese tutte le comunicazioni principali e potrai disattivarle quando vuoi.</p>
+    <div class="push-benefits"><span>🏁 Risultati, qualifiche e griglia</span><span>📅 Calendario, news e regolamento</span><span>✅ Approvazione del tuo account</span></div>
+    <div id="pushPromptMsg"></div>
+    <div class="row" style="justify-content:center"><button class="btn" id="enablePushBtn" type="button">Attiva notifiche</button><button class="btn alt" id="dismissPushBtn" type="button">Non ora</button></div>
+  </div>
+</div>
+
 <section id="admin" class="section">
   <div class="section-head"><div><h2>Pannello Admin</h2><p>Gestisci la Stagione 2026-2027 direttamente dal telefono.</p></div><div class="grow"></div><button class="btn alt small" onclick="loadAll()">Aggiorna dati</button></div>
   <div id="adminMsg"></div>
   <div class="admin-tabs">
-    <button data-admin="dashboardPane" class="active">Dashboard</button><button data-admin="usersPane">Utenti <span id="pendingAccountsTabCount" class="account-status-pill pending hidden">0</span></button><button data-admin="backupPane">Backup e Cestino</button><button data-admin="settingsPane">Impostazioni</button><button data-admin="scoringPane">Punteggi</button>
+    <button data-admin="dashboardPane" class="active">Dashboard</button><button data-admin="usersPane">Utenti <span id="pendingAccountsTabCount" class="account-status-pill pending hidden">0</span></button><button data-admin="notificationsPane">Notifiche</button><button data-admin="backupPane">Backup e Cestino</button><button data-admin="settingsPane">Impostazioni</button><button data-admin="scoringPane">Punteggi</button>
     <button data-admin="teamPane">Scuderie</button>
     <button data-admin="newsPane">News</button><button data-admin="regulationsPane">Regolamento</button><button data-admin="disciplinePane">Disciplina</button>
     <button data-admin="driverPane">Piloti</button>
@@ -474,7 +501,7 @@
   </div>
 
   <div id="usersPane" class="admin-pane card">
-    <div class="section-head"><div><h3>Gestione accessi</h3><p>Approva o blocca gli account registrati al sito.</p></div><div class="grow"></div><button class="btn alt small" type="button" onclick="loadAll()">Aggiorna</button></div>
+    <div class="section-head"><div><h3>Gestione accessi</h3><p>Controlla nome e cognome, associa il pilota corretto e approva l’account.</p></div><div class="grow"></div><button class="btn alt small" type="button" onclick="loadAll()">Aggiorna</button></div>
     <div class="stats-grid">
       <div class="card stat-card"><div class="big" id="adminPendingAccounts">0</div><div class="caption">In attesa</div></div>
       <div class="card stat-card"><div class="big" id="adminApprovedAccounts">0</div><div class="caption">Approvati</div></div>
@@ -483,6 +510,20 @@
     </div>
     <div class="notice" style="margin-top:14px">I nuovi iscritti non possono vedere il sito finché non premi <strong>Approva</strong>. Il tuo account Admin non può essere bloccato da questa schermata.</div>
     <div id="adminUsersList" class="user-access-list"></div>
+  </div>
+
+  <div id="notificationsPane" class="admin-pane card">
+    <div class="section-head"><div><h3>Centro notifiche</h3><p>Invia una comunicazione a tutti oppure a un singolo account.</p></div></div>
+    <div class="notice success"><strong>Invii automatici:</strong> nuova richiesta all’Admin; approvazione al nuovo utente; risultati GP, news, calendario e regolamento agli account approvati.</div>
+    <form id="notificationForm" class="form-grid">
+      <div class="field"><label>Destinatari</label><select id="notificationTarget" name="target"><option value="all">Tutti gli approvati</option><option value="admins">Solo Admin</option><option value="user">Un singolo utente</option></select></div>
+      <div id="notificationUserField" class="field hidden"><label>Utente</label><select id="notificationUser" name="profile_id"></select></div>
+      <div class="field"><label>Apri questa pagina</label><select name="page"><option value="home">Home</option><option value="calendar">Calendario</option><option value="standings">Classifiche</option><option value="archive">Archivio GP</option><option value="news">News</option><option value="regulations">Regolamento</option><option value="profiles">Profilo</option></select></div>
+      <div class="field"><label>Titolo</label><input name="title" maxlength="70" value="Aggiornamento SRT" required></div>
+      <div class="field full"><label>Messaggio</label><textarea name="message" maxlength="220" placeholder="Scrivi qui la comunicazione…" required></textarea></div>
+      <div class="row"><button class="btn" type="submit">Invia notifica</button><button id="testPushBtn" class="btn alt" type="button">Prova sul mio telefono</button></div>
+    </form>
+    <div id="notificationMsg"></div>
   </div>
 
   <div id="backupPane" class="admin-pane card">
@@ -719,7 +760,23 @@
 <script>
 const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
 const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
+const ONESIGNAL_APP_ID="6a48738b-018d-490a-8a51-80b8dbcb9bd3";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let oneSignalClient=null;
+let resolveOneSignalReady;
+const oneSignalReady=new Promise(resolve=>{resolveOneSignalReady=resolve});
+window.OneSignalDeferred=window.OneSignalDeferred||[];
+window.OneSignalDeferred.push(async OneSignal=>{
+ try{
+  await OneSignal.init({appId:ONESIGNAL_APP_ID,serviceWorkerPath:'service-worker.js',serviceWorkerParam:{scope:'/'},notifyButton:{enable:false}});
+  oneSignalClient=OneSignal;
+  OneSignal.Notifications.addEventListener('permissionChange',()=>updatePushUi());
+  OneSignal.User.PushSubscription.addEventListener('change',()=>updatePushUi());
+  resolveOneSignalReady(OneSignal);
+  syncOneSignalIdentity();
+ }catch(error){console.warn('Notifiche OneSignal:',error);resolveOneSignalReady(null);updatePushUi()}
+});
+setTimeout(()=>resolveOneSignalReady(null),12000);
 const recoveryUrlDetected=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery'||new URLSearchParams(location.search).get('type')==='recovery';
 let state={teams:[],drivers:[],races:[],results:[],entries:[],news:[],profiles:[],backups:[],backupsAvailable:true,regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null,attendanceRaceId:null,archiveRaceId:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -769,6 +826,64 @@ window.go=go;
 $$('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
 $$('.admin-tabs button').forEach(b=>b.onclick=()=>{$$('.admin-tabs button').forEach(x=>x.classList.remove('active'));$$('.admin-pane').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#'+b.dataset.admin).classList.add('active')});
 function msg(el,text,ok=false){el.innerHTML=`<div class="notice ${ok?'success':''}">${esc(text)}</div>`}
+function pushDismissKey(){return `srt-push-dismissed-${state.user?.id||'guest'}`}
+function nativePushPermission(){return typeof Notification==='undefined'?'unsupported':Notification.permission}
+function updatePushUi(){
+ const status=$('#pushStatus'),help=$('#pushStatusHelp'),button=$('#togglePushBtn');
+ if(!status||!help||!button)return;
+ const os=oneSignalClient,supported=Boolean(os&&os.Notifications.isPushSupported());
+ status.className='push-status';button.disabled=false;
+ if(!os){status.textContent='Servizio in caricamento…';button.disabled=true;return}
+ if(!supported){status.textContent='Non supportate su questo browser';status.classList.add('blocked');help.textContent='Apri il sito con Chrome, Edge o Safari compatibile.';button.disabled=true;return}
+ const permission=nativePushPermission(),enabled=Boolean(os.User.PushSubscription.optedIn);
+ if(permission==='denied'){
+  status.textContent='Bloccate nelle impostazioni del browser';status.classList.add('blocked');help.textContent='Per riattivarle, consenti le notifiche nelle impostazioni del sito.';button.textContent='Notifiche bloccate';button.disabled=true;
+ }else if(enabled){
+  status.textContent='Notifiche attive';status.classList.add('on');help.textContent='Riceverai gli aggiornamenti importanti SRT.';button.textContent='Disattiva';button.classList.remove('alt');
+ }else{
+  status.textContent='Notifiche non attive';status.classList.add('off');help.textContent='Attivale per non perdere risultati e comunicazioni.';button.textContent='Attiva';button.classList.add('alt');
+ }
+}
+function maybeShowPushPrompt(){
+ const os=oneSignalClient;if(!state.user||!os||!os.Notifications.isPushSupported())return;
+ if(os.User.PushSubscription.optedIn||nativePushPermission()==='denied')return;
+ const dismissed=Number(localStorage.getItem(pushDismissKey())||0);
+ if(dismissed&&Date.now()-dismissed<7*86400000)return;
+ setTimeout(()=>{if(state.user&&!os.User.PushSubscription.optedIn)$('#pushPromptModal')?.classList.remove('hidden')},650);
+}
+async function syncOneSignalIdentity(){
+ const os=oneSignalClient||await oneSignalReady;
+ if(!os){updatePushUi();return}
+ try{
+  if(state.user){
+   await os.login(state.user.id);
+   os.User.setLanguage('it');
+   os.User.addTags({role:currentRole(),account_status:profileStatus(),driver_id:String(state.profile?.driver_id||'')});
+  }else if(os.User.externalId){await os.logout()}
+ }catch(error){console.warn('Identità notifiche:',error)}
+ updatePushUi();
+ if(state.user)maybeShowPushPrompt();else $('#pushPromptModal')?.classList.add('hidden');
+}
+async function enablePushNotifications(){
+ const os=oneSignalClient;if(!os)throw new Error('Il servizio notifiche non è ancora pronto. Riprova tra qualche secondo.');
+ if(!os.Notifications.isPushSupported())throw new Error('Questo browser non supporta le notifiche web.');
+ if(nativePushPermission()==='denied')throw new Error('Le notifiche sono bloccate nelle impostazioni del browser.');
+ await os.Notifications.requestPermission();
+ if(!os.Notifications.permission)throw new Error('Permesso non concesso. Potrai attivarlo in seguito dal tuo profilo.');
+ await os.User.PushSubscription.optIn();
+ localStorage.removeItem(pushDismissKey());
+ $('#pushPromptModal')?.classList.add('hidden');
+ updatePushUi();
+}
+$('#enablePushBtn').onclick=async()=>{const button=$('#enablePushBtn');try{button.disabled=true;await enablePushNotifications();msg($('#pushPromptMsg'),'Notifiche attivate correttamente.',true)}catch(error){msg($('#pushPromptMsg'),error.message)}finally{button.disabled=false}};
+$('#dismissPushBtn').onclick=()=>{localStorage.setItem(pushDismissKey(),String(Date.now()));$('#pushPromptModal').classList.add('hidden')};
+$('#togglePushBtn').onclick=async()=>{
+ try{
+  const os=oneSignalClient;if(!os)throw new Error('Il servizio notifiche non è ancora pronto.');
+  if(os.User.PushSubscription.optedIn){if(!confirm('Disattivare le notifiche SRT su questo dispositivo?'))return;await os.User.PushSubscription.optOut();updatePushUi()}
+  else await enablePushNotifications();
+ }catch(error){alert(error.message)}
+};
 function teamName(id){return state.teams.find(t=>t.id==id)?.name||'—'}
 function driverName(id){const d=state.drivers.find(x=>x.id==id);return d?`${d.name} ${d.surname||''}`.trim():'—'}
 function teamCode(id){const n=teamName(id);const codes={'Aston Martin':'AM','Racing Bulls':'RB','Red Bull':'RBR','McLaren':'MCL','Mercedes':'MER','Ferrari':'FER','Williams':'WIL','Cadillac':'CAD','Haas':'HAS','Audi':'AUD','Alpine':'ALP'};return codes[n]||n.replace(/[^A-Za-z]/g,'').slice(0,3).toUpperCase()||'—'}
@@ -880,6 +995,10 @@ function renderHallOfFame(){
 }
 
 function accountStatusLabel(status){return status==='approved'?'Approvato':status==='blocked'?'Bloccato':'In attesa'}
+function driverOptionsForProfile(profile){
+ const assigned=new Set(state.profiles.filter(p=>p.id!==profile.id&&p.driver_id).map(p=>Number(p.driver_id)));
+ return '<option value="">Seleziona il pilota corretto</option>'+state.drivers.filter(d=>!assigned.has(Number(d.id))).map(d=>`<option value="${d.id}" ${Number(profile.driver_id)===Number(d.id)?'selected':''}>${esc(driverName(d.id))} — ${esc(d.ea_id||'')}</option>`).join('');
+}
 function renderAdminUsers(){
  const users=[...state.profiles].sort((a,b)=>{
    const priority={pending:0,blocked:1,approved:2};
@@ -897,13 +1016,18 @@ function renderAdminUsers(){
  $('#adminUsersList').innerHTML=users.map(profile=>{
    const status=profileStatus(profile),self=profile.id===state.user?.id,isAdmin=profile.role==='admin';
    const created=profile.created_at?new Date(profile.created_at).toLocaleDateString('it-IT'):'—';
+   const firstName=profile.first_name||String(profile.display_name||'').trim().split(/\s+/)[0]||'';
+   const lastName=profile.last_name||String(profile.display_name||'').trim().split(/\s+/).slice(1).join(' ');
+   const fields=self||isAdmin?'':`<div class="user-profile-fields"><div class="field"><label>Nome</label><input data-profile-first="${profile.id}" value="${esc(firstName)}"></div><div class="field"><label>Cognome</label><input data-profile-last="${profile.id}" value="${esc(lastName)}"></div><div class="field driver-link-field"><label>Pilota associato</label><select data-profile-driver="${profile.id}">${driverOptionsForProfile(profile)}</select></div></div>`;
    let actions='';
    if(self||isAdmin)actions='<span class="chip">Account Admin protetto</span>';
-   else if(status==='pending')actions=`<button class="btn small" type="button" onclick="setAccountStatus('${profile.id}','approved')">Approva</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca</button>`;
-   else if(status==='approved')actions=`<button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca accesso</button>`;
-   else actions=`<button class="btn small" type="button" onclick="setAccountStatus('${profile.id}','approved')">Riattiva</button>`;
-   return `<div class="user-access-row"><span class="account-status-pill ${status}">${accountStatusLabel(status)}</span><div class="user-copy"><strong>${esc(profile.display_name||'Utente')}</strong><span class="muted">${esc(profile.email||'Email non disponibile')} • ${isAdmin?'Admin':'Utente'} • Iscritto il ${created}</span></div><div class="user-actions">${actions}</div></div>`;
+   else if(status==='pending')actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva e approva</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca</button>`;
+   else if(status==='approved')actions=`<button class="btn alt small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva dati</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca accesso</button>`;
+   else actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva e riattiva</button>`;
+   return `<div class="user-access-row"><span class="account-status-pill ${status}">${accountStatusLabel(status)}</span><div class="user-copy"><strong>${esc(profile.display_name||'Utente')}</strong><span class="muted">${esc(profile.email||'Email non disponibile')} • ${isAdmin?'Admin':'Utente'} • Iscritto il ${created}</span></div>${fields}<div class="user-actions">${actions}</div></div>`;
  }).join('')||'<div class="empty"><strong>Nessun account</strong>Gli utenti registrati compariranno qui.</div>';
+ const notificationUser=$('#notificationUser');
+ if(notificationUser)notificationUser.innerHTML=users.filter(p=>profileStatus(p)==='approved').map(p=>`<option value="${p.id}">${esc(p.display_name||p.email||'Utente')}</option>`).join('');
 }
 
 async function setAccountStatus(id,status){
@@ -917,7 +1041,21 @@ async function setAccountStatus(id,status){
  msg($('#adminMsg'),status==='approved'?'Account approvato. Ora l’utente può entrare nel sito.':'Account bloccato.',true);
  await loadAll();
 }
-window.setAccountStatus=setAccountStatus;
+async function saveAccountProfile(id,status='approved'){
+ if(currentRole()!=='admin')return;
+ const profile=state.profiles.find(p=>p.id===id);if(!profile||profile.role==='admin')return;
+ const firstName=document.querySelector(`[data-profile-first="${id}"]`)?.value.trim()||'';
+ const lastName=document.querySelector(`[data-profile-last="${id}"]`)?.value.trim()||'';
+ const driverId=Number(document.querySelector(`[data-profile-driver="${id}"]`)?.value)||null;
+ if(!firstName||!lastName){msg($('#adminMsg'),'Inserisci nome e cognome corretti.');return}
+ if(status==='approved'&&!driverId){msg($('#adminMsg'),'Seleziona il pilota da associare prima di approvare.');return}
+ if(profileStatus(profile)!=='approved'&&!confirm(`Approvare ${firstName} ${lastName} e associarlo a ${driverName(driverId)}?`))return;
+ const payload={first_name:firstName,last_name:lastName,display_name:`${firstName} ${lastName}`.trim(),driver_id:driverId,account_status:status};
+ const{error}=await db.from('profiles').update(payload).eq('id',id);
+ if(error){msg($('#adminMsg'),'Errore account: '+error.message);return}
+ msg($('#adminMsg'),profileStatus(profile)==='approved'?'Dati account aggiornati.':'Account approvato e pilota associato.',true);await loadAll();
+}
+window.setAccountStatus=setAccountStatus;window.saveAccountProfile=saveAccountProfile;
 
 const BACKUP_REASON_LABELS={
  manual:'Manuale',export:'Esportazione',import:'Importato',pre_restore:'Prima del ripristino',
@@ -1212,7 +1350,7 @@ function render(){
  }
 
  const ps=$('#profileDriverSelect');
- if(ps){const cur=ps.value;ps.innerHTML='<option value="">Seleziona un pilota</option>'+state.drivers.map(d=>`<option value="${d.id}">${esc(driverName(d.id))} — ${esc(d.ea_id||'')}</option>`).join('');if(cur&&state.drivers.some(d=>d.id==cur))ps.value=cur;if(!ps.value&&state.drivers[0])ps.value=String(state.drivers[0].id);if(ps.value)renderProfile(Number(ps.value))}
+ if(ps){const cur=ps.value,linked=Number(state.profile?.driver_id)||null;ps.innerHTML='<option value="">Seleziona un pilota</option>'+state.drivers.map(d=>`<option value="${d.id}">${esc(driverName(d.id))} — ${esc(d.ea_id||'')}</option>`).join('');if(cur&&state.drivers.some(d=>d.id==cur))ps.value=cur;else if(linked&&state.drivers.some(d=>Number(d.id)===linked))ps.value=String(linked);else if(state.drivers[0])ps.value=String(state.drivers[0].id);if(ps.value)renderProfile(Number(ps.value))}
  $('#profilesEmpty').classList.toggle('hidden',state.drivers.length>0);
  const prs=state.races.filter(r=>r.results_status==='published'||state.results.some(x=>x.race_id==r.id&&x.is_published===true)).sort((a,b)=>Number(b.round)-Number(a.round));
  $('#archiveEmpty').classList.toggle('hidden',prs.length>0);
@@ -1299,16 +1437,37 @@ $('#scoringForm').onsubmit=async e=>{
  }catch(x){msg($('#adminMsg'),x.message)}
 };
 
-$('#settingsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));const p={championship_name:o.championship_name,season_name:o.season_name,game_name:o.game_name,race_day:o.race_day,race_time:o.race_time||null,race_length:o.race_length,platform:o.platform,required_level:Number(o.required_level||100),status:o.status,registration_open:o.registration_open==='true',description:o.description,updated_at:new Date().toISOString()};await createSafetyBackup('Prima di modificare le impostazioni del campionato','settings',null);let q=state.settings?.id?await db.from('championship_settings').update(p).eq('id',state.settings.id):await db.from('championship_settings').insert(p);if(q.error)throw q.error;msg($('#adminMsg'),'Impostazioni salvate.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#settingsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));const p={championship_name:o.championship_name,season_name:o.season_name,game_name:o.game_name,race_day:o.race_day,race_time:o.race_time||null,race_length:o.race_length,platform:o.platform,required_level:Number(o.required_level||100),status:o.status,registration_open:o.registration_open==='true',description:o.description,updated_at:new Date().toISOString()};await createSafetyBackup('Prima di modificare le impostazioni del campionato','settings',null);let q=state.settings?.id?await db.from('championship_settings').update(p).eq('id',state.settings.id):await db.from('championship_settings').insert(p);if(q.error)throw q.error;const notified=await notifyAllSafely('Impostazioni campionato aggiornate','Controlla gli ultimi aggiornamenti del campionato SRT.','home');msg($('#adminMsg'),notified?'Impostazioni salvate e notifica inviata.':'Impostazioni salvate. La notifica non è partita: controlla la configurazione OneSignal.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 $('#teamForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f));o.logo=await uploadImage($('#teamLogoFile').files[0],'teams');const{error}=await db.from('teams').insert(o);if(error)throw error;f.reset();await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
-$('#newsForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f));o.image=await uploadImage($('#newsImageFile').files[0],'news');const{error}=await db.from('news').insert(o);if(error)throw error;f.reset();await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#newsForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f));o.image=await uploadImage($('#newsImageFile').files[0],'news');const{error}=await db.from('news').insert(o);if(error)throw error;const notified=await notifyAllSafely('Nuova comunicazione SRT',o.title,'news');f.reset();await loadAll();msg($('#adminMsg'),notified?'News pubblicata e notifica inviata.':'News pubblicata. La notifica non è partita: controlla la configurazione OneSignal.',true)}catch(x){msg($('#adminMsg'),x.message)}};
 
-$('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));await createSafetyBackup('Prima di modificare il regolamento','regulations',null);let q=state.regulations?.id?await db.from('regulations').update({...o,updated_at:new Date().toISOString()}).eq('id',state.regulations.id):await db.from('regulations').insert(o);if(q.error)throw q.error;msg($('#adminMsg'),'Regolamento salvato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#notificationTarget').onchange=()=>$('#notificationUserField').classList.toggle('hidden',$('#notificationTarget').value!=='user');
+async function sendAdminNotification({title,message,target='all',profileId=null,page='home'}){
+ const{data,error}=await db.rpc('send_srt_push',{p_title:title,p_message:message,p_target:target,p_profile_id:profileId||null,p_url:`https://srtracing.it/?page=${encodeURIComponent(page)}`});
+ if(error)throw error;
+ return data;
+}
+async function notifyAllSafely(title,message,page='home'){
+ try{await sendAdminNotification({title,message,target:'all',page});return true}
+ catch(error){console.warn('Notifica automatica non inviata:',error);return false}
+}
+$('#notificationForm').onsubmit=async e=>{
+ e.preventDefault();const button=e.submitter;try{
+  if(button)button.disabled=true;
+  const o=Object.fromEntries(new FormData(e.target)),profileId=o.target==='user'?o.profile_id:null;
+  if(o.target==='user'&&!profileId)throw new Error('Seleziona un utente.');
+  await sendAdminNotification({title:o.title.trim(),message:o.message.trim(),target:o.target,profileId,page:o.page});
+  msg($('#notificationMsg'),'Notifica messa in invio.',true);e.target.elements.message.value='';
+ }catch(error){msg($('#notificationMsg'),'Invio non riuscito: '+error.message)}finally{if(button)button.disabled=false}
+};
+$('#testPushBtn').onclick=async()=>{try{await sendAdminNotification({title:'Test notifiche SRT',message:'Perfetto: le notifiche del sito funzionano su questo dispositivo.',target:'user',profileId:state.user?.id,page:'home'});msg($('#notificationMsg'),'Notifica di prova inviata al tuo account.',true)}catch(error){msg($('#notificationMsg'),'Test non riuscito: '+error.message)}};
+
+$('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));await createSafetyBackup('Prima di modificare il regolamento','regulations',null);let q=state.regulations?.id?await db.from('regulations').update({...o,updated_at:new Date().toISOString()}).eq('id',state.regulations.id):await db.from('regulations').insert(o);if(q.error)throw q.error;const notified=await notifyAllSafely('Regolamento aggiornato','È disponibile una nuova versione del regolamento ufficiale.','regulations');msg($('#adminMsg'),notified?'Regolamento salvato e notifica inviata.':'Regolamento salvato. La notifica non è partita: controlla la configurazione OneSignal.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 const createDriverMode=$('#driverForm [name="driver_mode"]'),createDriverTeam=$('#driverForm [name="team_id"]');
 const syncCreateDriverMode=()=>{createDriverTeam.disabled=createDriverMode.value==='wild'};createDriverMode.onchange=syncCreateDriverMode;syncCreateDriverMode();
 $('#driverForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'drivers',o=>{const mode=o.driver_mode,teamId=Number(o.team_id)||null;if(mode==='official'&&!teamId)throw new Error('Scegli la scuderia del pilota ufficiale.');const{driver_mode,...driver}=o;return{...driver,level:Number(o.level||100),team_id:mode==='wild'?null:teamId,status:mode==='suspended'?'suspended':mode==='official'?'active':'reserve',is_wild:mode==='wild'}});syncCreateDriverMode()}catch(x){msg($('#adminMsg'),x.message)}};
 $('#absenceForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target)),absences=Number(o.absences),mode=o.driver_mode,teamId=Number(o.team_id)||null;if(!Number.isInteger(absences)||absences<0||absences>3)throw new Error('Le assenze devono essere comprese tra 0 e 3.');if(mode==='official'&&!teamId)throw new Error('Scegli la scuderia del pilota ufficiale.');const driverId=Number(o.driver_id),changes={absences,is_wild:mode==='wild',status:mode==='suspended'?'suspended':mode==='official'?'active':'reserve',team_id:mode==='wild'?null:teamId};await createSafetyBackup(`Prima di modificare il pilota ${driverName(driverId)}`,'driver_update',null);const{error}=await db.from('drivers').update(changes).eq('id',driverId);if(error)throw error;msg($('#adminMsg'),mode==='wild'?'Pilota trasformato in Wild.':mode==='reserve'?'Pilota impostato come riserva.':mode==='suspended'?'Pilota sospeso senza cancellare lo storico.':'Pilota ufficiale aggiornato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
-$('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');const o=Object.fromEntries(new FormData(e.target)),round=Number(o.round);if(state.races.some(r=>Number(r.round)===round))throw new Error(`Il Round ${round} esiste già nel calendario.`);await insertForm(e.target,'races',x=>({...x,round,season_id:state.season.id,race_time:x.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
+$('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');const o=Object.fromEntries(new FormData(e.target)),round=Number(o.round);if(state.races.some(r=>Number(r.round)===round))throw new Error(`Il Round ${round} esiste già nel calendario.`);await insertForm(e.target,'races',x=>({...x,round,season_id:state.season.id,race_time:x.race_time||null}));const notified=await notifyAllSafely('Calendario aggiornato',`Controlla data e orario di ${o.name}.`,'calendar');msg($('#adminMsg'),notified?'GP aggiunto e notifica inviata.':'GP aggiunto. La notifica non è partita: controlla la configurazione OneSignal.',true)}catch(x){msg($('#adminMsg'),x.message)}};
 $('#attendanceRace').addEventListener('change',e=>{state.attendanceRaceId=Number(e.target.value)||null;renderAttendance()});
 $('#saveAttendanceBtn').onclick=saveAttendance;
 $('#createBackupBtn').onclick=createManualBackup;
@@ -1570,6 +1729,7 @@ function collectRaceControlResults(isPublished){
 async function saveRaceControl(isPublished){
  try{
    const race=selectedRace();
+   const wasPublished=race?.results_status==='published'||state.results.some(result=>result.race_id==race?.id&&result.is_published===true);
    const payload=collectRaceControlResults(isPublished);
    await createSafetyBackup(`${isPublished?'Prima di pubblicare':'Prima di salvare la bozza di'} ${race.name}`,isPublished?'race_publish':'race_draft',race.id);
    const {error}=await db.from('race_results').upsert(payload,{onConflict:'race_id,driver_id'});
@@ -1589,7 +1749,12 @@ async function saveRaceControl(isPublished){
      const rebuilt=await rebuildStandingsHistory(false);
      if(!rebuilt)throw new Error('Impossibile ricostruire il movimento classifica.');
    }
-   msg($('#adminMsg'),isPublished?'GP pubblicato: classifiche e statistiche aggiornate.':'Bozza salvata correttamente.',true);
+   const notified=isPublished&&!wasPublished
+     ?await notifyAllSafely(`Risultati ${race.name}`,'Risultati, tempi e classifiche del GP sono online.','archive')
+     :true;
+   msg($('#adminMsg'),isPublished
+     ?notified?'GP pubblicato: classifiche, statistiche e notifica aggiornate.':'GP pubblicato, ma la notifica non è partita: controlla la configurazione OneSignal.'
+     :'Bozza salvata correttamente.',true);
    await loadAll();
  }catch(e){msg($('#adminMsg'),e.message)}
 }
@@ -1683,16 +1848,37 @@ let signup=false;
 function syncAuthMode(){
  $('#authTitle').textContent=signup?'Crea account':'Accedi';
  $('#nameField').classList.toggle('hidden',!signup);
+ $('#firstName').required=signup;$('#lastName').required=signup;
  $('#authSubmit').textContent=signup?'Registrati':'Accedi';
  $('#authSwitch').textContent=signup?'Ho già un account':'Crea account';
  $('#forgotPasswordBtn').classList.toggle('hidden',signup||Boolean(state.user));
 }
+function defaultLandingPage(){return currentRole()==='driver'&&state.profile?.driver_id?'profiles':'home'}
+function requestedLandingPage(){
+ const page=new URLSearchParams(location.search).get('page');
+ return page&&allowedPages().includes(page)?page:defaultLandingPage();
+}
+function openRequestedPage(){
+ const params=new URLSearchParams(location.search),page=requestedLandingPage(),raceId=Number(params.get('race'))||null;
+ if(page==='archive'&&raceId){state.archiveRaceId=raceId;openRaceArchive(raceId);return}
+ go(page);
+}
 $('#authSwitch').onclick=()=>{signup=!signup;syncAuthMode()};
-$('#authSubmit').onclick=async()=>{try{const email=$('#email').value.trim(),password=$('#password').value;const creating=signup;const r=creating?await db.auth.signUp({email,password,options:{data:{display_name:$('#displayName').value.trim()||email.split('@')[0]}}}):await db.auth.signInWithPassword({email,password});if(r.error)throw r.error;msg($('#authMsg'),creating?'Registrazione inviata. Dopo l’eventuale conferma email, attendi l’approvazione dell’Admin.':'Accesso effettuato.',true);await refreshUser();if(hasSiteAccess()){await loadAll();go('home')}else go('login')}catch(e){msg($('#authMsg'),e.message)}};
+$('#authSubmit').onclick=async()=>{try{
+ const email=$('#email').value.trim(),password=$('#password').value,creating=signup;
+ const firstName=$('#firstName').value.trim(),lastName=$('#lastName').value.trim();
+ if(creating&&(!firstName||!lastName))throw new Error('Inserisci nome e cognome.');
+ const r=creating
+  ?await db.auth.signUp({email,password,options:{data:{first_name:firstName,last_name:lastName,display_name:`${firstName} ${lastName}`.trim()}}})
+  :await db.auth.signInWithPassword({email,password});
+ if(r.error)throw r.error;
+ msg($('#authMsg'),creating?'Registrazione inviata. Dopo l’eventuale conferma email, attendi l’approvazione dell’Admin.':'Accesso effettuato.',true);
+ await refreshUser();if(hasSiteAccess()){await loadAll();openRequestedPage()}else go('login');
+}catch(e){msg($('#authMsg'),e.message)}};
 
 $('#refreshAccountBtn').onclick=async()=>{
  await refreshUser();
- if(hasSiteAccess()){await loadAll();go('home')}
+ if(hasSiteAccess()){await loadAll();openRequestedPage()}
 };
 
 $('#forgotPasswordBtn').onclick=async()=>{
@@ -1732,7 +1918,7 @@ $('#saveNewPasswordBtn').onclick=async()=>{
   history.replaceState({},document.title,location.pathname);
   msg($('#authMsg'),'Password aggiornata correttamente.',true);
   await refreshUser();
-  if(state.user)go('home');
+  if(state.user)openRequestedPage();
  }catch(e){msg($('#passwordRecoveryMsg'),e.message)}
  finally{button.disabled=false}
 };
@@ -1751,7 +1937,7 @@ $('#logoutBtn').onclick=logoutUser;
 $('#topLogoutBtn').onclick=logoutUser;
 async function refreshUser(){
  const{data:{user}}=await db.auth.getUser();state.user=user;state.profile=null;
- if(user){const{data,error}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();if(error)console.error('Profilo:',error);state.profile=data||{id:user.id,email:user.email,display_name:user.user_metadata?.display_name||user.email?.split('@')[0]||'Pilota',role:'driver',driver_id:null,account_status:'pending'}}
+ if(user){const{data,error}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();if(error)console.error('Profilo:',error);state.profile=data||{id:user.id,email:user.email,first_name:user.user_metadata?.first_name||'',last_name:user.user_metadata?.last_name||'',display_name:user.user_metadata?.display_name||user.email?.split('@')[0]||'Pilota',role:'driver',driver_id:null,account_status:'pending'}}
  const role=currentRole();
  const status=profileStatus(),approved=hasSiteAccess();
  $('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':approved?' • Pilota':status==='blocked'?' • Bloccato':' • In attesa'):'Ospite';
@@ -1766,6 +1952,7 @@ async function refreshUser(){
      :'<div class="account-status-card pending"><strong>Registrazione ricevuta</strong><br>L’Admin deve approvare il tuo account. Dopo l’approvazione premi “Controlla approvazione”.</div>';
  }else if($('#authMsg .account-status-card'))$('#authMsg').innerHTML='';
  applyAccessControl();
+ syncOneSignalIdentity();
 }
 db.auth.onAuthStateChange((event,session)=>{
  if(event==='PASSWORD_RECOVERY')openPasswordRecovery(session);
@@ -1777,8 +1964,8 @@ db.auth.onAuthStateChange((event,session)=>{
   const{data:{session}}=await db.auth.getSession();
   if(session&&$('#passwordRecoveryModal').classList.contains('hidden'))openPasswordRecovery(session);
  }
- if(hasSiteAccess())await loadAll();
- if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js?v=9-backup-cestino',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
+ if(hasSiteAccess()){await loadAll();openRequestedPage()}
+ if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
 })();
 </script>
 <script>

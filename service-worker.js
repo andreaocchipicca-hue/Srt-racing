@@ -1,4 +1,6 @@
-const CACHE='srt-v5e7-password-recovery';
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
+
+const CACHE='srt-v10-profili-notifiche';
 
 const CORE = [
   '/',
