@@ -440,7 +440,7 @@
     <div id="authFields"><div class="field"><label>Email</label><input id="email" type="email" autocomplete="email"></div><br>
     <div class="field"><label>Password</label><input id="password" type="password" minlength="6"></div><br>
     <div id="nameField" class="form-grid hidden"><div class="field"><label>Nome</label><input id="firstName" autocomplete="given-name"></div><div class="field"><label>Cognome</label><input id="lastName" autocomplete="family-name"></div></div><br></div>
-    <div class="row"><button class="btn" id="authSubmit">Accedi</button><button class="btn alt" id="authSwitch">Crea account</button><button class="btn alt hidden" id="refreshAccountBtn" type="button">Controlla approvazione</button><button class="btn danger hidden" id="logoutBtn">Esci</button></div>
+    <div class="row"><button class="btn" id="authSubmit">Accedi</button><button class="btn alt" id="authSwitch">Crea account</button><button class="btn alt hidden" id="refreshAccountBtn" type="button">Aggiorna account</button><button class="btn danger hidden" id="logoutBtn">Esci</button></div>
     <div class="auth-help"><button class="auth-link" id="forgotPasswordBtn" type="button">Password dimenticata?</button></div>
   </div>
 </section>
@@ -461,7 +461,7 @@
     <div class="push-icon">🔔</div>
     <h2 id="pushPromptTitle">Attiva le notifiche SRT</h2>
     <p class="muted">Ricevi sul telefono gli aggiornamenti importanti del campionato. Sono già comprese tutte le comunicazioni principali e potrai disattivarle quando vuoi.</p>
-    <div class="push-benefits"><span>🏁 Risultati, qualifiche e griglia</span><span>📅 Calendario, news e regolamento</span><span>✅ Approvazione del tuo account</span></div>
+    <div class="push-benefits"><span>🏁 Risultati, qualifiche e griglia</span><span>📅 Calendario, news e regolamento</span><span>✅ Aggiornamenti del tuo account</span></div>
     <div id="pushPromptMsg"></div>
     <div class="row" style="justify-content:center"><button class="btn" id="enablePushBtn" type="button">Attiva notifiche</button><button class="btn alt" id="dismissPushBtn" type="button">Non ora</button></div>
   </div>
@@ -503,12 +503,12 @@
   <div id="usersPane" class="admin-pane card">
     <div class="section-head"><div><h3>Gestione accessi</h3><p>Controlla nome e cognome, associa il pilota corretto e approva l’account.</p></div><div class="grow"></div><button class="btn alt small" type="button" onclick="loadAll()">Aggiorna</button></div>
     <div class="stats-grid">
-      <div class="card stat-card"><div class="big" id="adminPendingAccounts">0</div><div class="caption">In attesa</div></div>
-      <div class="card stat-card"><div class="big" id="adminApprovedAccounts">0</div><div class="caption">Approvati</div></div>
+      <div class="card stat-card"><div class="big" id="adminPendingAccounts">0</div><div class="caption">Ospiti</div></div>
+      <div class="card stat-card"><div class="big" id="adminApprovedAccounts">0</div><div class="caption">Piloti</div></div>
       <div class="card stat-card"><div class="big" id="adminBlockedAccounts">0</div><div class="caption">Bloccati</div></div>
       <div class="card stat-card"><div class="big" id="adminTotalAccounts">0</div><div class="caption">Totali</div></div>
     </div>
-    <div class="notice" style="margin-top:14px">I nuovi iscritti non possono vedere il sito finché non premi <strong>Approva</strong>. Il tuo account Admin non può essere bloccato da questa schermata.</div>
+    <div class="notice" style="margin-top:14px">I nuovi iscritti entrano subito come <strong>Ospiti</strong> e possono vedere Classifiche, Calendario e Hall of Fame. Se fanno parte della lega, associa il pilota corretto e rendili <strong>Piloti SRT</strong>. Il tuo account Admin non può essere bloccato da questa schermata.</div>
     <div id="adminUsersList" class="user-access-list"></div>
   </div>
 
@@ -784,7 +784,8 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 
 const ROLE_ACCESS={
   guest:['login'],
-  pending:['login'],
+  blocked:['login'],
+  pending:['standings','calendar','halloffame'],
   driver:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame'],
   admin:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame','admin']
 };
@@ -793,30 +794,42 @@ function profileStatus(profile=state.profile){
  return Object.prototype.hasOwnProperty.call(profile,'account_status')?(profile.account_status||'pending'):'approved';
 }
 function hasSiteAccess(){return Boolean(state.user)&&profileStatus()==='approved'}
-function currentRole(){return !state.user?'guest':!hasSiteAccess()?'pending':state.profile?.role==='admin'?'admin':'driver'}
+function canBrowseSite(){return Boolean(state.user)&&profileStatus()!=='blocked'}
+function currentRole(){
+ if(!state.user)return'guest';
+ const status=profileStatus();
+ if(status==='blocked')return'blocked';
+ if(status!=='approved')return'pending';
+ return state.profile?.role==='admin'?'admin':'driver';
+}
 function allowedPages(){return ROLE_ACCESS[currentRole()]||ROLE_ACCESS.guest}
+function accessFallback(){
+ const role=currentRole();
+ if(role==='pending')return'standings';
+ return hasSiteAccess()?'home':'login';
+}
 function applyAccessControl(){
   const role=currentRole();
-  const approved=hasSiteAccess();
   document.body.classList.remove('locked');
-  document.body.classList.toggle('guest-mode',!approved);
+  document.body.classList.toggle('guest-mode',role==='guest'||role==='blocked');
   $$('#nav button[data-page]').forEach(btn=>{
     const page=btn.dataset.page;
-    const visible=page==='login'?!approved:allowedPages().includes(page);
+    const visible=page==='login'?(role==='guest'||role==='blocked'):allowedPages().includes(page);
     btn.classList.toggle('role-hidden',!visible);
   });
   const active=$('.section.active');
   const canStay=active&&allowedPages().includes(active.id);
   if(!canStay){
-    const fallback=approved?'home':'login';
+    const fallback=accessFallback();
     $$('.section').forEach(x=>x.classList.toggle('active',x.id===fallback));
     $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===fallback));
   }
 }
 function go(id){
-  const approved=hasSiteAccess();
-  if(id==='login')id=approved?'home':'login';
-  else if(!allowedPages().includes(id))id=approved?'home':'login';
+  const role=currentRole();
+  const fallback=accessFallback();
+  if(id==='login'&&role!=='guest'&&role!=='blocked')id=fallback;
+  else if(!allowedPages().includes(id))id=fallback;
   $$('.section').forEach(x=>x.classList.toggle('active',x.id===id));
   $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
   scrollTo({top:0,behavior:'smooth'});
@@ -927,7 +940,7 @@ function renderCalendar(next){
  const races=[...state.races].sort((a,b)=>Number(a.round)-Number(b.round));
  $('#calendarEmpty').classList.toggle('hidden',races.length>0);
  $('#calendarGrid').innerHTML=races.map(r=>{
-   const archived=raceHasArchive(r);
+   const archived=raceHasArchive(r)&&allowedPages().includes('archive');
    const attrs=archived?`role="button" tabindex="0" aria-label="Apri ${esc(r.name)} nell'Archivio GP" onclick="openRaceArchive(${r.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRaceArchive(${r.id})}"`:'';
    return `<article class="card calendar-card ${next&&r.id==next.id?'next':''} ${archived?'archive-link':''}" ${attrs}><div class="round-box">${esc(r.round)}</div><div><strong>${countryFlag(r.country)} ${esc(r.name)}</strong><div class="muted">${esc(r.circuit)}</div><span class="chip" style="margin-top:7px">${esc(raceStatusLabel(r))}</span>${archived?'<span class="archive-hint">Apri Archivio GP</span>':''}</div><div class="race-date">${fmtDate(r.race_date)}<small>${String(r.race_time||'22:30').slice(0,5)}</small></div></article>`;
  }).join('');
@@ -994,7 +1007,7 @@ function renderHallOfFame(){
  $('#hallOfFameGrid').innerHTML=rows.map(h=>`<article class="card hof-card"><div class="champion-crown">${h.icon||'👑'}</div><div class="eyebrow">${esc(h.season_name)}</div><h3>${esc(h.title)}</h3><div class="record-name">${esc(h.winner_name)}</div><div class="muted">${esc(h.details||'')}</div></article>`).join('');
 }
 
-function accountStatusLabel(status){return status==='approved'?'Approvato':status==='blocked'?'Bloccato':'In attesa'}
+function accountStatusLabel(status){return status==='approved'?'Pilota':status==='blocked'?'Bloccato':'Ospite'}
 function driverOptionsForProfile(profile){
  const assigned=new Set(state.profiles.filter(p=>p.id!==profile.id&&p.driver_id).map(p=>Number(p.driver_id)));
  return '<option value="">Seleziona il pilota corretto</option>'+state.drivers.filter(d=>!assigned.has(Number(d.id))).map(d=>`<option value="${d.id}" ${Number(profile.driver_id)===Number(d.id)?'selected':''}>${esc(driverName(d.id))} — ${esc(d.ea_id||'')}</option>`).join('');
@@ -1021,10 +1034,10 @@ function renderAdminUsers(){
    const fields=self||isAdmin?'':`<div class="user-profile-fields"><div class="field"><label>Nome</label><input data-profile-first="${profile.id}" value="${esc(firstName)}"></div><div class="field"><label>Cognome</label><input data-profile-last="${profile.id}" value="${esc(lastName)}"></div><div class="field driver-link-field"><label>Pilota associato</label><select data-profile-driver="${profile.id}">${driverOptionsForProfile(profile)}</select></div></div>`;
    let actions='';
    if(self||isAdmin)actions='<span class="chip">Account Admin protetto</span>';
-   else if(status==='pending')actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva e approva</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca</button>`;
+   else if(status==='pending')actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Associa e rendi pilota</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca</button>`;
    else if(status==='approved')actions=`<button class="btn alt small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva dati</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca accesso</button>`;
    else actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva e riattiva</button>`;
-   return `<div class="user-access-row"><span class="account-status-pill ${status}">${accountStatusLabel(status)}</span><div class="user-copy"><strong>${esc(profile.display_name||'Utente')}</strong><span class="muted">${esc(profile.email||'Email non disponibile')} • ${isAdmin?'Admin':'Utente'} • Iscritto il ${created}</span></div>${fields}<div class="user-actions">${actions}</div></div>`;
+   return `<div class="user-access-row"><span class="account-status-pill ${status}">${accountStatusLabel(status)}</span><div class="user-copy"><strong>${esc(profile.display_name||'Utente')}</strong><span class="muted">${esc(profile.email||'Email non disponibile')} • ${isAdmin?'Admin':status==='approved'?'Pilota':'Ospite'} • Iscritto il ${created}</span></div>${fields}<div class="user-actions">${actions}</div></div>`;
  }).join('')||'<div class="empty"><strong>Nessun account</strong>Gli utenti registrati compariranno qui.</div>';
  const notificationUser=$('#notificationUser');
  if(notificationUser)notificationUser.innerHTML=users.filter(p=>profileStatus(p)==='approved').map(p=>`<option value="${p.id}">${esc(p.display_name||p.email||'Utente')}</option>`).join('');
@@ -1049,11 +1062,11 @@ async function saveAccountProfile(id,status='approved'){
  const driverId=Number(document.querySelector(`[data-profile-driver="${id}"]`)?.value)||null;
  if(!firstName||!lastName){msg($('#adminMsg'),'Inserisci nome e cognome corretti.');return}
  if(status==='approved'&&!driverId){msg($('#adminMsg'),'Seleziona il pilota da associare prima di approvare.');return}
- if(profileStatus(profile)!=='approved'&&!confirm(`Approvare ${firstName} ${lastName} e associarlo a ${driverName(driverId)}?`))return;
+ if(profileStatus(profile)!=='approved'&&!confirm(`Associare ${firstName} ${lastName} a ${driverName(driverId)} e renderlo Pilota SRT?`))return;
  const payload={first_name:firstName,last_name:lastName,display_name:`${firstName} ${lastName}`.trim(),driver_id:driverId,account_status:status};
  const{error}=await db.from('profiles').update(payload).eq('id',id);
  if(error){msg($('#adminMsg'),'Errore account: '+error.message);return}
- msg($('#adminMsg'),profileStatus(profile)==='approved'?'Dati account aggiornati.':'Account approvato e pilota associato.',true);await loadAll();
+ msg($('#adminMsg'),profileStatus(profile)==='approved'?'Dati account aggiornati.':'Account associato al pilota SRT.',true);await loadAll();
 }
 window.setAccountStatus=setAccountStatus;window.saveAccountProfile=saveAccountProfile;
 
@@ -1853,7 +1866,7 @@ function syncAuthMode(){
  $('#authSwitch').textContent=signup?'Ho già un account':'Crea account';
  $('#forgotPasswordBtn').classList.toggle('hidden',signup||Boolean(state.user));
 }
-function defaultLandingPage(){return currentRole()==='driver'&&state.profile?.driver_id?'profiles':'home'}
+function defaultLandingPage(){return currentRole()==='pending'?'standings':currentRole()==='driver'&&state.profile?.driver_id?'profiles':'home'}
 function requestedLandingPage(){
  const page=new URLSearchParams(location.search).get('page');
  return page&&allowedPages().includes(page)?page:defaultLandingPage();
@@ -1872,13 +1885,13 @@ $('#authSubmit').onclick=async()=>{try{
   ?await db.auth.signUp({email,password,options:{data:{first_name:firstName,last_name:lastName,display_name:`${firstName} ${lastName}`.trim()}}})
   :await db.auth.signInWithPassword({email,password});
  if(r.error)throw r.error;
- msg($('#authMsg'),creating?'Registrazione inviata. Dopo l’eventuale conferma email, attendi l’approvazione dell’Admin.':'Accesso effettuato.',true);
- await refreshUser();if(hasSiteAccess()){await loadAll();openRequestedPage()}else go('login');
+ msg($('#authMsg'),creating?'Registrazione inviata. Dopo l’eventuale conferma email puoi entrare come Ospite. Se sei un pilota SRT, l’Admin ti assocerà al tuo profilo.':'Accesso effettuato.',true);
+ await refreshUser();if(canBrowseSite()){await loadAll();openRequestedPage()}else go('login');
 }catch(e){msg($('#authMsg'),e.message)}};
 
 $('#refreshAccountBtn').onclick=async()=>{
  await refreshUser();
- if(hasSiteAccess()){await loadAll();openRequestedPage()}
+ if(canBrowseSite()){await loadAll();openRequestedPage()}
 };
 
 $('#forgotPasswordBtn').onclick=async()=>{
@@ -1940,16 +1953,16 @@ async function refreshUser(){
  if(user){const{data,error}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();if(error)console.error('Profilo:',error);state.profile=data||{id:user.id,email:user.email,first_name:user.user_metadata?.first_name||'',last_name:user.user_metadata?.last_name||'',display_name:user.user_metadata?.display_name||user.email?.split('@')[0]||'Pilota',role:'driver',driver_id:null,account_status:'pending'}}
  const role=currentRole();
  const status=profileStatus(),approved=hasSiteAccess();
- $('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':approved?' • Pilota':status==='blocked'?' • Bloccato':' • In attesa'):'Ospite';
+ $('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':approved?' • Pilota':status==='blocked'?' • Bloccato':' • Ospite'):'Ospite';
  $('#adminNav').classList.toggle('hidden',role!=='admin');$('#logoutBtn').classList.toggle('hidden',!user);$('#topLogoutBtn').classList.toggle('hidden',!user);$('#authSubmit').classList.toggle('hidden',!!user);$('#authSwitch').classList.toggle('hidden',!!user);
  $('#authFields').classList.toggle('hidden',!!user);
  $('#refreshAccountBtn').classList.toggle('hidden',!user||approved||status==='blocked');
  $('#forgotPasswordBtn').classList.toggle('hidden',!!user||signup);
- $('#authTitle').textContent=!user?(signup?'Crea account':'Accedi'):approved?'Account approvato':status==='blocked'?'Account bloccato':'Account in attesa';
+ $('#authTitle').textContent=!user?(signup?'Crea account':'Accedi'):approved?'Account pilota':status==='blocked'?'Account bloccato':'Account ospite';
  if(user&&!approved){
    $('#authMsg').innerHTML=status==='blocked'
      ?'<div class="account-status-card blocked"><strong>Accesso bloccato</strong><br>Questo account non può entrare nel sito. Contatta l’Admin SRT.</div>'
-     :'<div class="account-status-card pending"><strong>Registrazione ricevuta</strong><br>L’Admin deve approvare il tuo account. Dopo l’approvazione premi “Controlla approvazione”.</div>';
+     :'<div class="account-status-card pending"><strong>Accesso ospite attivo</strong><br>Puoi consultare Classifiche, Calendario e Hall of Fame. Se sei un pilota SRT, l’Admin ti assocerà al tuo profilo personale. Dopo l’associazione puoi premere “Aggiorna account”.</div>';
  }else if($('#authMsg .account-status-card'))$('#authMsg').innerHTML='';
  applyAccessControl();
  syncOneSignalIdentity();
@@ -1964,7 +1977,7 @@ db.auth.onAuthStateChange((event,session)=>{
   const{data:{session}}=await db.auth.getSession();
   if(session&&$('#passwordRecoveryModal').classList.contains('hidden'))openPasswordRecovery(session);
  }
- if(hasSiteAccess()){await loadAll();openRequestedPage()}
+ if(canBrowseSite()){await loadAll();openRequestedPage()}
  if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
 })();
 </script>
@@ -2739,7 +2752,7 @@ db.auth.onAuthStateChange((event,session)=>{
 })();
 
 </script>
-  <script>
+<script>
 (() => {
   const PHOTO_CONSENT_VERSION = 'SRT-FOTO-2026-V1';
 
@@ -3022,6 +3035,11 @@ db.auth.onAuthStateChange((event,session)=>{
         return;
       }
 
+      // La gestione foto compare solo dopo che l'ospite è diventato Pilota SRT.
+      if (profileStatus(profile) !== 'approved' || !profile.driver_id) {
+        return;
+      }
+
       row.style.flexWrap = 'wrap';
 
       const area = document.createElement('div');
@@ -3031,10 +3049,7 @@ db.auth.onAuthStateChange((event,session)=>{
         'flex-basis:100%;width:100%;padding-top:10px;' +
         'margin-top:4px;border-top:1px solid var(--line)';
 
-      if (
-        profile.photo_consent === true &&
-        profile.driver_id
-      ) {
+      if (profile.photo_consent === true) {
         area.innerHTML = `
           <div class="row">
             <span class="account-status-pill approved">
@@ -3118,6 +3133,6 @@ db.auth.onAuthStateChange((event,session)=>{
   }, 1200);
 
 })();
-  </script>
+</script>
 </body>
 </html>
