@@ -2739,5 +2739,385 @@ db.auth.onAuthStateChange((event,session)=>{
 })();
 
 </script>
+  <script>
+(() => {
+  const PHOTO_CONSENT_VERSION = 'SRT-FOTO-2026-V1';
+
+  function consentDismissKey() {
+    return `srt-photo-consent-dismissed-${state.user?.id || 'guest'}`;
+  }
+
+  function photoConsentPending() {
+    return Boolean(
+      state.user &&
+      currentRole() === 'driver' &&
+      state.profile?.driver_id &&
+      state.profile?.photo_consent !== true
+    );
+  }
+
+  function ensurePhotoConsentModal() {
+    if (document.querySelector('#srtPhotoConsentModal')) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'srtPhotoConsentModal';
+    modal.className = 'push-modal hidden';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+
+    modal.innerHTML = `
+      <div class="card push-card">
+        <div class="push-icon">📷</div>
+
+        <h2>Foto del tuo profilo SRT</h2>
+
+        <p class="muted">
+          Per mostrare il tuo selfie nel profilo personale serve la tua
+          autorizzazione. Il consenso è facoltativo e puoi utilizzare
+          normalmente il sito anche senza accettare.
+        </p>
+
+        <label class="card"
+          style="display:flex;gap:12px;align-items:flex-start;text-align:left;margin:16px 0">
+          <input id="srtPhotoConsentCheck"
+                 type="checkbox"
+                 style="width:auto;margin-top:5px">
+
+          <span>
+            Autorizzo SRT Santena Racing Team a pubblicare una mia fotografia
+            nel mio profilo personale sul sito <strong>srtracing.it</strong>,
+            esclusivamente per attività legate al campionato SRT.
+            Posso revocare l'autorizzazione in qualsiasi momento
+            contattando l'Admin SRT.
+          </span>
+        </label>
+
+        <div id="srtPhotoConsentMsg"></div>
+
+        <div class="row" style="justify-content:center">
+          <button id="srtSavePhotoConsent"
+                  class="btn"
+                  type="button"
+                  disabled>
+            Autorizzo e salva
+          </button>
+
+          <button id="srtSkipPhotoConsent"
+                  class="btn alt"
+                  type="button">
+            Continua senza foto
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const checkbox = document.querySelector('#srtPhotoConsentCheck');
+    const saveBtn = document.querySelector('#srtSavePhotoConsent');
+    const skipBtn = document.querySelector('#srtSkipPhotoConsent');
+
+    checkbox.onchange = () => {
+      saveBtn.disabled = !checkbox.checked;
+    };
+
+    saveBtn.onclick = async () => {
+      try {
+        if (!checkbox.checked) return;
+
+        saveBtn.disabled = true;
+
+        const { error } = await db.rpc(
+          'set_my_photo_consent',
+          { p_consent: true }
+        );
+
+        if (error) throw error;
+
+        state.profile.photo_consent = true;
+        state.profile.photo_consent_at = new Date().toISOString();
+        state.profile.photo_consent_version = PHOTO_CONSENT_VERSION;
+
+        sessionStorage.removeItem(consentDismissKey());
+
+        msg(
+          document.querySelector('#srtPhotoConsentMsg'),
+          'Consenso registrato. L’Admin potrà ora caricare il tuo selfie.',
+          true
+        );
+
+        setTimeout(() => {
+          modal.classList.add('hidden');
+
+          if (typeof maybeShowPushPrompt === 'function') {
+            maybeShowPushPrompt();
+          }
+        }, 700);
+
+      } catch (error) {
+        msg(
+          document.querySelector('#srtPhotoConsentMsg'),
+          error.message
+        );
+
+        saveBtn.disabled = false;
+      }
+    };
+
+    skipBtn.onclick = () => {
+      sessionStorage.setItem(consentDismissKey(), '1');
+      modal.classList.add('hidden');
+
+      if (typeof maybeShowPushPrompt === 'function') {
+        setTimeout(maybeShowPushPrompt, 250);
+      }
+    };
+  }
+
+  function maybeShowPhotoConsent() {
+    ensurePhotoConsentModal();
+
+    const modal = document.querySelector('#srtPhotoConsentModal');
+
+    if (!photoConsentPending()) {
+      modal.classList.add('hidden');
+      return;
+    }
+
+    if (sessionStorage.getItem(consentDismissKey()) === '1') {
+      return;
+    }
+
+    document.querySelector('#pushPromptModal')
+      ?.classList.add('hidden');
+
+    const checkbox =
+      document.querySelector('#srtPhotoConsentCheck');
+
+    const button =
+      document.querySelector('#srtSavePhotoConsent');
+
+    const message =
+      document.querySelector('#srtPhotoConsentMsg');
+
+    checkbox.checked = false;
+    button.disabled = true;
+    message.innerHTML = '';
+
+    modal.classList.remove('hidden');
+  }
+
+  async function uploadSrtDriverSelfie(profileId) {
+    if (currentRole() !== 'admin') return;
+
+    const profile =
+      state.profiles.find(p => p.id === profileId);
+
+    if (!profile) {
+      msg(
+        document.querySelector('#adminMsg'),
+        'Account non trovato.'
+      );
+      return;
+    }
+
+    if (profile.photo_consent !== true) {
+      msg(
+        document.querySelector('#adminMsg'),
+        'Questo pilota non ha ancora autorizzato la pubblicazione della foto.'
+      );
+      return;
+    }
+
+    if (!profile.driver_id) {
+      msg(
+        document.querySelector('#adminMsg'),
+        'Associa prima questo account al pilota corretto.'
+      );
+      return;
+    }
+
+    const input =
+      document.querySelector(
+        `[data-srt-selfie="${profileId}"]`
+      );
+
+    const file = input?.files?.[0];
+
+    if (!file) {
+      msg(
+        document.querySelector('#adminMsg'),
+        'Scegli prima il selfie da caricare.'
+      );
+      return;
+    }
+
+    try {
+      const avatar =
+        await uploadImage(file, 'drivers');
+
+      const { error } =
+        await db
+          .from('drivers')
+          .update({ avatar })
+          .eq('id', Number(profile.driver_id));
+
+      if (error) throw error;
+
+      msg(
+        document.querySelector('#adminMsg'),
+        `Selfie di ${driverName(profile.driver_id)} caricato correttamente.`,
+        true
+      );
+
+      await loadAll();
+
+    } catch (error) {
+      msg(
+        document.querySelector('#adminMsg'),
+        'Errore caricamento selfie: ' + error.message
+      );
+    }
+  }
+
+  window.uploadSrtDriverSelfie =
+    uploadSrtDriverSelfie;
+
+  function enhanceAdminPhotoControls() {
+    if (currentRole() !== 'admin') return;
+
+    const list =
+      document.querySelector('#adminUsersList');
+
+    if (!list) return;
+
+    const users = [...state.profiles].sort((a, b) => {
+      const priority = {
+        pending: 0,
+        blocked: 1,
+        approved: 2
+      };
+
+      return (
+        (priority[profileStatus(a)] ?? 3) -
+        (priority[profileStatus(b)] ?? 3) ||
+        String(a.display_name || '')
+          .localeCompare(
+            String(b.display_name || ''),
+            'it'
+          )
+      );
+    });
+
+    const rows =
+      [...list.querySelectorAll('.user-access-row')];
+
+    rows.forEach((row, index) => {
+      row.querySelector('.srt-photo-admin')
+        ?.remove();
+
+      const profile = users[index];
+
+      if (!profile || profile.role === 'admin') {
+        return;
+      }
+
+      row.style.flexWrap = 'wrap';
+
+      const area = document.createElement('div');
+      area.className = 'srt-photo-admin';
+
+      area.style.cssText =
+        'flex-basis:100%;width:100%;padding-top:10px;' +
+        'margin-top:4px;border-top:1px solid var(--line)';
+
+      if (
+        profile.photo_consent === true &&
+        profile.driver_id
+      ) {
+        area.innerHTML = `
+          <div class="row">
+            <span class="account-status-pill approved">
+              📷 Consenso foto: SÌ
+            </span>
+
+            <input
+              data-srt-selfie="${profile.id}"
+              type="file"
+              accept="image/*"
+              style="max-width:260px"
+            >
+
+            <button
+              class="btn alt small"
+              type="button"
+              onclick="uploadSrtDriverSelfie('${profile.id}')">
+              Carica selfie
+            </button>
+          </div>
+        `;
+      } else {
+        area.innerHTML = `
+          <div class="row">
+            <span class="account-status-pill pending">
+              📷 Consenso foto: NO
+            </span>
+
+            <span class="muted">
+              Il selfie resta nascosto finché il pilota
+              non autorizza la pubblicazione.
+            </span>
+          </div>
+        `;
+      }
+
+      row.appendChild(area);
+    });
+  }
+
+  document.addEventListener(
+    'srt:data-ready',
+    () => {
+      enhanceAdminPhotoControls();
+
+      setTimeout(
+        maybeShowPhotoConsent,
+        300
+      );
+    }
+  );
+
+  db.auth.onAuthStateChange(
+    (event, session) => {
+
+      if (event === 'SIGNED_IN') {
+        if (session?.user?.id) {
+          sessionStorage.removeItem(
+            `srt-photo-consent-dismissed-${session.user.id}`
+          );
+        }
+
+        setTimeout(
+          maybeShowPhotoConsent,
+          900
+        );
+      }
+
+      if (event === 'SIGNED_OUT') {
+        document.querySelector(
+          '#srtPhotoConsentModal'
+        )?.classList.add('hidden');
+      }
+    }
+  );
+
+  setTimeout(() => {
+    ensurePhotoConsentModal();
+    enhanceAdminPhotoControls();
+    maybeShowPhotoConsent();
+  }, 1200);
+
+})();
+  </script>
 </body>
 </html>
