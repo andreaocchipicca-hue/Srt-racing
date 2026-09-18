@@ -75,6 +75,14 @@
     .user-access-row{display:flex;gap:12px;align-items:center;padding:13px;border:1px solid var(--line);border-radius:14px;background:#102039}
     .user-access-row .user-copy{min-width:0;flex:1}.user-access-row .user-copy strong,.user-access-row .user-copy span{display:block;overflow-wrap:anywhere}
     .user-access-row .user-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .backup-toolbar{display:grid;grid-template-columns:minmax(210px,1fr) auto;gap:12px;align-items:end;margin:14px 0}
+    .backup-toolbar .row{justify-content:flex-end}
+    .backup-list{display:grid;gap:10px;margin-top:14px}
+    .backup-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:14px;background:#102039}
+    .backup-copy{min-width:0}.backup-copy strong{display:block;overflow-wrap:anywhere}.backup-meta{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:6px;color:var(--muted);font-size:12px}
+    .backup-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.backup-actions .btn{white-space:nowrap}
+    .backup-reason{display:inline-flex;align-items:center;padding:4px 7px;border-radius:999px;background:#1b304b;border:1px solid var(--line);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.45px;color:#bcd0e4}
+    .backup-reason.delete{background:#35171c;border-color:#733038;color:#ffc4c7}.backup-reason.restore{background:#2b2410;border-color:#806724;color:#ffe59a}
     .recovery-overlay{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:18px;background:rgba(3,9,18,.86);backdrop-filter:blur(10px)}
     .recovery-overlay .auth{width:min(100%,520px)}
     .notice{padding:12px;border-radius:11px;background:#251317;border:1px solid #5c2429;color:#ffc4c7;margin:10px 0}.notice.success{background:#102619;border-color:#245d38;color:#baf3c8}
@@ -84,7 +92,7 @@
     .coming{border:1px dashed #4a4a59;background:rgba(255,255,255,.02)}
     footer{text-align:center;color:#91a6bd;padding:28px 12px 36px;font-size:12px}
     @media(max-width:800px){.hero{grid-template-columns:105px 1fr;min-height:auto;padding:18px;gap:16px}.hero h1{font-size:36px;letter-spacing:-1px}.hero p{font-size:14px}.grid,.grid.two,.stats-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}main{padding:12px}.topbar{padding:10px 12px}.brand-logo{width:45px;height:45px}}
-    @media(max-width:620px){.user-access-row{align-items:flex-start;flex-direction:column}.user-access-row .user-actions{width:100%;justify-content:flex-start}.user-access-row .user-actions .btn{flex:1}}
+    @media(max-width:620px){.user-access-row{align-items:flex-start;flex-direction:column}.user-access-row .user-actions{width:100%;justify-content:flex-start}.user-access-row .user-actions .btn{flex:1}.backup-toolbar{grid-template-columns:1fr}.backup-toolbar .row{justify-content:flex-start}.backup-toolbar .row .btn{flex:1 1 140px}.backup-row{grid-template-columns:1fr}.backup-actions{justify-content:flex-start}.backup-actions .btn{flex:1}}
 
     .race-control-toolbar{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
     .race-control-list{display:grid;gap:10px;margin-top:14px}
@@ -436,7 +444,7 @@
   <div class="section-head"><div><h2>Pannello Admin</h2><p>Gestisci la Stagione 2026-2027 direttamente dal telefono.</p></div><div class="grow"></div><button class="btn alt small" onclick="loadAll()">Aggiorna dati</button></div>
   <div id="adminMsg"></div>
   <div class="admin-tabs">
-    <button data-admin="dashboardPane" class="active">Dashboard</button><button data-admin="usersPane">Utenti <span id="pendingAccountsTabCount" class="account-status-pill pending hidden">0</span></button><button data-admin="settingsPane">Impostazioni</button><button data-admin="scoringPane">Punteggi</button>
+    <button data-admin="dashboardPane" class="active">Dashboard</button><button data-admin="usersPane">Utenti <span id="pendingAccountsTabCount" class="account-status-pill pending hidden">0</span></button><button data-admin="backupPane">Backup e Cestino</button><button data-admin="settingsPane">Impostazioni</button><button data-admin="scoringPane">Punteggi</button>
     <button data-admin="teamPane">Scuderie</button>
     <button data-admin="newsPane">News</button><button data-admin="regulationsPane">Regolamento</button><button data-admin="disciplinePane">Disciplina</button>
     <button data-admin="driverPane">Piloti</button>
@@ -475,6 +483,26 @@
     </div>
     <div class="notice" style="margin-top:14px">I nuovi iscritti non possono vedere il sito finché non premi <strong>Approva</strong>. Il tuo account Admin non può essere bloccato da questa schermata.</div>
     <div id="adminUsersList" class="user-access-list"></div>
+  </div>
+
+  <div id="backupPane" class="admin-pane card">
+    <div class="section-head">
+      <div><h3>Backup e Cestino</h3><p>Salva, esporta o ripristina l’intero campionato in sicurezza.</p></div>
+      <div class="grow"></div><span class="account-status-pill approved">Protezione attiva</span>
+    </div>
+    <div class="stats-grid">
+      <div class="card stat-card"><div class="big" id="adminBackupCount">0</div><div class="caption">Backup disponibili</div></div>
+      <div class="card stat-card"><div class="big" id="adminAutomaticBackupCount">0</div><div class="caption">Automatici</div></div>
+      <div class="card stat-card"><div class="big" id="adminLastBackupDate">—</div><div class="caption">Ultimo backup</div></div>
+      <div class="card stat-card"><div class="big">50</div><div class="caption">Massimo conservato</div></div>
+    </div>
+    <div class="backup-toolbar">
+      <div class="field"><label>Nome del backup manuale</label><input id="manualBackupLabel" maxlength="160" placeholder="Esempio: Prima del GP del Giappone"></div>
+      <div class="row"><button class="btn" type="button" id="createBackupBtn">Crea backup ora</button><button class="btn alt" type="button" id="exportBackupBtn">Esporta JSON</button><input id="importBackupFile" class="hidden" type="file" accept="application/json,.json"><button class="btn alt" type="button" id="importBackupBtn">Importa JSON</button><button class="btn alt" type="button" id="refreshBackupsBtn">Aggiorna</button></div>
+    </div>
+    <div class="notice success"><strong>Cestino automatico attivo.</strong> Prima di cancellare o modificare dati importanti il sito crea una copia completa. “Ripristina” riporta tutto il campionato a quel momento e crea prima un ulteriore backup di sicurezza. Account, password e approvazioni utenti non vengono modificati.</div>
+    <div id="backupFeatureUnavailable" class="notice hidden"><strong>Funzione non ancora attiva.</strong> Esegui prima l’SQL V9 nel SQL Editor di Supabase.</div>
+    <div id="adminBackupList" class="backup-list"></div>
   </div>
 
   <div id="settingsPane" class="admin-pane card">
@@ -693,7 +721,7 @@ const SUPABASE_URL="https://flatqxvqjkcxypwlgujs.supabase.co";
 const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const recoveryUrlDetected=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery'||new URLSearchParams(location.search).get('type')==='recovery';
-let state={teams:[],drivers:[],races:[],results:[],entries:[],news:[],profiles:[],regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null,attendanceRaceId:null,archiveRaceId:null};
+let state={teams:[],drivers:[],races:[],results:[],entries:[],news:[],profiles:[],backups:[],backupsAvailable:true,regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null,attendanceRaceId:null,archiveRaceId:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -829,6 +857,7 @@ async function saveAttendance(){
   const combined=[...state.entries.filter(x=>x.race_id!=race.id),...payload];
   const overLimit=state.drivers.find(d=>!d.is_wild&&combined.filter(x=>x.driver_id==d.id&&x.status==='absent').length>3);
   if(overLimit)throw new Error(`${driverName(overLimit.id)} supererebbe il limite massimo di 3 assenze.`);
+  await createSafetyBackup(`Prima di modificare i convocati • ${race.name}`,'attendance',race.id);
   const saved=await db.from('race_entries').upsert(payload,{onConflict:'race_id,driver_id'});if(saved.error)throw saved.error;
   const updates=state.drivers.filter(d=>!d.is_wild).map(d=>db.from('drivers').update({absences:combined.filter(x=>x.driver_id==d.id&&x.status==='absent').length}).eq('id',d.id));
   const results=await Promise.all(updates);const failed=results.find(x=>x.error);if(failed)throw failed.error;
@@ -890,10 +919,103 @@ async function setAccountStatus(id,status){
 }
 window.setAccountStatus=setAccountStatus;
 
+const BACKUP_REASON_LABELS={
+ manual:'Manuale',export:'Esportazione',import:'Importato',pre_restore:'Prima del ripristino',
+ delete_team:'Cestino scuderia',delete_driver:'Cestino pilota',delete_race:'Cestino GP',delete_news:'Cestino news',
+ race_publish:'Prima della pubblicazione',race_draft:'Prima della bozza',race_cancel:'Prima dell’annullamento',
+ attendance:'Prima dei convocati',scoring:'Prima dei punteggi',settings:'Prima delle impostazioni',
+ regulations:'Prima del regolamento',driver_update:'Prima della modifica pilota',
+ standings_rebuild:'Prima del ricalcolo',close_season:'Prima della chiusura',
+ discipline_warning:'Prima del warning',discipline_license:'Prima della patente'
+};
+function backupReasonLabel(reason){return BACKUP_REASON_LABELS[reason]||String(reason||'Automatico').replaceAll('_',' ')}
+function backupReasonClass(reason){return String(reason||'').startsWith('delete_')?'delete':reason==='pre_restore'?'restore':''}
+function backupDate(value,withTime=true){
+ if(!value)return '—';
+ const d=new Date(value);if(Number.isNaN(d.getTime()))return '—';
+ return new Intl.DateTimeFormat('it-IT',withTime?{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}:{day:'2-digit',month:'2-digit'}).format(d);
+}
+function renderAdminBackups(){
+ const list=$('#adminBackupList');if(!list)return;
+ const available=Boolean(state.backupsAvailable),rows=state.backups||[];
+ $('#backupFeatureUnavailable').classList.toggle('hidden',available);
+ ['createBackupBtn','exportBackupBtn','importBackupBtn'].forEach(id=>{$('#'+id).disabled=!available});
+ $('#adminBackupCount').textContent=rows.length;
+ $('#adminAutomaticBackupCount').textContent=rows.filter(x=>!['manual','export','import'].includes(x.reason)).length;
+ $('#adminLastBackupDate').textContent=rows[0]?backupDate(rows[0].created_at,false):'—';
+ if(!available){list.innerHTML='<div class="empty"><strong>Backup non disponibili</strong>Dopo aver eseguito l’SQL V9 compariranno qui.</div>';return}
+ list.innerHTML=rows.map(row=>`<div class="backup-row"><div class="backup-copy"><strong>${esc(row.label||'Backup campionato')}</strong><div class="backup-meta"><span class="backup-reason ${backupReasonClass(row.reason)}">${esc(backupReasonLabel(row.reason))}</span><span>${esc(backupDate(row.created_at))}</span>${row.race_id?`<span>GP #${Number(row.race_id)}</span>`:''}</div></div><div class="backup-actions"><button class="btn small" type="button" onclick="restoreBackup(${Number(row.id)})">Ripristina</button><button class="btn alt small" type="button" onclick="downloadBackup(${Number(row.id)})">Scarica JSON</button><button class="btn danger small" type="button" onclick="deleteBackup(${Number(row.id)})">Elimina</button></div></div>`).join('')||'<div class="empty"><strong>Nessun backup</strong>Creane uno manuale oppure continua a usare il gestionale: le copie automatiche appariranno qui.</div>';
+}
+async function createSafetyBackup(label,reason='manual',raceId=null){
+ if(currentRole()!=='admin')throw new Error('Operazione riservata all’Admin.');
+ if(!state.backupsAvailable)throw new Error('Backup non attivi: esegui prima l’SQL V9 nel SQL Editor di Supabase.');
+ const {data,error}=await db.rpc('create_championship_backup',{p_label:label,p_reason:reason,p_race_id:raceId});
+ if(error)throw new Error('Backup non creato: '+error.message);
+ return Number(data);
+}
+function backupFileName(row){
+ const clean=String(row?.label||'campionato').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,55).toLowerCase()||'campionato';
+ const stamp=new Date(row?.created_at||Date.now()).toISOString().replace(/[:.]/g,'-');
+ return `srt-backup-${clean}-${stamp}.json`;
+}
+async function downloadBackup(id,{silent=false}={}){
+ try{
+  const {data,error}=await db.from('admin_backups').select('id,label,reason,created_at,snapshot').eq('id',id).single();
+  if(error)throw error;
+  const payload={id:data.id,label:data.label,reason:data.reason,created_at:data.created_at,...data.snapshot};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=backupFileName(data);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+  if(!silent)msg($('#adminMsg'),'Backup JSON scaricato.',true);
+ }catch(e){msg($('#adminMsg'),'Download non riuscito: '+e.message)}
+}
+async function createManualBackup(){
+ const button=$('#createBackupBtn'),old=button.textContent;button.disabled=true;button.textContent='Creazione…';
+ try{
+  const custom=$('#manualBackupLabel').value.trim(),label=custom||`Backup manuale • ${backupDate(new Date().toISOString())}`;
+  await createSafetyBackup(label,'manual',null);$('#manualBackupLabel').value='';await loadAll();msg($('#adminMsg'),'Backup completo creato.',true);
+ }catch(e){msg($('#adminMsg'),e.message)}finally{button.disabled=!state.backupsAvailable;button.textContent=old}
+}
+async function exportCurrentBackup(){
+ const button=$('#exportBackupBtn'),old=button.textContent;button.disabled=true;button.textContent='Preparazione…';
+ try{
+  const id=await createSafetyBackup(`Esportazione completa • ${backupDate(new Date().toISOString())}`,'export',null);
+  await downloadBackup(id,{silent:true});await loadAll();msg($('#adminMsg'),'Esportazione completa scaricata in formato JSON.',true);
+ }catch(e){msg($('#adminMsg'),e.message)}finally{button.disabled=!state.backupsAvailable;button.textContent=old}
+}
+async function importBackupFile(file){
+ const button=$('#importBackupBtn'),old=button.textContent;button.disabled=true;button.textContent='Importazione…';
+ try{
+  if(!file)throw new Error('Seleziona un file JSON.');
+  const parsed=JSON.parse(await file.text()),snapshot=parsed?.snapshot||parsed;
+  if(snapshot?.format!=='srt-championship-backup'||Number(snapshot?.version)!==1||!snapshot?.tables)throw new Error('Il file scelto non è un backup SRT valido.');
+  const label=`Importato: ${parsed?.label||file.name||'Backup SRT'}`;
+  const {error}=await db.rpc('import_championship_backup',{p_label:label,p_snapshot:snapshot});if(error)throw error;
+  await loadAll();msg($('#adminMsg'),'Backup importato. Ora puoi controllarlo e premere Ripristina quando vuoi.',true);
+ }catch(e){msg($('#adminMsg'),'Importazione non riuscita: '+e.message)}finally{$('#importBackupFile').value='';button.disabled=!state.backupsAvailable;button.textContent=old}
+}
+async function restoreBackup(id){
+ const row=state.backups.find(x=>Number(x.id)===Number(id));if(!row)return;
+ if(!confirm(`Ripristinare “${row.label}”?\n\nTutto il campionato tornerà allo stato del ${backupDate(row.created_at)}. Prima verrà creato automaticamente un backup di sicurezza dello stato attuale.`))return;
+ try{
+  msg($('#adminMsg'),'Ripristino in corso…');
+  const {data,error}=await db.rpc('restore_championship_backup',{p_backup_id:Number(id)});if(error)throw error;
+  await loadAll();msg($('#adminMsg'),`Ripristino completato. È stato creato anche il backup di sicurezza #${Number(data)}.`,true);
+ }catch(e){msg($('#adminMsg'),'Ripristino non riuscito: '+e.message)}
+}
+async function deleteBackup(id){
+ const row=state.backups.find(x=>Number(x.id)===Number(id));if(!row)return;
+ if(!confirm(`Eliminare definitivamente il backup “${row.label}”? Questa copia non potrà più essere ripristinata.`))return;
+ const {error}=await db.from('admin_backups').delete().eq('id',Number(id));
+ if(error){msg($('#adminMsg'),'Eliminazione non riuscita: '+error.message);return}
+ await loadAll();msg($('#adminMsg'),'Backup eliminato.',true);
+}
+window.restoreBackup=restoreBackup;window.downloadBackup=downloadBackup;window.deleteBackup=deleteBackup;
+
 async function loadAll(){
  try{
   const profilesRequest=currentRole()==='admin'?db.from('profiles').select('*').order('created_at',{ascending:false}):Promise.resolve({data:[],error:null});
-  const [se,te,dr,ra,re,en,ne,cs,rg,sc,di,hf,sh,pr]=await Promise.all([
+  const backupsRequest=currentRole()==='admin'?db.from('admin_backups').select('id,label,reason,race_id,created_by,created_at').order('created_at',{ascending:false}).limit(50):Promise.resolve({data:[],error:null});
+  const [se,te,dr,ra,re,en,ne,cs,rg,sc,di,hf,sh,pr,bk]=await Promise.all([
    db.from('seasons').select('*').eq('is_active',true).limit(1).maybeSingle(),
    db.from('teams').select('*').order('name'),
    db.from('drivers').select('*').order('name'),
@@ -907,11 +1029,13 @@ async function loadAll(){
    db.from('discipline_events').select('*').order('created_at',{ascending:false}),
    db.from('hall_of_fame').select('*').order('season_name',{ascending:false}),
    db.from('standings_history').select('*').order('round'),
-   profilesRequest
+   profilesRequest,
+   backupsRequest
   ]);
   for(const x of [se,te,dr,ra,re,ne,cs,rg,sc,di,hf,sh,pr])if(x.error)throw x.error;
   if(en.error)console.warn('Convocati non ancora attivati:',en.error.message);
-  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.entries=en.error?[]:(en.data||[]);state.news=ne.data||[];state.profiles=pr.data||[];state.settings=cs.data||null;state.regulations=rg.data||null;state.scoring=sc.data||null;state.discipline=di.data||[];state.hallOfFame=hf.data||[];state.standingsHistory=sh.data||[];
+  if(bk.error)console.warn('Backup V9 non ancora attivati:',bk.error.message);
+  state.season=se.data;state.teams=te.data||[];state.drivers=dr.data||[];state.races=ra.data||[];state.results=re.data||[];state.entries=en.error?[]:(en.data||[]);state.news=ne.data||[];state.profiles=pr.data||[];state.backups=bk.error?[]:(bk.data||[]);state.backupsAvailable=!bk.error;state.settings=cs.data||null;state.regulations=rg.data||null;state.scoring=sc.data||null;state.discipline=di.data||[];state.hallOfFame=hf.data||[];state.standingsHistory=sh.data||[];
   render();
  }catch(e){console.error(e);msg($('#adminMsg'),'Errore caricamento: '+e.message)}
 }
@@ -1020,7 +1144,7 @@ function render(){
  $('#adminCountTeams').textContent=state.teams.length;
  $('#adminCountRaces').textContent=state.races.length;
  $('#adminCountNews').textContent=state.news.length;
- if(currentRole()==='admin')renderAdminUsers();
+ if(currentRole()==='admin'){renderAdminUsers();renderAdminBackups()}
  $('#adminSeasonState').innerHTML=`<strong>${esc(s.season_name||'Stagione 2026-2027')}</strong><br>${esc(s.status||'Preparazione')} • ${s.registration_open===false?'Iscrizioni chiuse':'Iscrizioni aperte'}`;
  $('#adminLastActivity').textContent=state.news[0]?`Ultima news: ${state.news[0].title}`:'Nessuna attività registrata.';
  if(state.regulations){
@@ -1106,7 +1230,16 @@ function render(){
 }
 function adminList(items,type){return items.map(x=>{let content;if(type==='race')content=`<strong>Round ${esc(x.round)} • ${esc(x.name)}</strong><br><span class="muted">${fmtDate(x.race_date)} • ${esc(x.circuit)}</span>`;else if(type==='driver'){const role=x.is_wild?'WILD':x.status==='suspended'?'SOSPESO':x.status==='reserve'?'RISERVA':'UFFICIALE';content=`<strong>${esc(driverName(x.id))}</strong> <span class="chip">${role}</span><br><span class="muted">EA ID: ${esc(x.ea_id||'—')} • ${esc(teamName(x.team_id))}</span>`}else content=esc(x.name||x.title||(x.round+' - '+x.circuit));return `<div class="admin-item"><span class="grow">${content}</span><button class="btn danger small" onclick="delItem('${type}',${x.id})">Elimina</button></div>`}).join('')}
 const tableMap={team:'teams',driver:'drivers',race:'races',news:'news'};
-async function delItem(type,id){if(!confirm('Eliminare definitivamente?'))return;const{error}=await db.from(tableMap[type]).delete().eq('id',id);if(error)alert(error.message);else loadAll()}window.delItem=delItem;
+const stateListMap={team:'teams',driver:'drivers',race:'races',news:'news'};
+async function delItem(type,id){
+ const item=(state[stateListMap[type]]||[]).find(x=>x.id==id),name=type==='driver'?driverName(id):(item?.name||item?.title||`elemento #${id}`);
+ if(!confirm(`Eliminare “${name}”? Prima della cancellazione verrà creato automaticamente un backup recuperabile.`))return;
+ try{
+  await createSafetyBackup(`Cestino: prima di eliminare ${name}`,`delete_${type}`,type==='race'?Number(id):null);
+  const{error}=await db.from(tableMap[type]).delete().eq('id',id);if(error)throw error;
+  await loadAll();msg($('#adminMsg'),`“${name}” eliminato. Puoi recuperarlo dal pannello Backup e Cestino.`,true);
+ }catch(e){msg($('#adminMsg'),e.message)}
+}window.delItem=delItem;
 async function insertForm(form,table,transform=x=>x){const o=Object.fromEntries(new FormData(form));const{error}=await db.from(table).insert(transform(o,form));if(error)throw error;form.reset();await loadAll()}
 
 
@@ -1156,6 +1289,7 @@ $('#scoringForm').onsubmit=async e=>{
      attendance_bonus:Number(f.attendance_bonus.value||0),
      dnf_keeps_points:f.dnf_keeps_points.value==='true'
    };
+   await createSafetyBackup('Prima di modificare il sistema punti','scoring',null);
    const q=state.scoring?.id
      ? await db.from('scoring_settings').update(payload).eq('id',state.scoring.id)
      : await db.from('scoring_settings').insert(payload);
@@ -1165,25 +1299,31 @@ $('#scoringForm').onsubmit=async e=>{
  }catch(x){msg($('#adminMsg'),x.message)}
 };
 
-$('#settingsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));const p={championship_name:o.championship_name,season_name:o.season_name,game_name:o.game_name,race_day:o.race_day,race_time:o.race_time||null,race_length:o.race_length,platform:o.platform,required_level:Number(o.required_level||100),status:o.status,registration_open:o.registration_open==='true',description:o.description,updated_at:new Date().toISOString()};let q=state.settings?.id?await db.from('championship_settings').update(p).eq('id',state.settings.id):await db.from('championship_settings').insert(p);if(q.error)throw q.error;msg($('#adminMsg'),'Impostazioni salvate.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#settingsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));const p={championship_name:o.championship_name,season_name:o.season_name,game_name:o.game_name,race_day:o.race_day,race_time:o.race_time||null,race_length:o.race_length,platform:o.platform,required_level:Number(o.required_level||100),status:o.status,registration_open:o.registration_open==='true',description:o.description,updated_at:new Date().toISOString()};await createSafetyBackup('Prima di modificare le impostazioni del campionato','settings',null);let q=state.settings?.id?await db.from('championship_settings').update(p).eq('id',state.settings.id):await db.from('championship_settings').insert(p);if(q.error)throw q.error;msg($('#adminMsg'),'Impostazioni salvate.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 $('#teamForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f));o.logo=await uploadImage($('#teamLogoFile').files[0],'teams');const{error}=await db.from('teams').insert(o);if(error)throw error;f.reset();await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 $('#newsForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Object.fromEntries(new FormData(f));o.image=await uploadImage($('#newsImageFile').files[0],'news');const{error}=await db.from('news').insert(o);if(error)throw error;f.reset();await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 
-$('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));let q=state.regulations?.id?await db.from('regulations').update({...o,updated_at:new Date().toISOString()}).eq('id',state.regulations.id):await db.from('regulations').insert(o);if(q.error)throw q.error;msg($('#adminMsg'),'Regolamento salvato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));await createSafetyBackup('Prima di modificare il regolamento','regulations',null);let q=state.regulations?.id?await db.from('regulations').update({...o,updated_at:new Date().toISOString()}).eq('id',state.regulations.id):await db.from('regulations').insert(o);if(q.error)throw q.error;msg($('#adminMsg'),'Regolamento salvato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 const createDriverMode=$('#driverForm [name="driver_mode"]'),createDriverTeam=$('#driverForm [name="team_id"]');
 const syncCreateDriverMode=()=>{createDriverTeam.disabled=createDriverMode.value==='wild'};createDriverMode.onchange=syncCreateDriverMode;syncCreateDriverMode();
 $('#driverForm').onsubmit=async e=>{e.preventDefault();try{await insertForm(e.target,'drivers',o=>{const mode=o.driver_mode,teamId=Number(o.team_id)||null;if(mode==='official'&&!teamId)throw new Error('Scegli la scuderia del pilota ufficiale.');const{driver_mode,...driver}=o;return{...driver,level:Number(o.level||100),team_id:mode==='wild'?null:teamId,status:mode==='suspended'?'suspended':mode==='official'?'active':'reserve',is_wild:mode==='wild'}});syncCreateDriverMode()}catch(x){msg($('#adminMsg'),x.message)}};
-$('#absenceForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target)),absences=Number(o.absences),mode=o.driver_mode,teamId=Number(o.team_id)||null;if(!Number.isInteger(absences)||absences<0||absences>3)throw new Error('Le assenze devono essere comprese tra 0 e 3.');if(mode==='official'&&!teamId)throw new Error('Scegli la scuderia del pilota ufficiale.');const changes={absences,is_wild:mode==='wild',status:mode==='suspended'?'suspended':mode==='official'?'active':'reserve',team_id:mode==='wild'?null:teamId};const{error}=await db.from('drivers').update(changes).eq('id',Number(o.driver_id));if(error)throw error;msg($('#adminMsg'),mode==='wild'?'Pilota trasformato in Wild.':mode==='reserve'?'Pilota impostato come riserva.':mode==='suspended'?'Pilota sospeso senza cancellare lo storico.':'Pilota ufficiale aggiornato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
+$('#absenceForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target)),absences=Number(o.absences),mode=o.driver_mode,teamId=Number(o.team_id)||null;if(!Number.isInteger(absences)||absences<0||absences>3)throw new Error('Le assenze devono essere comprese tra 0 e 3.');if(mode==='official'&&!teamId)throw new Error('Scegli la scuderia del pilota ufficiale.');const driverId=Number(o.driver_id),changes={absences,is_wild:mode==='wild',status:mode==='suspended'?'suspended':mode==='official'?'active':'reserve',team_id:mode==='wild'?null:teamId};await createSafetyBackup(`Prima di modificare il pilota ${driverName(driverId)}`,'driver_update',null);const{error}=await db.from('drivers').update(changes).eq('id',driverId);if(error)throw error;msg($('#adminMsg'),mode==='wild'?'Pilota trasformato in Wild.':mode==='reserve'?'Pilota impostato come riserva.':mode==='suspended'?'Pilota sospeso senza cancellare lo storico.':'Pilota ufficiale aggiornato.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 $('#raceForm').onsubmit=async e=>{e.preventDefault();try{if(!state.season)throw new Error('Nessuna stagione attiva');const o=Object.fromEntries(new FormData(e.target)),round=Number(o.round);if(state.races.some(r=>Number(r.round)===round))throw new Error(`Il Round ${round} esiste già nel calendario.`);await insertForm(e.target,'races',x=>({...x,round,season_id:state.season.id,race_time:x.race_time||null}))}catch(x){msg($('#adminMsg'),x.message)}};
 $('#attendanceRace').addEventListener('change',e=>{state.attendanceRaceId=Number(e.target.value)||null;renderAttendance()});
 $('#saveAttendanceBtn').onclick=saveAttendance;
+$('#createBackupBtn').onclick=createManualBackup;
+$('#exportBackupBtn').onclick=exportCurrentBackup;
+$('#importBackupBtn').onclick=()=>$('#importBackupFile').click();
+$('#importBackupFile').onchange=e=>importBackupFile(e.target.files?.[0]);
+$('#refreshBackupsBtn').onclick=loadAll;
 
 
 
-async function rebuildStandingsHistory(showMessage=true){
+async function rebuildStandingsHistory(showMessage=true,protectCurrentState=false){
  try{
   if(!state.profile || state.profile.role!=='admin')throw new Error('Operazione riservata all’Admin.');
   if(!state.season)throw new Error('Nessuna stagione attiva.');
+  if(protectCurrentState)await createSafetyBackup('Prima di ricostruire il movimento classifica','standings_rebuild',null);
 
   const publishedRaces=[...state.races]
    .filter(r=>r.results_status==='published' || state.results.some(x=>x.race_id==r.id && x.is_published===true))
@@ -1431,6 +1571,7 @@ async function saveRaceControl(isPublished){
  try{
    const race=selectedRace();
    const payload=collectRaceControlResults(isPublished);
+   await createSafetyBackup(`${isPublished?'Prima di pubblicare':'Prima di salvare la bozza di'} ${race.name}`,isPublished?'race_publish':'race_draft',race.id);
    const {error}=await db.from('race_results').upsert(payload,{onConflict:'race_id,driver_id'});
    if(error)throw error;
 
@@ -1456,31 +1597,32 @@ async function saveRaceControl(isPublished){
 async function cancelRaceControl(){
  const race=selectedRace();
  if(!race)return;
- if(!confirm(`Annullare tutti i risultati di ${race.name}?`))return;
- const del=await db.from('race_results').delete().eq('race_id',race.id);
- if(del.error){msg($('#adminMsg'),del.error.message);return}
- const upd=await db.from('races').update({results_status:'empty',result_notes:null,published_at:null,status:'upcoming'}).eq('id',race.id);
- if(upd.error){msg($('#adminMsg'),upd.error.message);return}
- await loadAll();
- await rebuildStandingsHistory(false);
- msg($('#adminMsg'),'GP annullato. Risultati eliminati e movimento classifica ricalcolato.',true);
+ if(!confirm(`Annullare tutti i risultati di ${race.name}? Prima verrà creato un backup recuperabile.`))return;
+ try{
+  await createSafetyBackup(`Prima di annullare ${race.name}`,'race_cancel',race.id);
+  const del=await db.from('race_results').delete().eq('race_id',race.id);if(del.error)throw del.error;
+  const upd=await db.from('races').update({results_status:'empty',result_notes:null,published_at:null,status:'upcoming'}).eq('id',race.id);if(upd.error)throw upd.error;
+  await loadAll();await rebuildStandingsHistory(false);
+  msg($('#adminMsg'),'GP annullato. Risultati eliminati e movimento classifica ricalcolato.',true);
+ }catch(e){msg($('#adminMsg'),e.message)}
 }
 
 
-$('#rebuildStandingsBtn').onclick=()=>rebuildStandingsHistory(true);
+$('#rebuildStandingsBtn').onclick=()=>rebuildStandingsHistory(true,true);
 
 $('#closeSeasonBtn').onclick=async()=>{
  if(!confirm('Concludere la stagione e assegnare i titoli nella Hall of Fame?'))return;
  try{
   const ds=buildDriverStats(),ts=buildTeamStats(ds);
   if(!ds.length||!ds[0].points)throw new Error('Non ci sono risultati sufficienti.');
+  await createSafetyBackup('Prima di concludere la stagione','close_season',null);
   const rows=[
    {season_name:state.settings?.season_name||state.season?.name||'Season',title:'Campione Piloti',winner_name:driverName(ds[0].driver.id),details:ds[0].points+' punti'},
    {season_name:state.settings?.season_name||state.season?.name||'Season',title:'Campione Costruttori',winner_name:ts[0]?.team.name||'—',details:(ts[0]?.points||0)+' punti'},
    {season_name:state.settings?.season_name||state.season?.name||'Season',title:'Record Vittorie',winner_name:driverName([...ds].sort((a,b)=>b.wins-a.wins)[0].driver.id),details:Math.max(...ds.map(x=>x.wins))+' vittorie'}
   ];
   const q=await db.from('hall_of_fame').upsert(rows,{onConflict:'season_name,title'});if(q.error)throw q.error;
-  await db.from('championship_settings').update({status:'Conclusa',registration_open:false}).eq('id',state.settings.id);
+  const closed=await db.from('championship_settings').update({status:'Conclusa',registration_open:false}).eq('id',state.settings.id);if(closed.error)throw closed.error;
   msg($('#adminMsg'),'Stagione conclusa e Hall of Fame aggiornata.',true);await loadAll();
  }catch(x){msg($('#adminMsg'),x.message)}
 };
@@ -1517,6 +1659,7 @@ $('#warningForm').onsubmit=async e=>{
  try{
   const o=Object.fromEntries(new FormData(e.target));
   const payload={driver_id:Number(o.driver_id),race_id:o.race_id?Number(o.race_id):null,event_type:'warning',points_change:0,reason:o.reason};
+  await createSafetyBackup(`Prima del warning a ${driverName(payload.driver_id)}`,'discipline_warning',payload.race_id);
   const q=await db.from('discipline_events').insert(payload);if(q.error)throw q.error;
   msg($('#adminMsg'),'Warning aggiunto.',true);e.target.reset();await loadAll();
  }catch(x){msg($('#adminMsg'),x.message)}
@@ -1529,6 +1672,7 @@ $('#licenseForm').onsubmit=async e=>{
   if(!driver)throw new Error('Pilota non trovato.');
   const amount=Number(o.points||0),change=o.operation==='subtract'?-amount:amount;
   const newPoints=Math.min(30,Math.max(1,Number(driver.license_points??30)+change));
+  await createSafetyBackup(`Prima di modificare la patente di ${driverName(driver.id)}`,'discipline_license',o.race_id?Number(o.race_id):null);
   const upd=await db.from('drivers').update({license_points:newPoints}).eq('id',driver.id);if(upd.error)throw upd.error;
   const q=await db.from('discipline_events').insert({driver_id:driver.id,race_id:o.race_id?Number(o.race_id):null,event_type:'license',points_change:newPoints-Number(driver.license_points??30),reason:o.reason});if(q.error)throw q.error;
   msg($('#adminMsg'),'Patente aggiornata.',true);e.target.reset();await loadAll();
@@ -1634,7 +1778,7 @@ db.auth.onAuthStateChange((event,session)=>{
   if(session&&$('#passwordRecoveryModal').classList.contains('hidden'))openPasswordRecovery(session);
  }
  if(hasSiteAccess())await loadAll();
- if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js');
+ if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js?v=9-backup-cestino',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
 })();
 </script>
 <script>
