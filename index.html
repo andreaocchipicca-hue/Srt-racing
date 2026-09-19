@@ -239,6 +239,38 @@
     .calendar-card.archive-link:hover,.calendar-card.archive-link:focus-visible{transform:translateY(-2px);border-color:#e33a40;box-shadow:0 12px 28px rgba(0,0,0,.24);outline:none}
     .calendar-card .archive-hint{display:block;color:#ff8e94;margin-top:5px;font-size:10px;text-transform:uppercase;letter-spacing:.45px}
     .gp-card{scroll-margin-top:100px}
+
+    .constructor-drivers{display:grid;gap:8px;margin-top:14px}
+    .constructor-driver{display:flex;align-items:center;gap:9px;padding:9px 10px;border:1px solid var(--line);border-radius:11px;background:rgba(7,17,31,.42)}
+    .constructor-driver .number{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:color-mix(in srgb,var(--team-color,#e10600) 26%,#14243a);border:1px solid var(--team-color,#e10600);font-size:11px;font-weight:950}
+    .constructor-driver strong{display:block}
+    .constructor-driver .muted{font-size:11px}
+    .constructor-photo-state{margin-top:10px;font-size:11px;color:var(--muted)}
+    .constructor-photo-state.ready{color:#baf3c8}
+    .constructor-open-btn{width:100%;margin-top:12px}
+    .constructor-presentation{position:fixed;inset:0;z-index:140;display:grid;place-items:center;padding:18px;background:rgba(3,9,18,.9);backdrop-filter:blur(12px)}
+    .constructor-presentation.hidden{display:none!important}
+    .constructor-presentation-card{position:relative;width:min(100%,900px);max-height:92vh;overflow:auto;border:1px solid var(--line);border-radius:24px;padding:22px;background:linear-gradient(145deg,#172a43,#0e1b2d);box-shadow:var(--shadow)}
+    .constructor-presentation-card:before{content:"";position:absolute;inset:0 0 auto;height:6px;background:var(--team-color,var(--red));border-radius:24px 24px 0 0}
+    .constructor-presentation-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+    .constructor-presentation-logo{width:90px;height:58px;object-fit:contain;padding:7px;background:#fff;border-radius:12px}
+    .constructor-presentation-title{min-width:0;flex:1}
+    .constructor-presentation-title h2{margin:3px 0 4px}
+    .constructor-close{border:1px solid var(--line);background:var(--surface2);color:white;width:42px;height:42px;border-radius:12px;font-size:22px}
+    .constructor-presentation-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .constructor-pilot-card{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:#102039}
+    .constructor-pilot-photo{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;background:#0b1728}
+    .constructor-pilot-info{padding:14px}
+    .constructor-pilot-info h3{font-size:21px;margin:0 0 5px}
+    .constructor-pilot-info .eyebrow{color:#ffd6d4}
+    @media(max-width:650px){
+      .constructor-presentation-grid{grid-template-columns:1fr 1fr;gap:8px}
+      .constructor-presentation-card{padding:15px}
+      .constructor-presentation-head{align-items:flex-start}
+      .constructor-presentation-logo{width:70px;height:48px}
+      .constructor-pilot-info{padding:10px}
+      .constructor-pilot-info h3{font-size:16px}
+    }
   </style>
 </head>
 <body class="guest-mode">
@@ -508,7 +540,7 @@
       <div class="card stat-card"><div class="big" id="adminBlockedAccounts">0</div><div class="caption">Bloccati</div></div>
       <div class="card stat-card"><div class="big" id="adminTotalAccounts">0</div><div class="caption">Totali</div></div>
     </div>
-    <div class="notice" style="margin-top:14px">I nuovi iscritti entrano subito come <strong>Ospiti</strong> e possono consultare tutto il sito. Se fanno parte della lega, associa il pilota corretto e rendili <strong>Piloti SRT</strong>: la differenza è che l’Ospite non ha un pilota personale associato. Il tuo account Admin non può essere bloccato da questa schermata.</div>
+    <div class="notice" style="margin-top:14px">I nuovi iscritti entrano subito come <strong>Ospiti</strong> e possono consultare tutto il sito. Se fanno parte della lega, associa il pilota corretto e rendili <strong>Piloti SRT</strong>. Se serve fare il passo indietro, usa <strong>Rendi ospite</strong>: l’account resta attivo ma il pilota viene liberato e torna disponibile per un’altra associazione. Il tuo account Admin non può essere modificato da questa schermata.</div>
     <div id="adminUsersList" class="user-access-list"></div>
   </div>
 
@@ -1035,8 +1067,8 @@ function renderAdminUsers(){
    let actions='';
    if(self||isAdmin)actions='<span class="chip">Account Admin protetto</span>';
    else if(status==='pending')actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Associa e rendi pilota</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca</button>`;
-   else if(status==='approved')actions=`<button class="btn alt small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva dati</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca accesso</button>`;
-   else actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva e riattiva</button>`;
+   else if(status==='approved')actions=`<button class="btn alt small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva dati</button><button class="btn alt small" type="button" onclick="makeAccountGuest('${profile.id}')">Rendi ospite</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca accesso</button>`;
+   else actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva e riattiva</button><button class="btn alt small" type="button" onclick="makeAccountGuest('${profile.id}')">Rendi ospite</button>`;
    return `<div class="user-access-row"><span class="account-status-pill ${status}">${accountStatusLabel(status)}</span><div class="user-copy"><strong>${esc(profile.display_name||'Utente')}</strong><span class="muted">${esc(profile.email||'Email non disponibile')} • ${isAdmin?'Admin':status==='approved'?'Pilota':'Ospite'} • Iscritto il ${created}</span></div>${fields}<div class="user-actions">${actions}</div></div>`;
  }).join('')||'<div class="empty"><strong>Nessun account</strong>Gli utenti registrati compariranno qui.</div>';
  const notificationUser=$('#notificationUser');
@@ -1054,6 +1086,22 @@ async function setAccountStatus(id,status){
  msg($('#adminMsg'),status==='approved'?'Account approvato. Ora l’utente può entrare nel sito.':'Account bloccato.',true);
  await loadAll();
 }
+async function makeAccountGuest(id){
+ if(currentRole()!=='admin')return;
+ const profile=state.profiles.find(p=>p.id===id);
+ if(!profile||profile.id===state.user?.id||profile.role==='admin')return;
+ const linkedDriverId=Number(profile.driver_id)||null;
+ const linkedDriverName=linkedDriverId?driverName(linkedDriverId):null;
+ const accountName=profile.display_name||profile.email||'questo account';
+ const detail=linkedDriverName?` Il pilota ${linkedDriverName} verrà liberato e potrà essere associato a un altro account.`:'';
+ if(!confirm(`Rendere ${accountName} un Ospite?${detail}`))return;
+ const{error}=await db.from('profiles').update({account_status:'pending',driver_id:null}).eq('id',id);
+ if(error){msg($('#adminMsg'),'Errore account: '+error.message);return}
+ msg($('#adminMsg'),linkedDriverName?`Account riportato a Ospite. ${linkedDriverName} è di nuovo disponibile per l’associazione.`:'Account riportato a Ospite.',true);
+ await loadAll();
+}
+window.makeAccountGuest=makeAccountGuest;
+
 async function saveAccountProfile(id,status='approved'){
  if(currentRole()!=='admin')return;
  const profile=state.profiles.find(p=>p.id===id);if(!profile||profile.role==='admin')return;
@@ -1333,6 +1381,64 @@ function openRaceArchive(id){
 }
 window.openRaceArchive=openRaceArchive;
 
+function ensureConstructorPresentationModal(){
+ if(document.querySelector('#constructorPresentationModal'))return;
+ const modal=document.createElement('div');
+ modal.id='constructorPresentationModal';
+ modal.className='constructor-presentation hidden';
+ modal.setAttribute('role','dialog');
+ modal.setAttribute('aria-modal','true');
+ modal.innerHTML=`<div class="constructor-presentation-card" id="constructorPresentationCard">
+   <div id="constructorPresentationContent"></div>
+  </div>`;
+ modal.addEventListener('click',event=>{if(event.target===modal)closeConstructorPresentation()});
+ document.body.appendChild(modal);
+}
+function closeConstructorPresentation(){
+ document.querySelector('#constructorPresentationModal')?.classList.add('hidden');
+}
+function openConstructorPresentation(teamId){
+ ensureConstructorPresentationModal();
+ const team=state.teams.find(t=>Number(t.id)===Number(teamId));
+ if(!team)return;
+ const pilots=state.drivers.filter(d=>Number(d.team_id)===Number(teamId)&&!d.is_wild&&d.status!=='suspended'&&d.status!=='reserve').slice(0,2);
+ if(pilots.length!==2||!pilots.every(d=>Boolean(d.avatar))){
+   alert('La presentazione fotografica sarà disponibile quando entrambi i piloti avranno autorizzato la foto e l’Admin avrà caricato i selfie.');
+   return;
+ }
+ const logo=teamLogoUrl(team);
+ const logoHtml=logo
+   ?`<img class="constructor-presentation-logo" src="${esc(logo)}" alt="${esc(team.name)}" onerror="this.src='icon-192.png'">`
+   :`<img class="constructor-presentation-logo" src="icon-192.png" alt="SRT">`;
+ document.querySelector('#constructorPresentationCard').style.setProperty('--team-color',team.color||'#e10600');
+ document.querySelector('#constructorPresentationContent').innerHTML=`
+   <div class="constructor-presentation-head">
+     ${logoHtml}
+     <div class="constructor-presentation-title">
+       <div class="eyebrow">SRT • Piloti ufficiali</div>
+       <h2>${esc(team.name)}</h2>
+       <div class="muted">Presentazione della coppia piloti</div>
+     </div>
+     <button class="constructor-close" type="button" aria-label="Chiudi" onclick="closeConstructorPresentation()">×</button>
+   </div>
+   <div class="constructor-presentation-grid">
+     ${pilots.map((d,index)=>`
+       <article class="constructor-pilot-card">
+         <img class="constructor-pilot-photo" src="${esc(d.avatar)}" alt="${esc(driverName(d.id))}" onerror="this.src='icon-512.png'">
+         <div class="constructor-pilot-info">
+           <div class="eyebrow">Pilota ${index+1}</div>
+           <h3>${esc(driverName(d.id))}</h3>
+           <div class="muted">EA ID: ${esc(d.ea_id||'—')}</div>
+         </div>
+       </article>
+     `).join('')}
+   </div>`;
+ document.querySelector('#constructorPresentationModal').classList.remove('hidden');
+}
+window.openConstructorPresentation=openConstructorPresentation;
+window.closeConstructorPresentation=closeConstructorPresentation;
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeConstructorPresentation()});
+
 function render(){
  const s=state.settings||{};
  $('#championshipInfo').innerHTML=`<strong>${esc(s.season_name||'Stagione 2026-2027')}</strong><br>${esc(s.race_day||'Domenica')} alle ${String(s.race_time||'22:30').slice(0,5)} • Gara ${esc(s.race_length||'50%')} • ${esc(s.platform||'Crossplay')} • Livello ${esc(s.required_level||100)}<br><span class="muted">${esc(s.description||'Campionato Formula 1 Crossplay organizzato da SRT Santena Racing Team.')}</span>`;
@@ -1357,7 +1463,26 @@ function render(){
  renderCalendar(next);
  renderNextRaceLineup(next);
 
- $('#teamsGrid').innerHTML=state.teams.map(t=>`<article class="card team-card" style="--team-color:${esc(t.color||'#e10600')}">${teamLargeLogo(t)}<h3>${esc(t.name)}</h3><div class="muted">${esc(t.country||'')}</div><div style="margin-top:12px"><span class="chip">${state.drivers.filter(d=>d.team_id==t.id&&!d.is_wild&&d.status!=='suspended'&&d.status!=='reserve').length} piloti ufficiali</span></div></article>`).join('');
+ $('#teamsGrid').innerHTML=state.teams.map(t=>{
+   const official=state.drivers.filter(d=>d.team_id==t.id&&!d.is_wild&&d.status!=='suspended'&&d.status!=='reserve').slice(0,2);
+   const bothPhotos=official.length===2&&official.every(d=>Boolean(d.avatar));
+   const driverRows=[0,1].map(index=>{
+     const d=official[index];
+     return d
+       ?`<div class="constructor-driver"><span class="number">${index+1}</span><div><strong>${esc(driverName(d.id))}</strong><div class="muted">${esc(d.ea_id||'EA ID non inserito')}</div></div></div>`
+       :`<div class="constructor-driver"><span class="number">${index+1}</span><div><strong>Posto libero</strong><div class="muted">Pilota non assegnato</div></div></div>`;
+   }).join('');
+   return `<article class="card team-card" style="--team-color:${esc(t.color||'#e10600')}">
+     ${teamLargeLogo(t)}
+     <h3>${esc(t.name)}</h3>
+     <div class="muted">${esc(t.country||'')}</div>
+     <div class="constructor-drivers">${driverRows}</div>
+     <div class="constructor-photo-state ${bothPhotos?'ready':''}">
+       ${bothPhotos?'📷 Presentazione fotografica disponibile':'📷 Presentazione disponibile quando entrambi i piloti hanno autorizzato la foto e il selfie è stato caricato'}
+     </div>
+     ${bothPhotos?`<button class="btn alt constructor-open-btn" type="button" onclick="openConstructorPresentation(${t.id})">Apri presentazione piloti</button>`:''}
+   </article>`;
+ }).join('');
  $('#teamsEmpty').classList.toggle('hidden',state.teams.length>0);
 
  $('#driversBody').innerHTML=state.drivers.map(d=>`<tr><td><strong>${esc(d.ea_id||'—')}</strong></td><td>${esc((d.name+' '+(d.surname||'')).trim())} ${d.is_wild?'<span class="wild-badge">WILD</span>':''}</td><td>${teamSymbol(d.team_id)}${esc(teamName(d.team_id))}</td><td>${esc(d.level??100)}</td><td><span class="chip">${Number(d.absences||0)}/3</span></td><td>${esc(d.is_wild?'Wild':driverStatus(d.status))}</td><td>${esc(d.platform||'Crossplay')}</td></tr>`).join('');
