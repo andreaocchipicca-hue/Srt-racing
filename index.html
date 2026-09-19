@@ -508,7 +508,7 @@
       <div class="card stat-card"><div class="big" id="adminBlockedAccounts">0</div><div class="caption">Bloccati</div></div>
       <div class="card stat-card"><div class="big" id="adminTotalAccounts">0</div><div class="caption">Totali</div></div>
     </div>
-    <div class="notice" style="margin-top:14px">I nuovi iscritti entrano subito come <strong>Ospiti</strong> e possono vedere Classifiche, Calendario e Hall of Fame. Se fanno parte della lega, associa il pilota corretto e rendili <strong>Piloti SRT</strong>. Il tuo account Admin non può essere bloccato da questa schermata.</div>
+    <div class="notice" style="margin-top:14px">I nuovi iscritti entrano subito come <strong>Ospiti</strong> e possono consultare tutto il sito. Se fanno parte della lega, associa il pilota corretto e rendili <strong>Piloti SRT</strong>: la differenza è che l’Ospite non ha un pilota personale associato. Il tuo account Admin non può essere bloccato da questa schermata.</div>
     <div id="adminUsersList" class="user-access-list"></div>
   </div>
 
@@ -785,7 +785,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const ROLE_ACCESS={
   guest:['login'],
   blocked:['login'],
-  pending:['standings','calendar','halloffame'],
+  pending:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame'],
   driver:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame'],
   admin:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame','admin']
 };
@@ -805,7 +805,7 @@ function currentRole(){
 function allowedPages(){return ROLE_ACCESS[currentRole()]||ROLE_ACCESS.guest}
 function accessFallback(){
  const role=currentRole();
- if(role==='pending')return'standings';
+ if(role==='pending')return'home';
  return hasSiteAccess()?'home':'login';
 }
 function applyAccessControl(){
@@ -1162,7 +1162,56 @@ async function deleteBackup(id){
 }
 window.restoreBackup=restoreBackup;window.downloadBackup=downloadBackup;window.deleteBackup=deleteBackup;
 
+async function loadGuestData(){
+ try{
+  const requests=await Promise.all([
+   db.from('seasons').select('*').eq('is_active',true).limit(1).maybeSingle(),
+   db.from('teams').select('*').order('name'),
+   db.from('drivers').select('*').order('name'),
+   db.from('races').select('*').order('round'),
+   db.from('race_results').select('*'),
+   db.from('race_entries').select('*'),
+   db.from('news').select('*').order('published_at',{ascending:false}),
+   db.from('championship_settings').select('*').limit(1).maybeSingle(),
+   db.from('regulations').select('*').limit(1).maybeSingle(),
+   db.from('scoring_settings').select('*').limit(1).maybeSingle(),
+   db.from('discipline_events').select('*').order('created_at',{ascending:false}),
+   db.from('hall_of_fame').select('*').order('season_name',{ascending:false}),
+   db.from('standings_history').select('*').order('round')
+  ]);
+
+  const [se,te,dr,ra,re,en,ne,cs,rg,sc,di,hf,sh]=requests;
+  const safe=(result,fallback)=>{
+   if(result?.error){console.warn('Dati ospite:',result.error.message);return fallback}
+   return result?.data??fallback;
+  };
+
+  state.season=safe(se,null);
+  state.teams=safe(te,[]);
+  state.drivers=safe(dr,[]);
+  state.races=safe(ra,[]);
+  state.results=safe(re,[]);
+  state.entries=safe(en,[]);
+  state.news=safe(ne,[]);
+  state.settings=safe(cs,null);
+  state.regulations=safe(rg,null);
+  state.scoring=safe(sc,null);
+  state.discipline=safe(di,[]);
+  state.hallOfFame=safe(hf,[]);
+  state.standingsHistory=safe(sh,[]);
+  state.profiles=[];
+  state.backups=[];
+  state.backupsAvailable=false;
+  render();
+ }catch(e){
+  console.error('Caricamento ospite:',e);
+  const target=$('#standingsEmpty');
+  if(target)target.textContent='Dati temporaneamente non disponibili. Riprova tra poco.';
+ }
+}
+
 async function loadAll(){
+ if(currentRole()==='pending')return loadGuestData();
  try{
   const profilesRequest=currentRole()==='admin'?db.from('profiles').select('*').order('created_at',{ascending:false}):Promise.resolve({data:[],error:null});
   const backupsRequest=currentRole()==='admin'?db.from('admin_backups').select('id,label,reason,race_id,created_by,created_at').order('created_at',{ascending:false}).limit(50):Promise.resolve({data:[],error:null});
@@ -1261,7 +1310,7 @@ function renderGpSession(id,type){
  return true;
 }
 function openGpSession(id,type){
- if(!hasSiteAccess()){go('login');return}
+ if(!canBrowseSite()){go('login');return}
  state.archiveRaceId=Number(id);
  if(renderGpSession(state.archiveRaceId,type))go(type==='qualifying'?'gpQualifying':'gpRace');
 }
@@ -1275,7 +1324,7 @@ window.openGpSession=openGpSession;
 window.switchGpSession=switchGpSession;
 window.returnToGpArchive=returnToGpArchive;
 function openRaceArchive(id){
- if(!hasSiteAccess()){go('login');return}
+ if(!canBrowseSite()){go('login');return}
  state.archiveRaceId=Number(id);
  go('archive');
  setTimeout(()=>{
@@ -1317,7 +1366,7 @@ function render(){
 
  const driverStats=buildDriverStats(),teamStats=buildTeamStats(),published=publishedResults();
  const leader=driverStats[0]?.points||0,teamLeader=teamStats[0]?.points||0;
- $('#standingsBody').innerHTML=driverStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${teamSymbol(x.driver.team_id)}<button class="driver-link" onclick="if(hasSiteAccess()){go('profiles');document.querySelector('#profileDriverSelect').value='${x.driver.id}';renderProfile(${x.driver.id})}">${esc(driverName(x.driver.id))}</button><div class="gap-leader">${esc(x.driver.ea_id||'')} • <span class="${movementForDriver(x.driver.id).cls}">${movementForDriver(x.driver.id).text}</span></div></td><td>${esc(teamName(x.driver.team_id))}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(leader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
+ $('#standingsBody').innerHTML=driverStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${teamSymbol(x.driver.team_id)}<button class="driver-link" onclick="if(canBrowseSite()){go('profiles');document.querySelector('#profileDriverSelect').value='${x.driver.id}';renderProfile(${x.driver.id})}">${esc(driverName(x.driver.id))}</button><div class="gap-leader">${esc(x.driver.ea_id||'')} • <span class="${movementForDriver(x.driver.id).cls}">${movementForDriver(x.driver.id).text}</span></div></td><td>${esc(teamName(x.driver.team_id))}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(leader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
  $('#standingsEmpty').classList.toggle('hidden',published.length>0);
  $('#constructorsBody').innerHTML=teamStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${teamSymbol(x.team.id)}${esc(x.team.name)}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(teamLeader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
  $('#constructorsEmpty').classList.toggle('hidden',published.length>0);
@@ -1866,7 +1915,7 @@ function syncAuthMode(){
  $('#authSwitch').textContent=signup?'Ho già un account':'Crea account';
  $('#forgotPasswordBtn').classList.toggle('hidden',signup||Boolean(state.user));
 }
-function defaultLandingPage(){return currentRole()==='pending'?'standings':currentRole()==='driver'&&state.profile?.driver_id?'profiles':'home'}
+function defaultLandingPage(){return currentRole()==='driver'&&state.profile?.driver_id?'profiles':'home'}
 function requestedLandingPage(){
  const page=new URLSearchParams(location.search).get('page');
  return page&&allowedPages().includes(page)?page:defaultLandingPage();
@@ -1962,7 +2011,7 @@ async function refreshUser(){
  if(user&&!approved){
    $('#authMsg').innerHTML=status==='blocked'
      ?'<div class="account-status-card blocked"><strong>Accesso bloccato</strong><br>Questo account non può entrare nel sito. Contatta l’Admin SRT.</div>'
-     :'<div class="account-status-card pending"><strong>Accesso ospite attivo</strong><br>Puoi consultare Classifiche, Calendario e Hall of Fame. Se sei un pilota SRT, l’Admin ti assocerà al tuo profilo personale. Dopo l’associazione puoi premere “Aggiorna account”.</div>';
+     :'<div class="account-status-card pending"><strong>Accesso ospite attivo</strong><br>Puoi consultare tutto il sito come Ospite. Se sei un pilota SRT, l’Admin ti assocerà al tuo pilota personale. Dopo l’associazione puoi premere “Aggiorna account”.</div>';
  }else if($('#authMsg .account-status-card'))$('#authMsg').innerHTML='';
  applyAccessControl();
  syncOneSignalIdentity();
