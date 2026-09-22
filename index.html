@@ -2,6 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="utf-8">
+  <meta name="srt-build" content="2026-09-22-foto-notifiche">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <meta name="description" content="SRT Santena Racing Team - Stagione 2026-2027">
@@ -80,7 +81,7 @@
     .user-profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}
     .user-profile-fields .field.driver-link-field{grid-column:1/-1}
     .user-profile-fields input,.user-profile-fields select{padding:8px;font-size:12px}
-    .push-modal{position:fixed;inset:0;z-index:110;display:grid;place-items:center;padding:18px;background:rgba(3,9,18,.86);backdrop-filter:blur(10px)}
+    .push-modal{position:fixed;inset:0;z-index:110;display:grid;place-items:center;padding:18px;background:rgba(3,9,18,.86);backdrop-filter:blur(10px);overflow-y:auto}
     .push-card{width:min(100%,520px);text-align:center;border-color:#6f2630;background:linear-gradient(155deg,#263149,#131f33)}
     .push-icon{width:76px;height:76px;display:grid;place-items:center;margin:0 auto 14px;border-radius:22px;background:linear-gradient(135deg,var(--red),var(--red2));font-size:36px;box-shadow:0 16px 35px rgba(225,6,0,.32)}
     .push-benefits{display:grid;gap:8px;margin:16px 0;text-align:left}.push-benefits span{padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(7,17,31,.42)}
@@ -546,7 +547,8 @@
 
   <div id="notificationsPane" class="admin-pane card">
     <div class="section-head"><div><h3>Centro notifiche</h3><p>Invia una comunicazione a tutti oppure a un singolo account.</p></div></div>
-    <div class="notice success"><strong>Invii automatici:</strong> nuova richiesta all’Admin; approvazione al nuovo utente; risultati GP, news, calendario e regolamento agli account approvati.</div>
+    <div class="notice"><strong>Invii previsti:</strong> nuova iscrizione all’Admin e approvazione al pilota tramite Supabase; risultati GP, news, calendario e regolamento agli account approvati. L’invio dal server e la ricezione sul telefono vanno verificati separatamente.</div>
+    <div class="card" style="margin:14px 0"><h3>Questo dispositivo</h3><div id="adminPushDiagnostics" class="muted" role="status" aria-live="polite">Controllo notifiche…</div><div class="row" style="margin-top:12px"><button id="checkPushDeviceBtn" class="btn alt small" type="button">Ricontrolla collegamento</button><button id="adminEnablePushBtn" class="btn alt small" type="button">Attiva notifiche qui</button></div></div>
     <form id="notificationForm" class="form-grid">
       <div class="field"><label>Destinatari</label><select id="notificationTarget" name="target"><option value="all">Tutti gli approvati</option><option value="admins">Solo Admin</option><option value="user">Un singolo utente</option></select></div>
       <div id="notificationUserField" class="field hidden"><label>Utente</label><select id="notificationUser" name="profile_id"></select></div>
@@ -795,6 +797,8 @@ const SUPABASE_KEY="sb_publishable_IJNWc8FZpIjF-sH_InYoAA_VeXH276r";
 const ONESIGNAL_APP_ID="6a48738b-018d-490a-8a51-80b8dbcb9bd3";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let oneSignalClient=null;
+let authProfileReady=false,oneSignalInitError='',oneSignalIdentityError='',profileRefreshVersion=0;
+let oneSignalIdentityQueue=Promise.resolve(),pushPromptTimer=null;
 let resolveOneSignalReady;
 const oneSignalReady=new Promise(resolve=>{resolveOneSignalReady=resolve});
 window.OneSignalDeferred=window.OneSignalDeferred||[];
@@ -802,13 +806,15 @@ window.OneSignalDeferred.push(async OneSignal=>{
  try{
   await OneSignal.init({appId:ONESIGNAL_APP_ID,serviceWorkerPath:'service-worker.js',serviceWorkerParam:{scope:'/'},notifyButton:{enable:false}});
   oneSignalClient=OneSignal;
+  oneSignalInitError='';
   OneSignal.Notifications.addEventListener('permissionChange',()=>updatePushUi());
   OneSignal.User.PushSubscription.addEventListener('change',()=>updatePushUi());
+  OneSignal.User.addEventListener('change',()=>updatePushUi());
   resolveOneSignalReady(OneSignal);
   syncOneSignalIdentity();
- }catch(error){console.warn('Notifiche OneSignal:',error);resolveOneSignalReady(null);updatePushUi()}
+ }catch(error){oneSignalInitError=error.message||'Inizializzazione non riuscita';console.warn('Notifiche OneSignal:',error);resolveOneSignalReady(null);updatePushUi()}
 });
-setTimeout(()=>resolveOneSignalReady(null),12000);
+setTimeout(()=>{if(!oneSignalClient){oneSignalInitError=oneSignalInitError||'Il servizio non ha risposto. Controlla la connessione e ricarica la pagina.';resolveOneSignalReady(null);updatePushUi()}},12000);
 const recoveryUrlDetected=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery'||new URLSearchParams(location.search).get('type')==='recovery';
 let state={teams:[],drivers:[],races:[],results:[],entries:[],news:[],profiles:[],backups:[],backupsAvailable:true,regulations:null,scoring:null,discipline:[],hallOfFame:[],standingsHistory:[],season:null,settings:null,user:null,profile:null,raceControlRaceId:null,attendanceRaceId:null,archiveRaceId:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -873,41 +879,73 @@ $$('.admin-tabs button').forEach(b=>b.onclick=()=>{$$('.admin-tabs button').forE
 function msg(el,text,ok=false){el.innerHTML=`<div class="notice ${ok?'success':''}">${esc(text)}</div>`}
 function pushDismissKey(){return `srt-push-dismissed-${state.user?.id||'guest'}`}
 function nativePushPermission(){return typeof Notification==='undefined'?'unsupported':Notification.permission}
+function pushDeviceReady(){
+ const os=oneSignalClient;
+ return Boolean(authProfileReady&&state.user&&os&&os.Notifications.permission&&os.User.PushSubscription.optedIn&&os.User.PushSubscription.id&&os.User.externalId===state.user.id&&!oneSignalIdentityError);
+}
+function updateAdminPushDiagnostics(){
+ const box=$('#adminPushDiagnostics');if(!box)return;
+ const os=oneSignalClient,permission=nativePushPermission();
+ const permissionText={granted:'Consentito',denied:'Bloccato',default:'Da autorizzare',unsupported:'Non disponibile'}[permission]||permission;
+ const registered=Boolean(os?.User.PushSubscription.id&&os.User.PushSubscription.optedIn);
+ const linked=Boolean(state.user&&os?.User.externalId===state.user.id);
+ box.innerHTML=`<div>Permesso del browser: <strong>${esc(permissionText)}</strong></div><div>Dispositivo registrato: <strong>${registered?'Sì':'No / in attesa'}</strong></div><div>Collegato al tuo account: <strong>${linked?'Sì':'No / in attesa'}</strong></div><p>${pushDeviceReady()?'Dispositivo pronto per una prova. Questo non conferma ancora l’invio automatico delle nuove iscrizioni.':'Completa i controlli qui sopra prima della prova.'}</p>`;
+ const error=oneSignalInitError||oneSignalIdentityError;
+ if(error)box.innerHTML+=`<div class="notice">${esc(error)}</div>`;
+ const enable=$('#adminEnablePushBtn');
+ if(enable){enable.disabled=!os||!state.user||permission==='denied'||!os.Notifications.isPushSupported()||pushDeviceReady();enable.textContent=pushDeviceReady()?'Notifiche abilitate qui':'Attiva notifiche qui'}
+}
 function updatePushUi(){
+ updateAdminPushDiagnostics();
  const status=$('#pushStatus'),help=$('#pushStatusHelp'),button=$('#togglePushBtn');
  if(!status||!help||!button)return;
  const os=oneSignalClient,supported=Boolean(os&&os.Notifications.isPushSupported());
  status.className='push-status';button.disabled=false;
- if(!os){status.textContent='Servizio in caricamento…';button.disabled=true;return}
+ if(!os){status.textContent=oneSignalInitError?'Servizio notifiche non disponibile':'Servizio in caricamento…';help.textContent=oneSignalInitError||'Attendi il collegamento al servizio notifiche.';button.disabled=true;return}
  if(!supported){status.textContent='Non supportate su questo browser';status.classList.add('blocked');help.textContent='Apri il sito con Chrome, Edge o Safari compatibile.';button.disabled=true;return}
  const permission=nativePushPermission(),enabled=Boolean(os.User.PushSubscription.optedIn);
  if(permission==='denied'){
   status.textContent='Bloccate nelle impostazioni del browser';status.classList.add('blocked');help.textContent='Per riattivarle, consenti le notifiche nelle impostazioni del sito.';button.textContent='Notifiche bloccate';button.disabled=true;
  }else if(enabled){
-  status.textContent='Notifiche attive';status.classList.add('on');help.textContent='Riceverai gli aggiornamenti importanti SRT.';button.textContent='Disattiva';button.classList.remove('alt');
+  status.textContent=pushDeviceReady()?'Notifiche abilitate su questo dispositivo':'Collegamento notifiche da completare';status.classList.add(pushDeviceReady()?'on':'off');help.textContent=oneSignalIdentityError||(pushDeviceReady()?'L’effettiva ricezione dipende anche dall’invio del server.':'Attendi il collegamento al tuo account; se non cambia, ricarica il sito.');button.textContent='Disattiva';button.classList.remove('alt');
  }else{
   status.textContent='Notifiche non attive';status.classList.add('off');help.textContent='Attivale per non perdere risultati e comunicazioni.';button.textContent='Attiva';button.classList.add('alt');
  }
 }
 function maybeShowPushPrompt(){
- const os=oneSignalClient;if(!state.user||!os||!os.Notifications.isPushSupported())return;
+ clearTimeout(pushPromptTimer);
+ const os=oneSignalClient;if(!authProfileReady||!state.user||!os||!os.Notifications.isPushSupported())return;
  if(os.User.PushSubscription.optedIn||nativePushPermission()==='denied')return;
  const dismissed=Number(localStorage.getItem(pushDismissKey())||0);
  if(dismissed&&Date.now()-dismissed<7*86400000)return;
- setTimeout(()=>{if(state.user&&!os.User.PushSubscription.optedIn)$('#pushPromptModal')?.classList.remove('hidden')},650);
+ const userId=state.user.id;
+ pushPromptTimer=setTimeout(()=>{
+  const photoModal=$('#srtPhotoConsentModal');
+  if(photoModal&&!photoModal.classList.contains('hidden'))return;
+  if(state.user?.id===userId&&!os.User.PushSubscription.optedIn&&nativePushPermission()!=='denied')$('#pushPromptModal')?.classList.remove('hidden');
+ },650);
 }
-async function syncOneSignalIdentity(){
- const os=oneSignalClient||await oneSignalReady;
- if(!os){updatePushUi();return}
- try{
-  if(state.user){
-   await os.login(state.user.id);
-   os.User.setLanguage('it');
-   os.User.addTags({role:currentRole(),account_status:profileStatus(),driver_id:String(state.profile?.driver_id||'')});
-  }else if(os.User.externalId){await os.logout()}
- }catch(error){console.warn('Identità notifiche:',error)}
- updatePushUi();
- if(state.user)maybeShowPushPrompt();else $('#pushPromptModal')?.classList.add('hidden');
+function syncOneSignalIdentity(){
+ // Inizializzazione SDK e ripristino sessione possono terminare in qualsiasi ordine.
+ // Serializzare evita che un logout iniziale scollegi un login già completato.
+ oneSignalIdentityQueue=oneSignalIdentityQueue.catch(()=>{}).then(async()=>{
+  if(!authProfileReady)return;
+  const os=oneSignalClient||await oneSignalReady;
+  if(!os){updatePushUi();return}
+  oneSignalIdentityError='';
+  try{
+   const userId=state.user?.id;
+   if(userId){
+    await os.login(userId);
+    if(state.user?.id!==userId)return;
+    await os.User.setLanguage('it');
+    await os.User.addTags({role:currentRole(),account_status:profileStatus(),driver_id:String(state.profile?.driver_id||'')});
+   }else if(os.User.externalId){await os.logout()}
+  }catch(error){oneSignalIdentityError='Collegamento account non riuscito: '+error.message;console.warn('Identità notifiche:',error)}
+  updatePushUi();
+  if(state.user)maybeShowPushPrompt();else $('#pushPromptModal')?.classList.add('hidden');
+ });
+ return oneSignalIdentityQueue;
 }
 async function enablePushNotifications(){
  const os=oneSignalClient;if(!os)throw new Error('Il servizio notifiche non è ancora pronto. Riprova tra qualche secondo.');
@@ -916,6 +954,7 @@ async function enablePushNotifications(){
  await os.Notifications.requestPermission();
  if(!os.Notifications.permission)throw new Error('Permesso non concesso. Potrai attivarlo in seguito dal tuo profilo.');
  await os.User.PushSubscription.optIn();
+ await syncOneSignalIdentity();
  localStorage.removeItem(pushDismissKey());
  $('#pushPromptModal')?.classList.add('hidden');
  updatePushUi();
@@ -1069,10 +1108,11 @@ function renderAdminUsers(){
    else if(status==='pending')actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Associa e rendi pilota</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca</button>`;
    else if(status==='approved')actions=`<button class="btn alt small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva dati</button><button class="btn alt small" type="button" onclick="makeAccountGuest('${profile.id}')">Rendi ospite</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca accesso</button>`;
    else actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva e riattiva</button><button class="btn alt small" type="button" onclick="makeAccountGuest('${profile.id}')">Rendi ospite</button>`;
-   return `<div class="user-access-row"><span class="account-status-pill ${status}">${accountStatusLabel(status)}</span><div class="user-copy"><strong>${esc(profile.display_name||'Utente')}</strong><span class="muted">${esc(profile.email||'Email non disponibile')} • ${isAdmin?'Admin':status==='approved'?'Pilota':'Ospite'} • Iscritto il ${created}</span></div>${fields}<div class="user-actions">${actions}</div></div>`;
+   return `<div class="user-access-row" data-profile-id="${esc(profile.id)}"><span class="account-status-pill ${status}">${accountStatusLabel(status)}</span><div class="user-copy"><strong>${esc(profile.display_name||'Utente')}</strong><span class="muted">${esc(profile.email||'Email non disponibile')} • ${isAdmin?'Admin':status==='approved'?'Pilota':'Ospite'} • Iscritto il ${created}</span></div>${fields}<div class="user-actions">${actions}</div></div>`;
  }).join('')||'<div class="empty"><strong>Nessun account</strong>Gli utenti registrati compariranno qui.</div>';
  const notificationUser=$('#notificationUser');
  if(notificationUser)notificationUser.innerHTML=users.filter(p=>profileStatus(p)==='approved').map(p=>`<option value="${p.id}">${esc(p.display_name||p.email||'Utente')}</option>`).join('');
+ window.dispatchEvent(new CustomEvent('srt:admin-users-rendered'));
 }
 
 async function setAccountStatus(id,status){
@@ -1630,8 +1670,12 @@ $('#newsForm').onsubmit=async e=>{e.preventDefault();try{const f=e.target,o=Obje
 
 $('#notificationTarget').onchange=()=>$('#notificationUserField').classList.toggle('hidden',$('#notificationTarget').value!=='user');
 async function sendAdminNotification({title,message,target='all',profileId=null,page='home'}){
+ if(currentRole()!=='admin')throw new Error('Operazione riservata all’Admin.');
  const{data,error}=await db.rpc('send_srt_push',{p_title:title,p_message:message,p_target:target,p_profile_id:profileId||null,p_url:`https://srtracing.it/?page=${encodeURIComponent(page)}`});
  if(error)throw error;
+ const reportedErrors=data?.errors;
+ const hasErrors=Array.isArray(reportedErrors)?reportedErrors.length>0:reportedErrors&&typeof reportedErrors==='object'?Object.keys(reportedErrors).length>0:Boolean(reportedErrors);
+ if(data===false||data?.success===false||data?.error||hasErrors||(data?.recipients!=null&&Number(data.recipients)===0))throw new Error('Il server non ha accettato l’invio o non ha trovato destinatari. Controlla Supabase e OneSignal.');
  return data;
 }
 async function notifyAllSafely(title,message,page='home'){
@@ -1644,10 +1688,20 @@ $('#notificationForm').onsubmit=async e=>{
   const o=Object.fromEntries(new FormData(e.target)),profileId=o.target==='user'?o.profile_id:null;
   if(o.target==='user'&&!profileId)throw new Error('Seleziona un utente.');
   await sendAdminNotification({title:o.title.trim(),message:o.message.trim(),target:o.target,profileId,page:o.page});
-  msg($('#notificationMsg'),'Notifica messa in invio.',true);e.target.elements.message.value='';
+  msg($('#notificationMsg'),'Richiesta accettata dal server. La consegna al telefono non è ancora confermata.',true);e.target.elements.message.value='';
  }catch(error){msg($('#notificationMsg'),'Invio non riuscito: '+error.message)}finally{if(button)button.disabled=false}
 };
-$('#testPushBtn').onclick=async()=>{try{await sendAdminNotification({title:'Test notifiche SRT',message:'Perfetto: le notifiche del sito funzionano su questo dispositivo.',target:'user',profileId:state.user?.id,page:'home'});msg($('#notificationMsg'),'Notifica di prova inviata al tuo account.',true)}catch(error){msg($('#notificationMsg'),'Test non riuscito: '+error.message)}};
+$('#checkPushDeviceBtn').onclick=async()=>{await syncOneSignalIdentity();updatePushUi()};
+$('#adminEnablePushBtn').onclick=async()=>{try{await enablePushNotifications()}catch(error){msg($('#notificationMsg'),error.message)}finally{updatePushUi()}};
+$('#testPushBtn').onclick=async()=>{
+ const button=$('#testPushBtn');button.disabled=true;
+ try{
+  await syncOneSignalIdentity();
+  if(!pushDeviceReady())throw new Error('Questo dispositivo non è ancora pronto. Controlla permesso, registrazione e collegamento account qui sopra.');
+  await sendAdminNotification({title:'Test notifiche SRT',message:'Se stai leggendo questa notifica sul telefono, la prova di ricezione è riuscita.',target:'user',profileId:state.user?.id,page:'home'});
+  msg($('#notificationMsg'),'Prova richiesta per il tuo account (anche sugli altri tuoi dispositivi collegati). Verifica se compare una notifica sul telefono: l’accettazione del server da sola non conferma la consegna.',true);
+ }catch(error){msg($('#notificationMsg'),'Test non riuscito: '+error.message)}finally{button.disabled=false}
+};
 
 $('#regulationsForm').onsubmit=async e=>{e.preventDefault();try{const o=Object.fromEntries(new FormData(e.target));await createSafetyBackup('Prima di modificare il regolamento','regulations',null);let q=state.regulations?.id?await db.from('regulations').update({...o,updated_at:new Date().toISOString()}).eq('id',state.regulations.id):await db.from('regulations').insert(o);if(q.error)throw q.error;const notified=await notifyAllSafely('Regolamento aggiornato','È disponibile una nuova versione del regolamento ufficiale.','regulations');msg($('#adminMsg'),notified?'Regolamento salvato e notifica inviata.':'Regolamento salvato. La notifica non è partita: controlla la configurazione OneSignal.',true);await loadAll()}catch(x){msg($('#adminMsg'),x.message)}};
 const createDriverMode=$('#driverForm [name="driver_mode"]'),createDriverTeam=$('#driverForm [name="team_id"]');
@@ -2123,8 +2177,12 @@ async function logoutUser(){const{error}=await db.auth.signOut();if(error){msg($
 $('#logoutBtn').onclick=logoutUser;
 $('#topLogoutBtn').onclick=logoutUser;
 async function refreshUser(){
- const{data:{user}}=await db.auth.getUser();state.user=user;state.profile=null;
- if(user){const{data,error}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();if(error)console.error('Profilo:',error);state.profile=data||{id:user.id,email:user.email,first_name:user.user_metadata?.first_name||'',last_name:user.user_metadata?.last_name||'',display_name:user.user_metadata?.display_name||user.email?.split('@')[0]||'Pilota',role:'driver',driver_id:null,account_status:'pending'}}
+ const refreshVersion=++profileRefreshVersion;
+ const{data:{user}}=await db.auth.getUser();
+ let profile=null;
+ if(user){const{data,error}=await db.from('profiles').select('*').eq('id',user.id).maybeSingle();if(error)console.error('Profilo:',error);profile=data||{id:user.id,email:user.email,first_name:user.user_metadata?.first_name||'',last_name:user.user_metadata?.last_name||'',display_name:user.user_metadata?.display_name||user.email?.split('@')[0]||'Pilota',role:'driver',driver_id:null,account_status:'pending'}}
+ if(refreshVersion!==profileRefreshVersion)return;
+ state.user=user;state.profile=profile;
  const role=currentRole();
  const status=profileStatus(),approved=hasSiteAccess();
  $('#userBadge').textContent=user?(state.profile?.display_name||user.email)+(role==='admin'?' • Admin':approved?' • Pilota':status==='blocked'?' • Bloccato':' • Ospite'):'Ospite';
@@ -2139,10 +2197,19 @@ async function refreshUser(){
      :'<div class="account-status-card pending"><strong>Accesso ospite attivo</strong><br>Puoi consultare tutto il sito come Ospite. Se sei un pilota SRT, l’Admin ti assocerà al tuo pilota personale. Dopo l’associazione puoi premere “Aggiorna account”.</div>';
  }else if($('#authMsg .account-status-card'))$('#authMsg').innerHTML='';
  applyAccessControl();
+ authProfileReady=true;
+ window.dispatchEvent(new CustomEvent('srt:profile-ready'));
  syncOneSignalIdentity();
 }
 db.auth.onAuthStateChange((event,session)=>{
  if(event==='PASSWORD_RECOVERY')openPasswordRecovery(session);
+ if(event==='SIGNED_OUT'){
+  profileRefreshVersion++;
+  state.user=null;state.profile=null;authProfileReady=true;
+  clearTimeout(pushPromptTimer);
+  $('#pushPromptModal')?.classList.add('hidden');
+  syncOneSignalIdentity();
+ }
  setTimeout(()=>refreshUser(),0);
 });
 (async()=>{
@@ -2929,14 +2996,13 @@ db.auth.onAuthStateChange((event,session)=>{
 <script>
 (() => {
   const PHOTO_CONSENT_VERSION = 'SRT-FOTO-2026-V1';
-
-  function consentDismissKey() {
-    return `srt-photo-consent-dismissed-${state.user?.id || 'guest'}`;
-  }
+  // Il rinvio vale solo per questa visita; ricaricando il sito si richiede il consenso.
+  let dismissedForUser = null;
+  let consentSaving = false;
 
   function photoConsentPending() {
     return Boolean(
-      state.user &&
+      authProfileReady && state.user &&
       currentRole() === 'driver' &&
       state.profile?.driver_id &&
       state.profile?.photo_consent !== true
@@ -2951,12 +3017,13 @@ db.auth.onAuthStateChange((event,session)=>{
     modal.className = 'push-modal hidden';
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'srtPhotoConsentTitle');
 
     modal.innerHTML = `
       <div class="card push-card">
         <div class="push-icon">📷</div>
 
-        <h2>Foto del tuo profilo SRT</h2>
+        <h2 id="srtPhotoConsentTitle">Foto del tuo profilo SRT</h2>
 
         <p class="muted">
           Per mostrare il tuo selfie nel profilo personale serve la tua
@@ -3009,10 +3076,14 @@ db.auth.onAuthStateChange((event,session)=>{
     };
 
     saveBtn.onclick = async () => {
+      const requestUserId = state.user?.id;
       try {
-        if (!checkbox.checked) return;
-
+        if (!checkbox.checked || !photoConsentPending() || consentSaving) return;
+        const userId = state.user.id;
+        consentSaving = true;
         saveBtn.disabled = true;
+        skipBtn.disabled = true;
+        checkbox.disabled = true;
 
         const { error } = await db.rpc(
           'set_my_photo_consent',
@@ -3020,12 +3091,15 @@ db.auth.onAuthStateChange((event,session)=>{
         );
 
         if (error) throw error;
+        // Non assegnare il consenso a un altro account se la sessione è cambiata.
+        if (state.user?.id !== userId) return;
 
         state.profile.photo_consent = true;
         state.profile.photo_consent_at = new Date().toISOString();
         state.profile.photo_consent_version = PHOTO_CONSENT_VERSION;
 
-        sessionStorage.removeItem(consentDismissKey());
+        state.profile.photo_consent_revoked_at = null;
+        dismissedForUser = null;
 
         msg(
           document.querySelector('#srtPhotoConsentMsg'),
@@ -3034,6 +3108,7 @@ db.auth.onAuthStateChange((event,session)=>{
         );
 
         setTimeout(() => {
+          if (state.user?.id !== userId) return;
           modal.classList.add('hidden');
 
           if (typeof maybeShowPushPrompt === 'function') {
@@ -3047,12 +3122,17 @@ db.auth.onAuthStateChange((event,session)=>{
           error.message
         );
 
-        saveBtn.disabled = false;
+      } finally {
+        consentSaving = false;
+        skipBtn.disabled = false;
+        checkbox.disabled = false;
+        saveBtn.disabled = !checkbox.checked;
+        if (state.user?.id !== requestUserId) maybeShowPhotoConsent();
       }
     };
 
     skipBtn.onclick = () => {
-      sessionStorage.setItem(consentDismissKey(), '1');
+      dismissedForUser = state.user?.id || null;
       modal.classList.add('hidden');
 
       if (typeof maybeShowPushPrompt === 'function') {
@@ -3071,12 +3151,14 @@ db.auth.onAuthStateChange((event,session)=>{
       return;
     }
 
-    if (sessionStorage.getItem(consentDismissKey()) === '1') {
+    if (dismissedForUser === state.user?.id || consentSaving) {
       return;
     }
 
     document.querySelector('#pushPromptModal')
       ?.classList.add('hidden');
+    // Non cancellare la spunta mentre l'utente sta leggendo o durante un refresh.
+    if (!modal.classList.contains('hidden')) return;
 
     const checkbox =
       document.querySelector('#srtPhotoConsentCheck');
@@ -3092,6 +3174,7 @@ db.auth.onAuthStateChange((event,session)=>{
     message.innerHTML = '';
 
     modal.classList.remove('hidden');
+    checkbox.focus();
   }
 
   async function uploadSrtDriverSelfie(profileId) {
@@ -3108,7 +3191,7 @@ db.auth.onAuthStateChange((event,session)=>{
       return;
     }
 
-    if (profile.photo_consent !== true) {
+    if (profile.photo_consent !== true || profileStatus(profile) !== 'approved') {
       msg(
         document.querySelector('#adminMsg'),
         'Questo pilota non ha ancora autorizzato la pubblicazione della foto.'
@@ -3140,6 +3223,17 @@ db.auth.onAuthStateChange((event,session)=>{
     }
 
     try {
+      if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
+        throw new Error('Usa una fotografia JPG, PNG o WebP.');
+      }
+      if (file.size > 10 * 1024 * 1024) throw new Error('La foto deve pesare meno di 10 MB.');
+      // Rileggi il consenso: il pannello potrebbe essere aperto da tempo.
+      const { data: fresh, error: profileError } = await db.from('profiles')
+        .select('id,driver_id,account_status,photo_consent').eq('id', profileId).single();
+      if (profileError) throw profileError;
+      if (currentRole() !== 'admin' || fresh.photo_consent !== true || fresh.account_status !== 'approved' || Number(fresh.driver_id) !== Number(profile.driver_id)) {
+        throw new Error('Consenso o associazione modificati. Aggiorna il pannello prima di caricare.');
+      }
       const avatar =
         await uploadImage(file, 'drivers');
 
@@ -3178,39 +3272,18 @@ db.auth.onAuthStateChange((event,session)=>{
 
     if (!list) return;
 
-    const users = [...state.profiles].sort((a, b) => {
-      const priority = {
-        pending: 0,
-        blocked: 1,
-        approved: 2
-      };
-
-      return (
-        (priority[profileStatus(a)] ?? 3) -
-        (priority[profileStatus(b)] ?? 3) ||
-        String(a.display_name || '')
-          .localeCompare(
-            String(b.display_name || ''),
-            'it'
-          )
-      );
-    });
+    const users = new Map(state.profiles.map(profile => [profile.id, profile]));
 
     const rows =
       [...list.querySelectorAll('.user-access-row')];
 
-    rows.forEach((row, index) => {
+    rows.forEach(row => {
       row.querySelector('.srt-photo-admin')
         ?.remove();
 
-      const profile = users[index];
+      const profile = users.get(row.dataset.profileId);
 
       if (!profile || profile.role === 'admin') {
-        return;
-      }
-
-      // La gestione foto compare solo dopo che l'ospite è diventato Pilota SRT.
-      if (profileStatus(profile) !== 'approved' || !profile.driver_id) {
         return;
       }
 
@@ -3220,20 +3293,24 @@ db.auth.onAuthStateChange((event,session)=>{
       area.className = 'srt-photo-admin';
 
       area.style.cssText =
-        'flex-basis:100%;width:100%;padding-top:10px;' +
+        'grid-column:1/-1;flex-basis:100%;width:100%;padding-top:10px;' +
         'margin-top:4px;border-top:1px solid var(--line)';
 
-      if (profile.photo_consent === true) {
+      const consentKnown = Object.prototype.hasOwnProperty.call(profile, 'photo_consent');
+      const eligible = profileStatus(profile) === 'approved' && Boolean(profile.driver_id);
+      if (profile.photo_consent === true && eligible) {
         area.innerHTML = `
           <div class="row">
             <span class="account-status-pill approved">
               📷 Consenso foto: SÌ
             </span>
+            <span class="muted">${profile.photo_consent_at ? 'Dal ' + esc(new Date(profile.photo_consent_at).toLocaleDateString('it-IT')) : 'Autorizzazione registrata'}</span>
 
             <input
               data-srt-selfie="${profile.id}"
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
+              aria-label="Selfie di ${esc(profile.display_name || 'questo pilota')}"
               style="max-width:260px"
             >
 
@@ -3246,15 +3323,19 @@ db.auth.onAuthStateChange((event,session)=>{
           </div>
         `;
       } else {
+        const label = profile.photo_consent === true ? 'SÌ' : !consentKnown ? 'NON DISPONIBILE' : profile.photo_consent_revoked_at ? 'REVOCATO' : 'NON DATO';
+        const reason = profileStatus(profile) === 'blocked' ? 'Account bloccato: caricamento non consentito.'
+          : !eligible ? 'Prima associa questo account al pilota corretto e rendilo Pilota SRT.'
+          : !consentKnown ? 'Il database non ha restituito il consenso. Verifica la configurazione foto in Supabase.'
+          : 'Non caricare la foto: manca il consenso del pilota. L’avviso compare al suo prossimo accesso.';
         area.innerHTML = `
           <div class="row">
             <span class="account-status-pill pending">
-              📷 Consenso foto: NO
+              📷 Consenso foto: ${label}
             </span>
 
             <span class="muted">
-              Il selfie resta nascosto finché il pilota
-              non autorizza la pubblicazione.
+              ${reason}
             </span>
           </div>
         `;
@@ -3264,35 +3345,24 @@ db.auth.onAuthStateChange((event,session)=>{
     });
   }
 
-  document.addEventListener(
+  window.addEventListener(
     'srt:data-ready',
     () => {
       enhanceAdminPhotoControls();
 
-      setTimeout(
-        maybeShowPhotoConsent,
-        300
-      );
+      maybeShowPhotoConsent();
     }
   );
 
+  window.addEventListener('srt:admin-users-rendered', enhanceAdminPhotoControls);
+  window.addEventListener('srt:profile-ready', () => {
+    if (!state.user || (dismissedForUser && dismissedForUser !== state.user.id)) dismissedForUser = null;
+    maybeShowPhotoConsent();
+  });
   db.auth.onAuthStateChange(
-    (event, session) => {
-
-      if (event === 'SIGNED_IN') {
-        if (session?.user?.id) {
-          sessionStorage.removeItem(
-            `srt-photo-consent-dismissed-${session.user.id}`
-          );
-        }
-
-        setTimeout(
-          maybeShowPhotoConsent,
-          900
-        );
-      }
-
+    event => {
       if (event === 'SIGNED_OUT') {
+        dismissedForUser = null;
         document.querySelector(
           '#srtPhotoConsentModal'
         )?.classList.add('hidden');
@@ -3300,11 +3370,13 @@ db.auth.onAuthStateChange((event,session)=>{
     }
   );
 
-  setTimeout(() => {
+  function initPhotoControls() {
     ensurePhotoConsentModal();
     enhanceAdminPhotoControls();
     maybeShowPhotoConsent();
-  }, 1200);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPhotoControls, {once:true});
+  else initPhotoControls();
 
 })();
 </script>
