@@ -1084,10 +1084,11 @@ function renderAdminUsers(){
    else if(statusClass==='guest')actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Associa e rendi pilota</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca accesso</button>`;
    else if(status==='approved')actions=`<button class="btn alt small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva dati</button><button class="btn alt small" type="button" onclick="makeAccountGuest('${profile.id}')">Rendi ospite</button><button class="btn danger small" type="button" onclick="setAccountStatus('${profile.id}','blocked')">Blocca accesso</button>`;
    else actions=`<button class="btn small" type="button" onclick="saveAccountProfile('${profile.id}','approved')">Salva e riattiva</button><button class="btn alt small" type="button" onclick="makeAccountGuest('${profile.id}')">Rendi ospite</button>`;
-   return `<div class="user-access-row"><span class="account-status-pill ${statusClass}">${accountStatusLabel(profile)}</span><div class="user-copy"><strong>${esc(profile.display_name||'Utente')}</strong><span class="muted">${esc(profile.email||'Email non disponibile')} • ${isAdmin?'Admin':accountStatusLabel(profile)} • Iscritto il ${created}</span></div>${fields}<div class="user-actions">${actions}</div></div>`;
+   return `<div class="user-access-row" data-photo-profile-id="${esc(profile.id)}"><span class="account-status-pill ${statusClass}">${accountStatusLabel(profile)}</span><div class="user-copy"><strong>${esc(profile.display_name||'Utente')}</strong><span class="muted">${esc(profile.email||'Email non disponibile')} • ${isAdmin?'Admin':accountStatusLabel(profile)} • Iscritto il ${created}</span></div>${fields}<div class="user-actions">${actions}</div></div>`;
  }).join('')||'<div class="empty"><strong>Nessun account</strong>Gli utenti registrati compariranno qui.</div>';
  const notificationUser=$('#notificationUser');
  if(notificationUser)notificationUser.innerHTML=users.filter(p=>profileStatus(p)==='approved').map(p=>`<option value="${p.id}">${esc(p.display_name||p.email||'Utente')}</option>`).join('');
+ window.dispatchEvent(new Event('srt:admin-users-rendered'));
 }
 
 async function setAccountStatus(id,status){
@@ -3113,6 +3114,25 @@ db.auth.onAuthStateChange((event,session)=>{
     modal.classList.remove('hidden');
   }
 
+  async function verifiedPhotoProfile(profileId, expectedDriverId) {
+    const { data: profile, error } = await db.from('profiles').select('*').eq('id', profileId).single();
+    if (error) throw error;
+    if (!profile || profileStatus(profile) !== 'approved' || profile.photo_consent !== true || !profile.driver_id) {
+      throw new Error('Caricamento bloccato: account non approvato, pilota non associato o consenso assente.');
+    }
+    if (String(profile.driver_id) !== String(expectedDriverId)) {
+      throw new Error('Associazione al pilota cambiata. Ricarica la pagina prima di caricare la foto.');
+    }
+    const { data: owners, error: ownersError } = await db.from('profiles').select('id').eq('driver_id', profile.driver_id);
+    if (ownersError) throw ownersError;
+    if (!owners || owners.length !== 1 || String(owners[0].id) !== String(profileId)) {
+      throw new Error('Pilota associato a più account: correggi le associazioni prima di caricare la foto.');
+    }
+    const { data: driver, error: driverError } = await db.from('drivers').select('id').eq('id', profile.driver_id).single();
+    if (driverError || !driver) throw driverError || new Error('Pilota non trovato.');
+    return profile;
+  }
+
   async function uploadSrtDriverSelfie(profileId) {
     if (currentRole() !== 'admin') return;
 
@@ -3159,14 +3179,17 @@ db.auth.onAuthStateChange((event,session)=>{
     }
 
     try {
+      const expectedDriverId = profile.driver_id;
+      await verifiedPhotoProfile(profileId, expectedDriverId);
       const avatar =
         await uploadImage(file, 'drivers');
+      await verifiedPhotoProfile(profileId, expectedDriverId);
 
       const { error } =
         await db
           .from('drivers')
           .update({ avatar })
-          .eq('id', Number(profile.driver_id));
+          .eq('id', expectedDriverId).select('id').single();
 
       if (error) throw error;
 
@@ -3197,32 +3220,14 @@ db.auth.onAuthStateChange((event,session)=>{
 
     if (!list) return;
 
-    const users = [...state.profiles].sort((a, b) => {
-      const priority = {
-        pending: 0,
-        blocked: 1,
-        approved: 2
-      };
-
-      return (
-        (priority[profileStatus(a)] ?? 3) -
-        (priority[profileStatus(b)] ?? 3) ||
-        String(a.display_name || '')
-          .localeCompare(
-            String(b.display_name || ''),
-            'it'
-          )
-      );
-    });
-
     const rows =
       [...list.querySelectorAll('.user-access-row')];
 
-    rows.forEach((row, index) => {
+    rows.forEach(row => {
       row.querySelector('.srt-photo-admin')
         ?.remove();
 
-      const profile = users[index];
+      const profile = state.profiles.find(p => String(p.id) === row.dataset.photoProfileId);
 
       if (!profile || profile.role === 'admin') {
         return;
@@ -3283,6 +3288,8 @@ db.auth.onAuthStateChange((event,session)=>{
     });
   }
 
+  window.addEventListener('srt:admin-users-rendered', enhanceAdminPhotoControls);
+
   window.addEventListener(
     'srt:data-ready',
     () => {
@@ -3329,3 +3336,4 @@ db.auth.onAuthStateChange((event,session)=>{
 </script>
 </body>
 </html>
+
