@@ -2236,8 +2236,12 @@ db.auth.onAuthStateChange((event,session)=>{
   }
 
   function officialDrivers(race) {
-    const regular = state.drivers.filter(driver => !driver.is_wild && driver.status !== 'reserve');
-    const fallback = regular.length >= 20 ? regular : state.drivers.filter(driver => !driver.is_wild);
+    // Le grafiche dei titolari devono escludere anche sospesi e disattivati.
+    const regular = state.drivers.filter(driver =>
+      driver.active !== false && !driver.is_wild &&
+      (!driver.status || driver.status === 'active')
+    );
+    const fallback = regular;
     if (!race) return fallback;
 
     const raceEntries = state.entries.filter(entry => entry.race_id == race.id);
