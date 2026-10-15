@@ -2708,7 +2708,7 @@ db.auth.onAuthStateChange((event,session)=>{
           entry,
           result,
           driver,
-          teamId: Number(entry.team_id || result?.team_id || driver?.team_id) || null,
+          teamId: Number(entry.team_id) || null,
           gridPosition: Number(result?.grid_position || 0)
         };
       });
@@ -2742,6 +2742,7 @@ db.auth.onAuthStateChange((event,session)=>{
     await drawHeader(ctx, 'STARTING GRID', race, subtitle);
     const entries = startingGridEntries(race);
     if (!entries.length) throw new Error('Inserisci le posizioni nel campo “Griglia” del Race Control e salva il GP.');
+    if (entries.some(item => !item.teamId)) throw new Error('Assegna una scuderia a ogni pilota nelle Convocazioni di questo GP, poi salva.');
 
     const labels = surnameLabels(entries);
     const teams = entries.map(item => state.teams.find(team => team.id == item.teamId)).filter(Boolean);
@@ -2767,7 +2768,7 @@ db.auth.onAuthStateChange((event,session)=>{
       const rowIndex = Math.floor((position - 1) / 2);
       const x = 45 + column * 505;
       const y = startY + rowIndex * rowStep;
-      const team = graphicTeam(item);
+      const team = state.teams.find(team => team.id == item.teamId) || {id: null, name: 'Scuderia non assegnata', color: '#555b66'};
 
       ctx.save();
       fillRounded(ctx, x, y, cardWidth, cardHeight, 12, '#11161d');
