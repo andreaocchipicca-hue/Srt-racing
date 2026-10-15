@@ -272,6 +272,13 @@
       .constructor-pilot-info{padding:10px}
       .constructor-pilot-info h3{font-size:16px}
     }
+  
+    .standings-choice{color:var(--text);text-align:left;display:grid;gap:12px;padding:28px;min-height:180px}
+    .standings-choice:hover,.standings-choice:focus-visible{border-color:var(--red);background:var(--surface2)}
+    .standings-choice>span{font-size:34px}.standings-choice>strong{font-size:24px}.standings-choice>small{color:var(--muted);font-size:14px}
+    .team-photo-admin{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+    .team-photo-preview{width:80px;height:100px;object-fit:cover;border-radius:10px}
+    @media(max-width:600px){#driverStandings .section-head,#constructorStandings .section-head{align-items:flex-start;flex-direction:column}}
   </style>
 </head>
 <body class="guest-mode">
@@ -355,19 +362,21 @@
 </section>
 
 <section id="standings" class="section">
-  <div class="section-head"><div><h2>Classifiche</h2><p>Aggiornate dopo ogni GP pubblicato.</p></div></div>
+  <div class="section-head"><div><h2>Classifiche</h2><p>Scegli la classifica da consultare.</p></div></div>
   <div class="grid two">
-    <div class="card table-wrap">
-      <h3>Classifica piloti</h3>
-      <table><thead><tr><th>Pos.</th><th>Pilota</th><th>Scuderia</th><th>Punti</th><th>Gap</th><th>Vittorie</th><th>Podi</th></tr></thead><tbody id="standingsBody"></tbody></table>
-      <div id="standingsEmpty" class="empty">Nessun risultato pubblicato.</div>
-    </div>
-    <div class="card table-wrap">
-      <h3>Classifica costruttori</h3>
-      <table><thead><tr><th>Pos.</th><th>Scuderia</th><th>Punti</th><th>Gap</th><th>Vittorie</th><th>Podi</th></tr></thead><tbody id="constructorsBody"></tbody></table>
-      <div id="constructorsEmpty" class="empty">Nessun risultato pubblicato.</div>
-    </div>
+    <button type="button" class="card standings-choice" onclick="go('driverStandings')"><span>🏎️</span><strong>Classifica piloti</strong><small>Punti, posizioni e risultati dei piloti →</small></button>
+    <button type="button" class="card standings-choice" onclick="go('constructorStandings')"><span>🏆</span><strong>Classifica costruttori</strong><small>Punti delle scuderie e foto dei piloti →</small></button>
   </div>
+</section>
+<section id="driverStandings" class="section">
+  <div class="section-head"><div class="grow"><h2>Classifica piloti</h2><p>Aggiornata dopo ogni GP pubblicato.</p></div><button type="button" class="btn alt" onclick="go('standings')">← Classifiche</button></div>
+  <div class="card table-wrap"><table><thead><tr><th>Pos.</th><th>Pilota</th><th>Scuderia</th><th>Punti</th><th>Gap</th><th>Vittorie</th><th>Podi</th></tr></thead><tbody id="standingsBody"></tbody></table>
+      <div id="standingsEmpty" class="empty">Nessun risultato pubblicato.</div></div>
+</section>
+<section id="constructorStandings" class="section">
+  <div class="section-head"><div class="grow"><h2>Classifica costruttori</h2><p>Apri la presentazione per vedere i due piloti della scuderia.</p></div><button type="button" class="btn alt" onclick="go('standings')">← Classifiche</button></div>
+  <div class="card table-wrap"><table><thead><tr><th>Pos.</th><th>Scuderia</th><th>Punti</th><th>Gap</th><th>Vittorie</th><th>Podi</th></tr></thead><tbody id="constructorsBody"></tbody></table>
+      <div id="constructorsEmpty" class="empty">Nessun risultato pubblicato.</div></div>
 </section>
 
 <section id="statistics" class="section">
@@ -616,7 +625,7 @@
   </div>
 
   <div id="teamPane" class="admin-pane card">
-    <h3>Aggiungi scuderia</h3>
+    <h3>Foto piloti delle scuderie</h3><p class="muted">Carica o sostituisci la foto di ciascun pilota per la presentazione della coppia. Il logo della scuderia resta separato.</p><div id="adminTeamPhotos"></div><h3 style="margin-top:24px">Aggiungi scuderia</h3>
     <form id="teamForm" class="form-grid">
       <div class="field"><label>Nome</label><input name="name" required></div>
       <div class="field"><label>Colore</label><input name="color" value="#e10600"></div>
@@ -820,9 +829,9 @@ const ROLE_ACCESS={
   guest:['login'],
   blocked:['login'],
   pending:['login'],
-  visitor:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame'],
-  driver:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame'],
-  admin:['home','teams','drivers','standings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame','admin']
+  visitor:['home','teams','drivers','standings','driverStandings','constructorStandings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame'],
+  driver:['home','teams','drivers','standings','driverStandings','constructorStandings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame'],
+  admin:['home','teams','drivers','standings','driverStandings','constructorStandings','calendar','statistics','profiles','archive','gpQualifying','gpRace','news','regulations','halloffame','admin']
 };
 function profileStatus(profile=state.profile){
  if(!profile)return'pending';
@@ -866,7 +875,7 @@ function go(id){
   if(id==='login'&&role!=='guest'&&role!=='blocked')id=fallback;
   else if(!allowedPages().includes(id))id=fallback;
   $$('.section').forEach(x=>x.classList.toggle('active',x.id===id));
-  $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===id));
+  $$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.page===(['driverStandings','constructorStandings'].includes(id)?'standings':id)));
   scrollTo({top:0,behavior:'smooth'});
 }
 window.go=go;
@@ -1397,6 +1406,35 @@ function openRaceArchive(id){
 }
 window.openRaceArchive=openRaceArchive;
 
+
+function constructorPilots(teamId){
+ return state.drivers.filter(d=>String(d.team_id)===String(teamId)&&!d.is_wild&&d.status!=='suspended'&&d.status!=='reserve').slice(0,2);
+}
+function constructorPhotoAction(teamId){
+ const pilots=constructorPilots(teamId);
+ return pilots.length===2&&pilots.every(d=>Boolean(d.avatar))
+  ?'<button class="btn alt small" type="button" onclick="openConstructorPresentation('+Number(teamId)+')">Foto dei piloti</button>'
+  :'<span class="muted">Foto piloti non ancora disponibili</span>';
+}
+function renderTeamPhotoControls(){
+ const container=document.querySelector('#adminTeamPhotos');
+ if(!container)return;
+ if(currentRole()!=='admin'){container.innerHTML='';return}
+ container.innerHTML=state.teams.map(team=>{
+  const pilots=constructorPilots(team.id);
+  return `<div class="team-photo-admin"><h3>${esc(team.name)}</h3><div class="grid two">${pilots.map(driver=>{
+   const owners=state.profiles.filter(p=>String(p.driver_id)===String(driver.id));
+   const profile=owners.length===1?owners[0]:null;
+   const enabled=profile&&profileStatus(profile)==='approved'&&profile.photo_consent===true;
+   const reason=owners.length>1?'Associazione a più account: correggila in Utenti.':!profile?'Associa il pilota a un account in Utenti.':profileStatus(profile)!=='approved'?'Approva prima l’account in Utenti.':'Il pilota deve prima autorizzare la pubblicazione della foto.';
+   return `<div class="card"><strong>${esc(driverName(driver.id))}</strong><p class="muted">${esc(driver.ea_id||'')}</p>
+    ${driver.avatar?`<img class="team-photo-preview" src="${esc(driver.avatar)}" alt="Foto di ${esc(driverName(driver.id))}">`:''}
+    ${enabled?`<div class="field"><label for="teamPilotPhoto-${driver.id}">Foto del pilota</label><input id="teamPilotPhoto-${driver.id}" type="file" accept="image/jpeg,image/png,image/webp"><button type="button" class="btn alt" onclick="uploadTeamPilotPhoto('${profile.id}',${Number(driver.id)},this)">${driver.avatar?'Sostituisci foto':'Carica foto'}</button></div>`:`<p class="muted">${esc(reason)}</p>`}
+    <div id="teamPilotPhotoMsg-${driver.id}" role="status"></div></div>`;
+  }).join('')||'<p class="muted">Nessun pilota ufficiale assegnato.</p>'}</div></div>`;
+ }).join('');
+}
+
 function ensureConstructorPresentationModal(){
  if(document.querySelector('#constructorPresentationModal'))return;
  const modal=document.createElement('div');
@@ -1509,7 +1547,7 @@ function render(){
  const leader=driverStats[0]?.points||0,teamLeader=teamStats[0]?.points||0;
  $('#standingsBody').innerHTML=driverStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${teamSymbol(x.driver.team_id)}<button class="driver-link" onclick="if(canBrowseSite()){go('profiles');document.querySelector('#profileDriverSelect').value='${x.driver.id}';renderProfile(${x.driver.id})}">${esc(driverName(x.driver.id))}</button><div class="gap-leader">${esc(x.driver.ea_id||'')} • <span class="${movementForDriver(x.driver.id).cls}">${movementForDriver(x.driver.id).text}</span></div></td><td>${esc(teamName(x.driver.team_id))}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(leader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
  $('#standingsEmpty').classList.toggle('hidden',published.length>0);
- $('#constructorsBody').innerHTML=teamStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${teamSymbol(x.team.id)}${esc(x.team.name)}</td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(teamLeader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
+ $('#constructorsBody').innerHTML=teamStats.filter(x=>x.points||published.length).map((x,i)=>`<tr class="${i===0?'leader-row':''}"><td><span class="rank-badge ${i===0?'first':''}">${i+1}</span></td><td>${teamSymbol(x.team.id)}${esc(x.team.name)}<div style="margin-top:8px">${constructorPhotoAction(x.team.id)}</div></td><td><strong>${x.points}</strong></td><td>${i===0?'Leader':'-'+(teamLeader-x.points)}</td><td>${x.wins}</td><td>${x.podiums}</td></tr>`).join('');
  $('#constructorsEmpty').classList.toggle('hidden',published.length>0);
  $('#statWins').textContent=published.filter(r=>r.position===1).length;$('#statPoles').textContent=published.filter(r=>r.pole).length;$('#statFastest').textContent=published.filter(r=>r.fastest_lap).length;$('#statPodiums').textContent=published.filter(r=>r.position&&r.position<=3).length;
  const wl=[...driverStats].sort((a,b)=>b.wins-a.wins)[0],pl=[...driverStats].sort((a,b)=>b.poles-a.poles)[0],pdl=[...driverStats].sort((a,b)=>b.podiums-a.podiums)[0],fl=[...driverStats].sort((a,b)=>b.fastest-a.fastest)[0],al=[...driverStats].filter(x=>x.races).sort((a,b)=>b.average-a.average)[0];
@@ -1542,7 +1580,7 @@ function render(){
  $$('.driverSelect').forEach(x=>x.innerHTML=state.drivers.map(d=>`<option value="${d.id}">${esc(driverName(d.id))}</option>`).join(''));
  $$('.raceSelect').forEach(x=>x.innerHTML=state.races.map(r=>`<option value="${r.id}">R${r.round} - ${esc(r.name)}</option>`).join(''));
  const attendanceSelect=$('#attendanceRace');if(attendanceSelect){const keep=state.attendanceRaceId;if(!keep&&next)state.attendanceRaceId=next.id;attendanceSelect.innerHTML='<option value="">Seleziona un GP</option>'+state.races.map(r=>`<option value="${r.id}">R${r.round} — ${esc(r.name)}</option>`).join('');if(state.attendanceRaceId)attendanceSelect.value=String(state.attendanceRaceId);renderAttendance()}
- $('#adminTeams').innerHTML=adminList(state.teams,'team');$('#adminDrivers').innerHTML=adminList(state.drivers,'driver');$('#adminRaces').innerHTML=adminList(state.races,'race');$('#adminNews').innerHTML=adminList(state.news,'news');
+ renderTeamPhotoControls();$('#adminTeams').innerHTML=adminList(state.teams,'team');$('#adminDrivers').innerHTML=adminList(state.drivers,'driver');$('#adminRaces').innerHTML=adminList(state.races,'race');$('#adminNews').innerHTML=adminList(state.news,'news');
 
  const absenceForm=$('#absenceForm'),absenceDriver=absenceForm?.querySelector('[name="driver_id"]');
  if(absenceDriver){
@@ -3133,6 +3171,29 @@ db.auth.onAuthStateChange((event,session)=>{
     return profile;
   }
 
+
+  async function uploadTeamPilotPhoto(profileId, driverId, button) {
+    if(currentRole()!=='admin')return;
+    const input=document.getElementById('teamPilotPhoto-'+driverId);
+    const target=document.getElementById('teamPilotPhotoMsg-'+driverId);
+    const file=input?.files?.[0];
+    if(!file){msg(target,'Scegli prima la foto da caricare.');return}
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)){msg(target,'Scegli una foto JPG, PNG o WebP.');return}
+    if(file.size>10*1024*1024){msg(target,'La foto deve pesare meno di 10 MB.');return}
+    button.disabled=true;
+    try{
+      await verifiedPhotoProfile(profileId,driverId);
+      const avatar=await uploadImage(file,'drivers');
+      await verifiedPhotoProfile(profileId,driverId);
+      const {error}=await db.from('drivers').update({avatar}).eq('id',driverId).select('id').single();
+      if(error)throw error;
+      await loadAll();
+      msg(document.getElementById('teamPilotPhotoMsg-'+driverId),'Foto salvata. Sarà visibile nella presentazione della scuderia.',true);
+    }catch(error){msg(document.getElementById('teamPilotPhotoMsg-'+driverId)||target,'Errore caricamento: '+error.message)}
+    finally{button.disabled=false}
+  }
+  window.uploadTeamPilotPhoto=uploadTeamPilotPhoto;
+
   async function uploadSrtDriverSelfie(profileId) {
     if (currentRole() !== 'admin') return;
 
@@ -3336,4 +3397,5 @@ db.auth.onAuthStateChange((event,session)=>{
 </script>
 </body>
 </html>
+
 
