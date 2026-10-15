@@ -2269,29 +2269,11 @@ db.auth.onAuthStateChange((event,session)=>{
   }
 
   function officialDrivers(race) {
-    // Le grafiche dei titolari devono escludere anche sospesi e disattivati.
-    const regular = state.drivers.filter(driver =>
+    // Il ruolo nelle grafiche segue l’anagrafica attuale, non le vecchie convocazioni.
+    return state.drivers.filter(driver =>
       driver.active !== false && !driver.is_wild &&
       (!driver.status || driver.status === 'active')
     );
-    const fallback = regular;
-    if (!race) return fallback;
-
-    const raceEntries = state.entries.filter(entry => entry.race_id == race.id);
-    if (raceEntries.length) {
-      const historicWildIds = new Set(raceEntries.filter(entry => entry.status === 'wild').map(entry => Number(entry.driver_id)));
-      return fallback.filter(driver => !historicWildIds.has(Number(driver.id)));
-    }
-
-    // I GP salvati prima dell'introduzione dei convocati non hanno lo snapshot WILD.
-    // Se un pilota corse per una scuderia diversa da quella attuale, non va inserito
-    // nella classifica ufficiale di quel vecchio round come se fosse già titolare.
-    return fallback.filter(driver => {
-      const raceResult = state.results.find(result => result.race_id == race.id && result.driver_id == driver.id);
-      const historicTeamId = Number(raceResult?.team_id || 0);
-      const currentTeamId = Number(driver.team_id || 0);
-      return !(historicTeamId && currentTeamId && historicTeamId !== currentTeamId);
-    });
   }
 
   function driverTeamAtRace(driver, race, rows = []) {
@@ -2332,15 +2314,14 @@ db.auth.onAuthStateChange((event,session)=>{
   function driverStandings(race) {
     const results = resultsThroughRace(race);
     const officialIds = new Set(officialDrivers(race).map(driver => Number(driver.id)));
-    const wildIds = new Set(state.entries.filter(entry => entry.status === 'wild' && Number(state.races.find(r => r.id == entry.race_id)?.round) <= Number(race?.round)).map(entry => Number(entry.driver_id)));
-    const candidates = state.drivers.filter(driver => officialIds.has(Number(driver.id)) || ((driver.is_wild || driver.status === 'suspended' || wildIds.has(Number(driver.id))) && results.filter(row => row.driver_id == driver.id).reduce((sum,row) => sum + Number(row.points || 0),0) > 0));
+    const candidates = state.drivers.filter(driver => officialIds.has(Number(driver.id)) || ((driver.is_wild || driver.status === 'suspended') && results.filter(row => row.driver_id == driver.id).reduce((sum,row) => sum + Number(row.points || 0),0) > 0));
     return candidates.map(driver => {
       const rows = results.filter(result => result.driver_id == driver.id);
       return {
         driver,
         rows,
         teamId: driverTeamAtRace(driver, race, rows),
-        graphicWild: Boolean(driver.is_wild || driver.status === 'suspended' || wildIds.has(Number(driver.id))),
+        graphicWild: Boolean(driver.is_wild || driver.status === 'suspended'),
         points: rows.reduce((sum, result) => sum + Number(result.points || 0), 0),
         wins: rows.filter(result => Number(result.position) === 1).length,
         podiums: rows.filter(result => Number(result.position) > 0 && Number(result.position) <= 3).length
