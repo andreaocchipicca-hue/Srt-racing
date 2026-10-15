@@ -277,7 +277,7 @@
     .standings-choice:hover,.standings-choice:focus-visible{border-color:var(--red);background:var(--surface2)}
     .standings-choice>span{font-size:34px}.standings-choice>strong{font-size:24px}.standings-choice>small{color:var(--muted);font-size:14px}
     .team-photo-admin{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
-    .team-photo-preview{width:80px;height:100px;object-fit:cover;border-radius:10px}
+    .team-pair-photo{display:block;width:100%;height:auto;object-fit:contain;border-radius:14px;margin:12px 0;background:#0b1728}
     @media(max-width:600px){#driverStandings .section-head,#constructorStandings .section-head{align-items:flex-start;flex-direction:column}}
   </style>
 </head>
@@ -625,7 +625,7 @@
   </div>
 
   <div id="teamPane" class="admin-pane card">
-    <h3>Foto piloti delle scuderie</h3><p class="muted">Carica o sostituisci la foto di ciascun pilota per la presentazione della coppia. Il logo della scuderia resta separato.</p><div id="adminTeamPhotos"></div><h3 style="margin-top:24px">Aggiungi scuderia</h3>
+    <h3>Foto piloti delle scuderie</h3><p class="muted">Carica un’unica foto con entrambi i piloti insieme. Il logo della scuderia e le foto dei profili personali restano invariati.</p><div id="adminTeamPhotos"></div><h3 style="margin-top:24px">Aggiungi scuderia</h3>
     <form id="teamForm" class="form-grid">
       <div class="field"><label>Nome</label><input name="name" required></div>
       <div class="field"><label>Colore</label><input name="color" value="#e10600"></div>
@@ -1410,11 +1410,16 @@ window.openRaceArchive=openRaceArchive;
 function constructorPilots(teamId){
  return state.drivers.filter(d=>String(d.team_id)===String(teamId)&&!d.is_wild&&d.status!=='suspended'&&d.status!=='reserve').slice(0,2);
 }
+function constructorPairPhoto(team){
+ const ids=constructorPilots(team.id).map(d=>String(d.id)).sort();
+ const photo=team.pair_photo;
+ return ids.length===2&&photo?.url&&Array.isArray(photo.driver_ids)&&JSON.stringify(photo.driver_ids.map(String).sort())===JSON.stringify(ids)?photo.url:'';
+}
 function constructorPhotoAction(teamId){
- const pilots=constructorPilots(teamId);
- return pilots.length===2&&pilots.every(d=>Boolean(d.avatar))
+ const team=state.teams.find(t=>String(t.id)===String(teamId));
+ return team&&constructorPairPhoto(team)
   ?'<button class="btn alt small" type="button" onclick="openConstructorPresentation('+Number(teamId)+')">Foto dei piloti</button>'
-  :'<span class="muted">Foto piloti non ancora disponibili</span>';
+  :'<span class="muted">Foto di coppia non ancora disponibile</span>';
 }
 function renderTeamPhotoControls(){
  const container=document.querySelector('#adminTeamPhotos');
@@ -1422,16 +1427,15 @@ function renderTeamPhotoControls(){
  if(currentRole()!=='admin'){container.innerHTML='';return}
  container.innerHTML=state.teams.map(team=>{
   const pilots=constructorPilots(team.id);
-  return `<div class="team-photo-admin"><h3>${esc(team.name)}</h3><div class="grid two">${pilots.map(driver=>{
+  const enabled=pilots.length===2&&pilots.every(driver=>{
    const owners=state.profiles.filter(p=>String(p.driver_id)===String(driver.id));
-   const profile=owners.length===1?owners[0]:null;
-   const enabled=profile&&profileStatus(profile)==='approved'&&profile.photo_consent===true;
-   const reason=owners.length>1?'Associazione a più account: correggila in Utenti.':!profile?'Associa il pilota a un account in Utenti.':profileStatus(profile)!=='approved'?'Approva prima l’account in Utenti.':'Il pilota deve prima autorizzare la pubblicazione della foto.';
-   return `<div class="card"><strong>${esc(driverName(driver.id))}</strong><p class="muted">${esc(driver.ea_id||'')}</p>
-    ${driver.avatar?`<img class="team-photo-preview" src="${esc(driver.avatar)}" alt="Foto di ${esc(driverName(driver.id))}">`:''}
-    ${enabled?`<div class="field"><label for="teamPilotPhoto-${driver.id}">Foto del pilota</label><input id="teamPilotPhoto-${driver.id}" type="file" accept="image/jpeg,image/png,image/webp"><button type="button" class="btn alt" onclick="uploadTeamPilotPhoto('${profile.id}',${Number(driver.id)},this)">${driver.avatar?'Sostituisci foto':'Carica foto'}</button></div>`:`<p class="muted">${esc(reason)}</p>`}
-    <div id="teamPilotPhotoMsg-${driver.id}" role="status"></div></div>`;
-  }).join('')||'<p class="muted">Nessun pilota ufficiale assegnato.</p>'}</div></div>`;
+   return owners.length===1&&profileStatus(owners[0])==='approved'&&owners[0].photo_consent===true;
+  });
+  const photo=constructorPairPhoto(team);
+  return `<div class="team-photo-admin"><h3>${esc(team.name)}</h3><p class="muted">${pilots.map(d=>esc(driverName(d.id))).join(' + ')||'Nessun pilota ufficiale assegnato'}</p>
+   ${photo?`<img class="team-pair-photo" src="${esc(photo)}" alt="Foto di coppia ${esc(team.name)}">`:''}
+   ${enabled?`<div class="field"><label for="teamPairPhoto-${team.id}">Un’unica foto con entrambi i piloti insieme</label><input id="teamPairPhoto-${team.id}" type="file" accept="image/jpeg,image/png,image/webp"><button type="button" class="btn alt" onclick="uploadTeamPairPhoto(${Number(team.id)},this)">${photo?'Sostituisci foto di coppia':'Carica foto di coppia'}</button></div>`:'<p class="muted">Servono due piloti ufficiali, ognuno associato a un solo account approvato e con consenso foto. Controlla la sezione Utenti.</p>'}
+   <div id="teamPairPhotoMsg-${team.id}" role="status"></div></div>`;
  }).join('');
 }
 
@@ -1456,8 +1460,8 @@ function openConstructorPresentation(teamId){
  const team=state.teams.find(t=>Number(t.id)===Number(teamId));
  if(!team)return;
  const pilots=state.drivers.filter(d=>Number(d.team_id)===Number(teamId)&&!d.is_wild&&d.status!=='suspended'&&d.status!=='reserve').slice(0,2);
- if(pilots.length!==2||!pilots.every(d=>Boolean(d.avatar))){
-   alert('La presentazione fotografica sarà disponibile quando entrambi i piloti avranno autorizzato la foto e l’Admin avrà caricato i selfie.');
+ if(!constructorPairPhoto(team)){
+   alert('La foto di coppia non è ancora stata caricata per questi piloti.');
    return;
  }
  const logo=teamLogoUrl(team);
@@ -1475,18 +1479,8 @@ function openConstructorPresentation(teamId){
      </div>
      <button class="constructor-close" type="button" aria-label="Chiudi" onclick="closeConstructorPresentation()">×</button>
    </div>
-   <div class="constructor-presentation-grid">
-     ${pilots.map((d,index)=>`
-       <article class="constructor-pilot-card">
-         <img class="constructor-pilot-photo" src="${esc(d.avatar)}" alt="${esc(driverName(d.id))}" onerror="this.src='icon-512.png'">
-         <div class="constructor-pilot-info">
-           <div class="eyebrow">Pilota ${index+1}</div>
-           <h3>${esc(driverName(d.id))}</h3>
-           <div class="muted">EA ID: ${esc(d.ea_id||'—')}</div>
-         </div>
-       </article>
-     `).join('')}
-   </div>`;
+   <img class="team-pair-photo" src="${esc(constructorPairPhoto(team))}" alt="${esc(pilots.map(d=>driverName(d.id)).join(' e '))}" onerror="this.hidden=true;this.nextElementSibling.textContent='Foto non disponibile. Riprova più tardi.'">
+   <p class="muted">${pilots.map(d=>esc(driverName(d.id))).join(' · ')}</p>`;
  document.querySelector('#constructorPresentationModal').classList.remove('hidden');
 }
 window.openConstructorPresentation=openConstructorPresentation;
@@ -1519,7 +1513,7 @@ function render(){
 
  $('#teamsGrid').innerHTML=state.teams.map(t=>{
    const official=state.drivers.filter(d=>d.team_id==t.id&&!d.is_wild&&d.status!=='suspended'&&d.status!=='reserve').slice(0,2);
-   const bothPhotos=official.length===2&&official.every(d=>Boolean(d.avatar));
+   const bothPhotos=Boolean(constructorPairPhoto(t));
    const driverRows=[0,1].map(index=>{
      const d=official[index];
      return d
@@ -1532,7 +1526,7 @@ function render(){
      <div class="muted">${esc(t.country||'')}</div>
      <div class="constructor-drivers">${driverRows}</div>
      <div class="constructor-photo-state ${bothPhotos?'ready':''}">
-       ${bothPhotos?'📷 Presentazione fotografica disponibile':'📷 Presentazione disponibile quando entrambi i piloti hanno autorizzato la foto e il selfie è stato caricato'}
+       ${bothPhotos?'📷 Presentazione fotografica disponibile':'📷 Foto di coppia non ancora caricata'}
      </div>
      ${bothPhotos?`<button class="btn alt constructor-open-btn" type="button" onclick="openConstructorPresentation(${t.id})">Apri presentazione piloti</button>`:''}
    </article>`;
@@ -3172,27 +3166,42 @@ db.auth.onAuthStateChange((event,session)=>{
   }
 
 
-  async function uploadTeamPilotPhoto(profileId, driverId, button) {
+  async function uploadTeamPairPhoto(teamId,button){
     if(currentRole()!=='admin')return;
-    const input=document.getElementById('teamPilotPhoto-'+driverId);
-    const target=document.getElementById('teamPilotPhotoMsg-'+driverId);
-    const file=input?.files?.[0];
-    if(!file){msg(target,'Scegli prima la foto da caricare.');return}
-    if(!['image/jpeg','image/png','image/webp'].includes(file.type)){msg(target,'Scegli una foto JPG, PNG o WebP.');return}
-    if(file.size>10*1024*1024){msg(target,'La foto deve pesare meno di 10 MB.');return}
+    const target=document.getElementById('teamPairPhotoMsg-'+teamId);
+    const file=document.getElementById('teamPairPhoto-'+teamId)?.files?.[0];
+    if(!file){msg(target,'Scegli una foto con entrambi i piloti insieme.');return}
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>10*1024*1024){msg(target,'Scegli una foto JPG, PNG o WebP di massimo 10 MB.');return}
+    const pilots=constructorPilots(teamId);
+    const ids=pilots.map(d=>String(d.id)).sort();
+    async function verifyPair(){
+      if(ids.length!==2)throw new Error('Servono due piloti ufficiali.');
+      const {data,error}=await db.from('drivers').select('id,is_wild,status').eq('team_id',teamId);
+      if(error)throw error;
+      const current=(data||[]).filter(d=>!d.is_wild&&d.status!=='suspended'&&d.status!=='reserve').map(d=>String(d.id)).sort();
+      if(JSON.stringify(current)!==JSON.stringify(ids))throw new Error('La coppia piloti è cambiata. Ricarica la pagina.');
+      for(const id of ids){
+        const profiles=state.profiles.filter(p=>String(p.driver_id)===id);
+        if(profiles.length!==1)throw new Error('Controlla le associazioni dei piloti in Utenti.');
+        await verifiedPhotoProfile(profiles[0].id,id);
+      }
+    }
     button.disabled=true;
     try{
-      await verifiedPhotoProfile(profileId,driverId);
-      const avatar=await uploadImage(file,'drivers');
-      await verifiedPhotoProfile(profileId,driverId);
-      const {error}=await db.from('drivers').update({avatar}).eq('id',driverId).select('id').single();
+      await verifyPair();
+      // Verifica lo schema prima di caricare il file.
+      const ready=await db.from('teams').select('id,pair_photo').eq('id',teamId).single();
+      if(ready.error)throw new Error('Configurazione foto di coppia non disponibile: esegui prima l’aggiornamento SQL fornito. '+ready.error.message);
+      const url=await uploadImage(file,'team-pairs');
+      await verifyPair();
+      const {error}=await db.from('teams').update({pair_photo:{url,driver_ids:ids}}).eq('id',teamId).select('id').single();
       if(error)throw error;
       await loadAll();
-      msg(document.getElementById('teamPilotPhotoMsg-'+driverId),'Foto salvata. Sarà visibile nella presentazione della scuderia.',true);
-    }catch(error){msg(document.getElementById('teamPilotPhotoMsg-'+driverId)||target,'Errore caricamento: '+error.message)}
+      msg(document.getElementById('teamPairPhotoMsg-'+teamId),'Foto di coppia salvata.',true);
+    }catch(error){msg(document.getElementById('teamPairPhotoMsg-'+teamId)||target,'Errore: '+error.message)}
     finally{button.disabled=false}
   }
-  window.uploadTeamPilotPhoto=uploadTeamPilotPhoto;
+  window.uploadTeamPairPhoto=uploadTeamPairPhoto;
 
   async function uploadSrtDriverSelfie(profileId) {
     if (currentRole() !== 'admin') return;
